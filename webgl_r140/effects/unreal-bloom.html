@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="es">
+	<head>
+		<meta charset="utf-8">
+		<title>Three.js r140 - UnrealBloomPass</title>
+		<style>
+			body {
+				margin: 0;
+				overflow: hidden;
+				background: #000;
+				font-family: sans-serif;
+			}
+
+			#panel {
+				position: absolute;
+				top: 12px;
+				left: 12px;
+				z-index: 1;
+				padding: 12px;
+				color: white;
+				background: rgba(0, 0, 0, 0.65);
+				border-radius: 6px;
+			}
+
+			#panel label {
+				display: block;
+				margin-top: 8px;
+			}
+
+			#panel output {
+				display: inline-block;
+				width: 35px;
+				text-align: right;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="panel">
+			<strong>UnrealBloomPass</strong>
+			<label>Fuerza <input id="strength" type="range" min="0" max="3" step="0.1" value="1.5"> <output>1.5</output></label>
+			<label>Radio <input id="radius" type="range" min="0" max="1" step="0.05" value="0.4"> <output>0.4</output></label>
+			<label>Umbral <input id="threshold" type="range" min="0" max="1" step="0.05" value="0.25"> <output>0.25</output></label>
+		</div>
+		<div id="container"></div>
+
+		<!-- Three.js r140 sin modulos -->
+		<script src="../lib/three.min_r140.js"></script>
+		<script src="../lib/OrbitControls.js"></script>
+
+		<!-- Dependencias clasicas de UnrealBloomPass (tambien r140) -->
+		<script src="js/CopyShader.js"></script>
+		<script src="js/LuminosityHighPassShader.js"></script>
+		<script src="js/EffectComposer.js"></script>
+		<script src="js/RenderPass.js"></script>
+		<script src="js/ShaderPass.js"></script>
+		<script src="js/UnrealBloomPass.js"></script>
+
+		<!-- Nuestro ejemplo -->
+		<script src="unreal-bloom.js"></script>
+	</body>
+</html>

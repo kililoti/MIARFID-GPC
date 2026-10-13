@@ -1,0 +1,43 @@
+<!doctype html>
+<!-- 
+Seminario 2 ejemplo basico
+-->
+<html lang="es">
+	<head>
+		<meta charset='utf-8'>
+		<title>Threejs App</title>
+		<style>
+			body {
+				background-color: #000;
+				margin: 0px;
+				overflow: hidden;
+			}
+            #text_canvas {
+                position: absolute;
+                pointer-events: none;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+            }            
+		</style>
+	</head>
+	<body>
+		<!-- Contenedor del app -->
+		<div id="container"></div>
+
+        <!-- Este canvas va a funcionar como superpuesto al canvas del three.js -->
+        <canvas id="text_canvas"></canvas>
+
+
+		<!-- Scripts de biblioteca -->
+		<script src="lib/three.min_r140.js"></script>
+		<script src="lib/OrbitControls.js"></script>
+		<script src="lib/stats.min.js"></script>
+		<script src="lib/dat.gui.min.js"></script>
+
+		<!-- Mi codigo -->
+		<script src="js/s4-gui-text.js"></script>
+
+	</body>
+</html>

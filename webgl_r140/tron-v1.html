@@ -1,0 +1,41 @@
+<!doctype html>
+<!--
+  Seminario practico: Tron Battle Grid
+
+  Copiado de tron-base.html. En esta version empezamos a construir la escena.
+-->
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <title>Tron Battle Grid - V1</title>
+    <style>
+      body {
+        background-color: #000;
+        margin: 0;
+        overflow: hidden;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Contenedor de la aplicacion -->
+    <div id="container"></div>
+
+    <!-- Librerias -->
+    <script src="lib/three.min_r140.js"></script>
+    <script src="lib/OrbitControls.js"></script>
+    <script src="lib/GLTFLoader.js"></script>
+    <script src="js/inflate.min.js"></script>
+    <script src="js/FBXLoader.js"></script>
+
+    <!-- BLOOM- dependencias clasicas de Three.js r140, sin modulos. -->
+    <script src="effects/js/CopyShader.js"></script>
+    <script src="effects/js/LuminosityHighPassShader.js"></script>
+    <script src="effects/js/EffectComposer.js"></script>
+    <script src="effects/js/RenderPass.js"></script>
+    <script src="effects/js/ShaderPass.js"></script>
+    <script src="effects/js/UnrealBloomPass.js"></script>
+
+    <!-- Nuestro codigo -->
+    <script src="js/tron-v1.js"></script>
+  </body>
+</html>
