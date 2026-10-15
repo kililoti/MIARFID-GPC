@@ -130,7 +130,12 @@ const ESCALAS = [
     altoBorde: 0.8,            // grosor del borde de tierra
     colorSuelo: 0x5d8331,
     colorBorde: 0x5b3a22,
-    repetirTextura: 6          // veces que se repetira tu textura sobre el disco
+    repetirTextura: 6,         // veces que se repetira tu textura sobre el disco
+    // Objetos del nivel: [tipo, cantidad, tamañoMin, tamañoMax]
+    // El tamaño es la mitad de su dimension mayor, en tamaños de slime
+    catalogo: [
+      ['semilla', 30, 0.12, 0.18]
+    ]
   }
 ];
 var escala_actual = 0;
@@ -296,6 +301,7 @@ function loadObjGLTF()
             // Escenario: suelo del primer nivel (su tamaño depende del slime)
             crearSuelo(0);
             configurarSombras();
+            generarObjetos(0);     // OBJETOS- los comestibles del primer nivel
 
             // A partir de ahora manda la camara en tercera persona
             cameraControls.enabled = false;
@@ -316,6 +322,108 @@ function loadObjGLTF()
         }
     );  
 
+}
+
+// ---------------------------------------------------------------------------
+// OBJETOS- definicion de los tipos de objetos comestibles y su colocacion
+// ---------------------------------------------------------------------------
+var objetos = [];   // registro de todos los objetos del mundo (para colisiones, comer...)
+
+// Numero aleatorio entre a y b
+function rand(a, b)
+{
+  return a + Math.random() * (b - a);
+}
+
+// Elemento aleatorio de una lista
+function elegir(lista)
+{
+  return lista[Math.floor(Math.random() * lista.length)];
+}
+
+// Geometrias y materiales compartidos: todas las semillas usan la misma esfera y
+// uno de estos tres materiales, en vez de crear uno nuevo por cada objeto
+const GEOMETRIAS = {
+  esfera: new THREE.SphereGeometry(1, 24, 16)
+};
+// Los colores en hexadecimal estan en sRGB; los pasamos a lineal porque el
+// renderizador trabaja en lineal y codifica la salida en sRGB
+const MATERIALES = {
+  semillas: ['#8a5a2b', '#c9a46a', '#4a3524'].map(function (c) {
+    return new THREE.MeshStandardMaterial({ color: new THREE.Color(c).convertSRGBToLinear(), roughness: 0.6 });
+  })
+};
+
+// Tabla de tipos: nombre visible, huella (radio de colision relativo a su tamaño)
+// y funcion que construye su modelo
+const TIPOS = {
+  semilla: { nombre: 'Semilla', huella: 0.8, crear: crearSemilla }
+};
+
+// Cada constructor monta el objeto en "unidades de objeto": apoyado en y = 0 y con
+// su dimension mayor de tamaño 2 (de -1 a 1). Despues el grupo se escala a su tamaño real.
+function crearSemilla(grupo)
+{
+  const semilla = new THREE.Mesh(GEOMETRIAS.esfera, elegir(MATERIALES.semillas));
+  semilla.position.y = 0.38;
+  semilla.scale.set(0.55, 0.4, 1);     // esfera achatada y alargada: forma de pipa
+  semilla.castShadow = true;
+  semilla.receiveShadow = true;
+  grupo.add(semilla);
+}
+
+// Recorre el catalogo de la escala y reparte sus objetos por el suelo
+function generarObjetos(indice)
+{
+  const E = ESCALAS[indice];
+  const radioSuelo = suelos[indice].radio;
+  let creados = 0;
+
+  E.catalogo.forEach(function (entrada) {
+    const tipo = entrada[0], cantidad = entrada[1], min = entrada[2], max = entrada[3];
+    const def = TIPOS[tipo];
+
+    for (let k = 0; k < cantidad; k++) {
+      const tam = rand(min, max) * tamano_slime;
+      const radio = tam * def.huella;
+      const pos = buscarPosicion(radioSuelo, radio);
+      if (!pos) continue;   // no hay hueco libre: lo saltamos
+
+      const grupo = new THREE.Group();
+      grupo.name = tipo;
+      def.crear(grupo);
+      grupo.position.set(pos.x, 0, pos.z);
+      grupo.rotation.y = rand(0, Math.PI * 2);
+      grupo.scale.setScalar(tam);
+      scene.add(grupo);
+
+      objetos.push({ tipo: tipo, def: def, tam: tam, radio: radio, escala: indice, grupo: grupo });
+      creados++;
+    }
+  });
+  console.log('Objetos creados en', E.nombre + ':', creados);
+}
+
+// Busca una posicion aleatoria dentro del disco que no este encima del slime
+// ni se solape con otro objeto. Si tras varios intentos no la encuentra, devuelve null.
+function buscarPosicion(radioSuelo, radio)
+{
+  const maximo = radioSuelo - radio - tamano_slime * 0.5;
+  for (let intento = 0; intento < 25; intento++) {
+    // sqrt para repartir uniformemente por el area (si no, se amontonan en el centro)
+    const d = Math.sqrt(Math.random()) * maximo;
+    const a = rand(0, Math.PI * 2);
+    const x = Math.sin(a) * d, z = Math.cos(a) * d;
+
+    if (Math.hypot(x - pos_slime.x, z - pos_slime.z) < tamano_slime * 1.5 + radio) continue;
+
+    const solapa = objetos.some(function (o) {
+      const minimo = (o.radio + radio) * 1.05;
+      return Math.hypot(o.grupo.position.x - x, o.grupo.position.z - z) < minimo;
+    });
+    if (!solapa) return { x: x, z: z };
+  }
+  return null;
 }
 
 // ESCENARIOS- crea el suelo de una escala: un disco plano con un borde de tierra,
