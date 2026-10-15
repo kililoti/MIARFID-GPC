@@ -6,6 +6,12 @@ var cameraControls;
 var angulo = -0.01;
 var mixer = null;      // reproduce las animaciones del modelo
 
+// Minimapa: camara cenital ortografica en la esquina superior derecha
+var cameraTop, cameraStencil;
+var stencilScene, hudBorderScene;
+var alcance_hud = 20;                          // lado (en unidades del mundo) que abarca el minimapa
+const centro_hud = new THREE.Vector3(0, 10, 0); // punto sobre el que se coloca la camara cenital
+
 const clock = new THREE.Clock();
 
 init();
@@ -33,6 +39,8 @@ function init()
 
   cameraControls = new THREE.OrbitControls( camera, renderer.domElement );
   cameraControls.target.set( 0, 0, 0 );
+
+  crearMinimapa();
 
   const light = new THREE.PointLight(0xffffff, 1, 50000000);
   light.position.set(50, 50, 50);
@@ -121,6 +129,18 @@ function loadObjGLTF()
             cameraControls.target.copy(center);
             cameraControls.update();            
 
+            // Ajustar la camara cenital al tamaño del modelo
+            alcance_hud = maxDim * 1.6;
+            cameraTop.left = -alcance_hud / 2;
+            cameraTop.right = alcance_hud / 2;
+            cameraTop.top = alcance_hud / 2;
+            cameraTop.bottom = -alcance_hud / 2;
+            cameraTop.near = maxDim * 0.1;
+            cameraTop.far = maxDim * 10;
+            cameraTop.updateProjectionMatrix();
+            centro_hud.copy(center);
+            centro_hud.y = box.max.y + maxDim;     // por encima del modelo
+
 
         },
         // called while loading is progressing
@@ -176,6 +196,92 @@ function crearEntorno()
   pmrem.dispose();
 }
 
+// FINAL- camara cenital ortografica para el HUD (igual que en el proyecto Tron)
+function crearMinimapa()
+{
+  cameraTop = new THREE.OrthographicCamera(
+    -alcance_hud / 2,
+    alcance_hud / 2,
+    alcance_hud / 2,
+    -alcance_hud / 2,
+    0.1,
+    200
+  );
+  // Con la camara mirando hacia abajo, "arriba" en el minimapa es -z
+  cameraTop.up.set(0, 0, -1);
+
+  // Escenas auxiliares que escriben la mascara circular y su borde.
+  cameraStencil = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
+  cameraStencil.position.z = 2;
+
+  // La mascara escribe 1 en el stencil y, a diferencia de Tron, tambien pinta
+  // un fondo oscuro para que el minimapa se distinga del fondo blanco de la escena.
+  stencilScene = new THREE.Scene();
+  const mascara = new THREE.Mesh(
+    new THREE.CircleGeometry(0.94, 64),
+    new THREE.MeshBasicMaterial({
+      color: 0x1f2a36,
+      depthWrite: false,
+      depthTest: false,
+      stencilWrite: true,
+      stencilRef: 1,
+      stencilFunc: THREE.AlwaysStencilFunc,
+      stencilFail: THREE.ReplaceStencilOp,
+      stencilZFail: THREE.ReplaceStencilOp,
+      stencilZPass: THREE.ReplaceStencilOp
+    })
+  );
+  stencilScene.add(mascara);
+
+  hudBorderScene = new THREE.Scene();
+  const borde = new THREE.Mesh(
+    new THREE.RingGeometry(0.92, 0.99, 64),
+    new THREE.MeshBasicMaterial({
+      color: 0x00ffff,
+      depthTest: false,
+      depthWrite: false
+    })
+  );
+  hudBorderScene.add(borde);
+}
+
+function updateCameraTop()
+{
+  cameraTop.position.copy(centro_hud);
+  cameraTop.lookAt(centro_hud.x, 0, centro_hud.z);
+}
+
+// Activa temporalmente la comparacion contra el stencil en todos los
+// materiales de la escena. Se desactiva inmediatamente despues del HUD para
+// no afectar la vista principal del siguiente frame.
+function configurarStencilHUD(activo)
+{
+  scene.traverse(function(objeto) {
+    if (!objeto.material)
+      return;
+
+    const materiales = Array.isArray(objeto.material)
+      ? objeto.material
+      : [objeto.material];
+
+    materiales.forEach(function(material) {
+      material.stencilWrite = activo;
+
+      if (activo) {
+        material.stencilRef = 1;
+        material.stencilFunc = THREE.EqualStencilFunc;
+        material.stencilFuncMask = 0xff;
+        material.stencilWriteMask = 0x00;
+        material.stencilFail = THREE.KeepStencilOp;
+        material.stencilZFail = THREE.KeepStencilOp;
+        material.stencilZPass = THREE.KeepStencilOp;
+      } else {
+        material.stencilWriteMask = 0xff;
+      }
+    });
+  });
+}
+
 function updateAspectRatio()
 {
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -195,7 +301,44 @@ function update()
 
 function render()
 {
-	requestAnimationFrame( render );
-	update();
-	renderer.render( scene, camera );
+  requestAnimationFrame( render );
+  update();
+  updateCameraTop();
+
+  // Vista principal.
+  renderer.autoClear = false;
+  renderer.setScissorTest(false);
+  renderer.setViewport(0, 0, window.innerWidth, window.innerHeight);
+  renderer.clear(true, true, true);
+  renderer.render( scene, camera );
+
+  // HUD circular en la esquina superior derecha.
+  const lado = Math.min(window.innerWidth, window.innerHeight) / 3.5;
+  const margen = 18;
+  const x = margen;
+  const y = window.innerHeight - lado - margen;
+
+  renderer.setViewport(x, y, lado, lado);
+  renderer.setScissor(x, y, lado, lado);
+  renderer.setScissorTest(true);
+
+  // Limpiamos profundidad y stencil solo dentro del viewport del HUD.
+  const gl = renderer.getContext();
+  gl.stencilMask(0xff);
+  gl.clearStencil(0);
+  renderer.clear(false, true, true);
+
+  // Primero escribimos el circulo en el stencil (y su fondo oscuro).
+  renderer.render(stencilScene, cameraStencil);
+
+  // Luego la vista cenital solo pasa donde el stencil vale 1.
+  configurarStencilHUD(true);
+  renderer.render(scene, cameraTop);
+  configurarStencilHUD(false);
+
+  // Un aro cian hace legible el limite del minimapa.
+  renderer.clearDepth();
+  renderer.render(hudBorderScene, cameraStencil);
+
+  renderer.setScissorTest(false);
 }
