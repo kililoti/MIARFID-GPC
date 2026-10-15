@@ -787,8 +787,13 @@ function update()
         moverRelativoACamara(delta);
     } else {
         // 3- movimiento: A/D giran, W/S avanzan y retroceden
-        if (controls.moveLeft) angulo += controls.turnSpeed * delta;
-        if (controls.moveRight) angulo -= controls.turnSpeed * delta;
+        // Al ir hacia atras en la camara en tercera persona el slime mira hacia la
+        // camara, asi que invertimos el giro: D siempre gira hacia la derecha de la
+        // pantalla y A hacia la izquierda, mire hacia donde mire el modelo.
+        var yendoAtras = controls.moveBackward && !controls.moveForward;
+        var sentidoGiro = (modo_camara === 'tercera' && yendoAtras) ? -1 : 1;
+        if (controls.moveLeft) angulo += controls.turnSpeed * delta * sentidoGiro;
+        if (controls.moveRight) angulo -= controls.turnSpeed * delta * sentidoGiro;
 
         velocity.set(Math.sin(angulo), 0, Math.cos(angulo));
 
