@@ -120,6 +120,10 @@ document.addEventListener('keyup', (event) => {
     case 'KeyC':
       cambiarCamara();
       break;
+    // SONIDO- silenciar / activar todo el audio
+    case 'KeyM':
+      alternarSilencio();
+      break;
   }
 });
 
@@ -154,6 +158,26 @@ var cameraTop, cameraStencil;
 var stencilScene, hudBorderScene;
 var alcance_hud = 20;                          // lado (en unidades del mundo) que abarca el minimapa
 const centro_hud = new THREE.Vector3(0, 10, 0); // punto sobre el que se coloca la camara cenital
+
+// SONIDO- configuracion y estado del audio. Va antes de init() porque crearAudio()
+// se ejecuta dentro de init() y necesita que estas variables ya existan.
+const RUTA_MUSICA = 'sounds/9-lonely-rolling-star.mp3';
+const VOLUMEN_MUSICA = 0.1;
+const VOLUMEN_EFECTOS = 0.1;
+
+// Sonidos de comer con su peso: cuanto mayor el peso, mas probable.
+const SONIDOS_COMER = [
+  { ruta: 'sounds/katamari_comer.wav', peso: 12 },
+  { ruta: 'sounds/mordisco.wav', peso: 6 },
+  { ruta: 'sounds/tragar.wav', peso: 3 },
+  { ruta: 'sounds/nom.wav', peso: 1 },
+];
+
+var oyente;                    // AudioListener
+var musica;                    // THREE.Audio de la musica de fondo
+var canalesComer = [];         // reserva de Audio para que varios bocados puedan sonar a la vez
+const MAX_CANALES_COMER = 6;  // como mucho, 6 bocados sonando simultaneamente
+var silenciado = false;
 
 const clock = new THREE.Clock();
 
@@ -192,6 +216,7 @@ function init()
 
   crearMinimapa();
   crearControlesCamaraSeguimiento();
+  crearAudio();
 
   crearLuces();
   
@@ -440,6 +465,116 @@ function buscarPosicion(radioSuelo, radio)
 }
 
 // ---------------------------------------------------------------------------
+// SONIDO Y MUSICA (sistema de audio de Three.js, basado en Web Audio)
+//   AudioListener: los "oidos" de la escena; va pegado a la camara
+//   Audio: un sonido no posicional (se oye igual este donde este)
+//   AudioLoader: carga el archivo y lo decodifica en un buffer
+// ---------------------------------------------------------------------------
+// (las variables de audio estan declaradas al principio del archivo, antes de init())
+
+function crearAudio()
+{
+  oyente = new THREE.AudioListener();
+  camera.add(oyente);
+
+  const cargador = new THREE.AudioLoader();
+
+  // Musica de fondo en bucle
+  musica = new THREE.Audio(oyente);
+  cargador.load(RUTA_MUSICA, function (buffer) {
+    musica.setBuffer(buffer);
+    musica.setLoop(true);
+    musica.setVolume(VOLUMEN_MUSICA);
+    // Si el usuario ya ha interactuado, empieza ya; si no, empezara al pulsar algo
+    if (oyente.context.state === 'running') musica.play();
+  }, undefined, function () {
+    console.error('No se pudo cargar la musica:', RUTA_MUSICA);
+  });
+
+  // Sonidos de comer: cargamos cada buffer una vez y lo reutilizamos
+  SONIDOS_COMER.forEach(function (sonido) {
+    cargador.load(sonido.ruta, function (buffer) {
+      sonido.buffer = buffer;
+    }, undefined, function () {
+      console.error('No se pudo cargar el sonido:', sonido.ruta);
+    });
+  });
+
+  // Empezamos con unos pocos canales; si hacen falta mas, se crean al vuelo
+  for (let i = 0; i < 4; i++) crearCanalComer();
+
+  // Los navegadores no dejan reproducir sonido hasta que el usuario interactua
+  // con la pagina: con la primera tecla o clic activamos el audio y la musica
+  const activarAudio = function () {
+    oyente.context.resume();
+    if (musica.buffer && !musica.isPlaying) musica.play();
+    document.removeEventListener('keydown', activarAudio);
+    document.removeEventListener('pointerdown', activarAudio);
+  };
+  document.addEventListener('keydown', activarAudio);
+  document.addEventListener('pointerdown', activarAudio);
+}
+
+// Eleccion aleatoria con pesos: se tira un numero entre 0 y la suma de los pesos
+// y se ve en el "tramo" de que elemento cae. Un elemento con peso 5 ocupa un tramo
+// cinco veces mas largo que uno con peso 1, asi que sale cinco veces mas.
+function elegirConPeso(lista)
+{
+  let total = 0;
+  for (let i = 0; i < lista.length; i++) total += lista[i].peso;
+
+  let tirada = Math.random() * total;
+  for (let i = 0; i < lista.length; i++) {
+    tirada -= lista[i].peso;
+    if (tirada < 0) return lista[i];
+  }
+  return lista[lista.length - 1];
+}
+
+function reproducirSonidoComer()
+{
+  if (!oyente) return;
+
+  // Solo elegimos entre los sonidos que ya se han cargado
+  const cargados = SONIDOS_COMER.filter(function (s) { return s.buffer; });
+  if (cargados.length === 0) return;
+
+  // Buscamos un canal que NO este sonando, en vez de coger el siguiente por turno:
+  // asi nunca se corta un sonido que todavia no ha terminado
+  let canal = canalesComer.find(function (c) { return !c.isPlaying; });
+
+  // Si todos estan ocupados, creamos uno nuevo (hasta el maximo)
+  if (!canal && canalesComer.length < MAX_CANALES_COMER) canal = crearCanalComer();
+
+  // Si se ha llegado al maximo, este bocado no suena: es preferible a cortar otro
+  // (con tantos sonidos a la vez, uno mas no se notaria)
+  if (!canal) return;
+
+  const sonido = elegirConPeso(cargados);
+  canal.setBuffer(sonido.buffer);
+  canal.setPlaybackRate(rand(0.92, 1.08));   // ligera variacion de tono: no suena repetitivo
+  canal.play();
+}
+
+// Crea un canal (THREE.Audio) para los sonidos de comer y lo añade a la reserva.
+// Cuando el sonido termina, Three.js pone isPlaying a false y el canal queda libre.
+function crearCanalComer()
+{
+  const canal = new THREE.Audio(oyente);
+  canal.setVolume(VOLUMEN_EFECTOS);
+  canalesComer.push(canal);
+  return canal;
+}
+
+function alternarSilencio()
+{
+  if (!oyente) return;
+  silenciado = !silenciado;
+  oyente.setMasterVolume(silenciado ? 0 : 1);
+  console.log(silenciado ? 'Sonido desactivado' : 'Sonido activado');
+}
+
+// ---------------------------------------------------------------------------
 // COLISIONES Y COMER
 // Las colisiones se calculan con circulos en el plano XZ (el suelo): cada objeto
 // tiene un radio (su "huella") y el slime otro. Es barato y suficiente para este
@@ -513,6 +648,9 @@ function comer(objeto)
   const radioActual = tamano_objetivo / 2;
   const radioNuevo = Math.sqrt(radioActual * radioActual + FACTOR_CRECIMIENTO * objeto.tam * objeto.tam);
   tamano_objetivo = radioNuevo * 2;
+
+  // SONIDO- un sonido de comer elegido al azar segun su peso
+  reproducirSonidoComer();
 
   comidos++;
   console.log('Comido:', objeto.def.nombre, '- total:', comidos,
@@ -1109,4 +1247,4 @@ function render()
   renderer.render(hudBorderScene, cameraStencil);
 
   renderer.setScissorTest(false);
-}wwwww
+}
