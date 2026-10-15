@@ -6,7 +6,89 @@ var cameraControls;
 var angulo = -0.01;
 var mixer = null;      // reproduce las animaciones del modelo
 
-// Minimapa: camara cenital ortografica en la esquina superior derecha
+// 3- movimiento y camara en tercera persona (misma estructura que el proyecto Tron)
+var slime = null;                              // grupo que contiene el modelo y se mueve por la escena
+var tamano_slime = 1;                          // tamaño del modelo: el resto de medidas son proporcionales
+var rotacion_frente = 0;                       // si el slime camina "de espaldas", pon Math.PI
+var rotacion_visual = -0.01;                   // hacia donde mira el modelo (puede diferir de angulo)
+const pos_slime = new THREE.Vector3();
+const velocity = new THREE.Vector3(0, 0, 1);   // direccion hacia la que mira el slime
+
+var distancia_camara = 2.5;                    // en tamaños de slime
+var altura_camara = 1.2;
+var desfase_lookat_y = 0.4;
+
+// FINAL- spring camera. La rigidez atrae la camara hacia su posicion ideal y
+// la amortiguacion frena su velocidad para que no oscile indefinidamente.
+const rigidez_camara = 50;
+const amortiguacion_camara = 14;
+const velocidad_camara = new THREE.Vector3();
+const velocidad_mirada_camara = new THREE.Vector3();
+const posicion_objetivo_camara = new THREE.Vector3();
+const mirada_objetivo_camara = new THREE.Vector3();
+const mirada_actual_camara = new THREE.Vector3();
+const aceleracion_camara = new THREE.Vector3();
+let camara_spring_iniciada = false;
+
+// DEBUG- permite cambiar entre tercera persona y camara orbital con la tecla C.
+var camara_orbital = false;
+
+const controls = {
+  moveForward: false,
+  moveBackward: false,
+  moveLeft: false,
+  moveRight: false,
+  speed: 1.5,          // tamaños de slime por segundo
+  turnSpeed: 2.5       // radianes por segundo
+};
+
+document.addEventListener('keydown', (event) => {
+  switch (event.code) {
+    case 'ArrowUp':
+    case 'KeyW':
+      controls.moveForward = true;
+      break;
+    case 'ArrowDown':
+    case 'KeyS':
+      controls.moveBackward = true;
+      break;
+    case 'ArrowLeft':
+    case 'KeyA':
+      controls.moveLeft = true;
+      break;
+    case 'ArrowRight':
+    case 'KeyD':
+      controls.moveRight = true;
+      break;
+  }
+});
+
+document.addEventListener('keyup', (event) => {
+  switch (event.code) {
+    case 'ArrowUp':
+    case 'KeyW':
+      controls.moveForward = false;
+      break;
+    case 'ArrowDown':
+    case 'KeyS':
+      controls.moveBackward = false;
+      break;
+    case 'ArrowLeft':
+    case 'KeyA':
+      controls.moveLeft = false;
+      break;
+    case 'ArrowRight':
+    case 'KeyD':
+      controls.moveRight = false;
+      break;
+    // DEBUG- cambio de camara.
+    case 'KeyC':
+      cambiarCamara();
+      break;
+  }
+});
+
+// Minimapa: camara cenital ortografica en la esquina superior izquierda
 var cameraTop, cameraStencil;
 var stencilScene, hudBorderScene;
 var alcance_hud = 20;                          // lado (en unidades del mundo) que abarca el minimapa
@@ -85,7 +167,12 @@ function loadObjGLTF()
         function ( gltf ) {
 
             var object = gltf.scene;
-            scene.add(object);            
+
+            // El modelo va dentro de un grupo: movemos y giramos el grupo, y el
+            // modelo queda centrado dentro de él (más abajo)
+            slime = new THREE.Group();
+            slime.add(object);
+            scene.add(slime);
 
             // Animaciones: un AnimationMixer reproduce los clips del modelo
             console.log('Animaciones:', gltf.animations);
@@ -122,7 +209,7 @@ function loadObjGLTF()
             // Ajustar la posición de la cámara y sus planos near y far
             camera.position.set(center.x, center.y + cameraDistance, center.z + cameraDistance);
             camera.near = cameraDistance / 10; // Ajustar near
-            camera.far = cameraDistance * 10;  // Ajustar far
+            camera.far = cameraDistance * 60;  // Ajustar far (lejos, para ver el suelo)
             camera.updateProjectionMatrix();
 
             // Ajustar el target de la cámara al centro del objeto
@@ -130,7 +217,7 @@ function loadObjGLTF()
             cameraControls.update();            
 
             // Ajustar la camara cenital al tamaño del modelo
-            alcance_hud = maxDim * 1.6;
+            alcance_hud = maxDim * 6;      // abarca los alrededores del slime
             cameraTop.left = -alcance_hud / 2;
             cameraTop.right = alcance_hud / 2;
             cameraTop.top = alcance_hud / 2;
@@ -138,8 +225,20 @@ function loadObjGLTF()
             cameraTop.near = maxDim * 0.1;
             cameraTop.far = maxDim * 10;
             cameraTop.updateProjectionMatrix();
-            centro_hud.copy(center);
-            centro_hud.y = box.max.y + maxDim;     // por encima del modelo
+            centro_hud.set(0, size.y + maxDim, 0); // por encima del modelo (ya apoyado en y = 0)
+
+            // Centramos el modelo dentro de su grupo y lo apoyamos en y = 0
+            object.position.x -= center.x;
+            object.position.z -= center.z;
+            object.position.y -= box.min.y;
+            tamano_slime = maxDim;
+
+            // Suelo con rejilla: sin una referencia no se notaria que el slime avanza
+            var suelo = new THREE.GridHelper(maxDim * 60, 60, 0x90a4ae, 0xb0bec5);
+            scene.add(suelo);
+
+            // A partir de ahora manda la camara en tercera persona
+            cameraControls.enabled = false;
 
 
         },
@@ -247,6 +346,11 @@ function crearMinimapa()
 
 function updateCameraTop()
 {
+  // El minimapa se centra en el slime
+  if (slime !== null) {
+    centro_hud.x = slime.position.x;
+    centro_hud.z = slime.position.z;
+  }
   cameraTop.position.copy(centro_hud);
   cameraTop.lookAt(centro_hud.x, 0, centro_hud.z);
 }
@@ -291,12 +395,106 @@ function updateAspectRatio()
 
 function update()
 {
-    // Cambios para actualizar la camara segun mvto del raton
-    cameraControls.update();
+    // Limitamos el delta para evitar saltos bruscos al volver a la pestaña.
+    var delta = Math.min(clock.getDelta(), 0.05);
+
+    // Mientras el modelo carga, solo funciona la camara orbital
+    if (slime === null) {
+        cameraControls.update();
+        return;
+    }
+
+    // 3- movimiento: A/D giran, W/S avanzan y retroceden
+    if (controls.moveLeft) angulo += controls.turnSpeed * delta;
+    if (controls.moveRight) angulo -= controls.turnSpeed * delta;
+
+    velocity.set(Math.sin(angulo), 0, Math.cos(angulo));
+
+    var avance = controls.speed * tamano_slime * delta;
+    if (controls.moveForward) pos_slime.addScaledVector(velocity, avance);
+    if (controls.moveBackward) pos_slime.addScaledVector(velocity, -avance * 0.6);
+
+    slime.position.copy(pos_slime);
+
+    // Al ir hacia atras (S), el modelo se da la vuelta y camina de frente hacia
+    // la camara. La camara sigue usando "angulo", asi que no da la vuelta con el.
+    var mirarAtras = controls.moveBackward && !controls.moveForward;
+    var rotacionObjetivo = angulo + (mirarAtras ? Math.PI : 0);
+    // Giro suave por el camino mas corto (atan2 evita dar la vuelta larga)
+    var diferencia = Math.atan2(Math.sin(rotacionObjetivo - rotacion_visual),
+                                Math.cos(rotacionObjetivo - rotacion_visual));
+    rotacion_visual += diferencia * (1 - Math.exp(-10 * delta));
+    slime.rotation.y = rotacion_visual + rotacion_frente;
+
+    // DEBUG- actualizamos solamente la camara que esta activa.
+    if (camara_orbital) {
+        cameraControls.update();
+    } else {
+        updateCamera(delta);
+    }
 
     // Avanzar la animación según el tiempo transcurrido
-    const delta = clock.getDelta();
     if (mixer != null) mixer.update(delta);
+}
+
+// Muelle amortiguado: el valor actual persigue al objetivo de forma elastica
+function actualizarResorte(actual, velocidadActual, objetivo, delta)
+{
+  aceleracion_camara
+    .copy(objetivo)
+    .sub(actual)
+    .multiplyScalar(rigidez_camara)
+    .addScaledVector(velocidadActual, -amortiguacion_camara);
+
+  velocidadActual.addScaledVector(aceleracion_camara, delta);
+  actual.addScaledVector(velocidadActual, delta);
+}
+
+// FINAL- camara en tercera persona con posicion y punto de mirada elasticos.
+function updateCamera(delta)
+{
+  // Detras del slime (en sentido contrario a donde mira) y algo por encima
+  posicion_objetivo_camara
+    .copy(slime.position)
+    .addScaledVector(velocity, -distancia_camara * tamano_slime);
+  posicion_objetivo_camara.y += altura_camara * tamano_slime;
+
+  mirada_objetivo_camara.copy(slime.position);
+  mirada_objetivo_camara.y += desfase_lookat_y * tamano_slime;
+
+  // La primera vez colocamos la camara directamente, sin animacion
+  if (!camara_spring_iniciada) {
+    camera.position.copy(posicion_objetivo_camara);
+    mirada_actual_camara.copy(mirada_objetivo_camara);
+    velocidad_camara.set(0, 0, 0);
+    velocidad_mirada_camara.set(0, 0, 0);
+    camara_spring_iniciada = true;
+  } else {
+    actualizarResorte(camera.position, velocidad_camara, posicion_objetivo_camara, delta);
+    actualizarResorte(mirada_actual_camara, velocidad_mirada_camara, mirada_objetivo_camara, delta);
+  }
+
+  camera.lookAt(mirada_actual_camara);
+}
+
+// DEBUG- alterna entre la camara orbital y la camara en tercera persona.
+function cambiarCamara()
+{
+  if (slime === null) return;
+  camara_orbital = !camara_orbital;
+  cameraControls.enabled = camara_orbital;
+
+  if (camara_orbital) {
+    cameraControls.target.copy(slime.position);
+    cameraControls.update();
+  } else {
+    // Volvemos suavemente desde la posicion orbital, sin tirones
+    velocidad_camara.set(0, 0, 0);
+    velocidad_mirada_camara.set(0, 0, 0);
+    mirada_actual_camara.copy(cameraControls.target);
+  }
+
+  console.log(camara_orbital ? 'Camara orbital' : 'Camara en tercera persona');
 }
 
 function render()
@@ -312,10 +510,10 @@ function render()
   renderer.clear(true, true, true);
   renderer.render( scene, camera );
 
-  // HUD circular en la esquina superior derecha.
+  // HUD circular en la esquina superior izquierda.
   const lado = Math.min(window.innerWidth, window.innerHeight) / 3.5;
   const margen = 18;
-  const x = margen;
+  const x = margen;                                   // esquina izquierda
   const y = window.innerHeight - lado - margen;
 
   renderer.setViewport(x, y, lado, lado);
