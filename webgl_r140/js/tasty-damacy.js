@@ -6,6 +6,11 @@ var cameraControls;
 var stats;
 var angulo = -0.01;
 var mixer = null;      // reproduce las animaciones del modelo
+var accionSlime = null; // la animacion del slime (AnimationAction), para cambiar su velocidad
+
+// VELOCIDAD ANIMACION- el slime se anima mas deprisa cuando se mueve
+const VELOCIDAD_ANIM_QUIETO = 1;        // 1 = velocidad normal del clip
+const VELOCIDAD_ANIM_MOVIENDOSE = 4;    // 4 = cuatro veces mas rapido
 
 // 3- movimiento y camara en tercera persona (misma estructura que el proyecto Tron)
 var slime = null;                              // grupo que contiene el modelo y se mueve por la escena
@@ -13,6 +18,12 @@ var tamano_slime = 1;                          // tamaño ACTUAL del slime: cama
 var tamano_base = 1;                           // tamaño ORIGINAL del modelo: el escenario y los objetos se miden con el
 var tamano_objetivo = 1;                       // tamaño hacia el que crece (tamano_slime lo alcanza poco a poco)
 var cuerpo_slime = null;                       // grupo intermedio que se escala al crecer
+
+// ANIMACION COMER- el slime se aplasta y rebota como una gelatina al comer
+var estiramiento = 0;                          // deformacion actual (+ aplastado, - estirado)
+var velocidadEstiramiento = 0;                 // con que rapidez cambia esa deformacion
+var ultimoEmpujon = -1;                        // instante (s) del ultimo empujon al muelle
+const INTERVALO_EMPUJON = 0.25;                // tiempo minimo entre empujones: deja rebotar al muelle
 var rotacion_frente = 0;                       // si el slime camina "de espaldas", pon Math.PI
 var rotacion_visual = -0.01;                   // hacia donde mira el modelo (puede diferir de angulo)
 const pos_slime = new THREE.Vector3();
@@ -278,7 +289,9 @@ function loadObjGLTF()
             console.log('Animaciones:', gltf.animations);
             if (gltf.animations.length > 0) {
                 mixer = new THREE.AnimationMixer(object);
-                mixer.clipAction(gltf.animations[0]).play();
+                accionSlime = mixer.clipAction(gltf.animations[0]);
+                accionSlime.timeScale = VELOCIDAD_ANIM_QUIETO;
+                accionSlime.play();
             }
 
             gltf.animations; // Array<THREE.AnimationClip>
@@ -652,6 +665,15 @@ function comer(objeto)
   // SONIDO- un sonido de comer elegido al azar segun su peso
   reproducirSonidoComer();
 
+  // ANIMACION COMER- un "empujon" al muelle: el slime se aplasta y rebota.
+  // Si acaba de recibir otro, este bocado no empuja: asi el muelle tiene tiempo
+  // de rebotar y, comiendo sin parar, el slime "mastica" con un ritmo regular
+  // en lugar de quedarse aplastado.
+  if (clock.elapsedTime - ultimoEmpujon > INTERVALO_EMPUJON) {
+    velocidadEstiramiento += 5.5;
+    ultimoEmpujon = clock.elapsedTime;
+  }
+
   comidos++;
   console.log('Comido:', objeto.def.nombre, '- total:', comidos,
               '- tamaño:', (tamano_objetivo / tamano_base).toFixed(2) + 'x');
@@ -662,7 +684,17 @@ function comer(objeto)
 function actualizarCrecimiento(delta)
 {
   tamano_slime = amortiguar(tamano_slime, tamano_objetivo, 5, delta);
-  cuerpo_slime.scale.setScalar(tamano_slime / tamano_base);
+
+  // ANIMACION COMER- muelle amortiguado (igual que la camara con resorte):
+  // la rigidez (120) lo devuelve a su forma y la amortiguacion (9) frena el rebote
+  velocidadEstiramiento += (-120 * estiramiento - 9 * velocidadEstiramiento) * delta;
+  estiramiento += velocidadEstiramiento * delta;
+  var e = THREE.MathUtils.clamp(estiramiento, -0.3, 0.3);
+
+  // Escala por el crecimiento y deformacion por la animacion. Al aplastarse
+  // (y menor) se ensancha (x, z mayores), como si conservara su volumen.
+  var escala = tamano_slime / tamano_base;
+  cuerpo_slime.scale.set(escala * (1 + e * 0.6), escala * (1 - e), escala * (1 + e * 0.6));
 
   // Planos de recorte de la camara principal proporcionales al tamaño
   camera.near = tamano_slime * 0.05;
@@ -1024,6 +1056,15 @@ function update()
 
     // COMER- animacion de los objetos que estan siendo absorbidos
     actualizarObjetos(delta);
+
+    // VELOCIDAD ANIMACION- mas rapida si se esta moviendo. Se suaviza con
+    // amortiguar() para que el cambio de ritmo no sea brusco.
+    if (accionSlime != null) {
+        var moviendose = controls.moveForward || controls.moveBackward ||
+                         controls.moveLeft || controls.moveRight;
+        var velocidadAnim = moviendose ? VELOCIDAD_ANIM_MOVIENDOSE : VELOCIDAD_ANIM_QUIETO;
+        accionSlime.timeScale = amortiguar(accionSlime.timeScale, velocidadAnim, 5, delta);
+    }
 
     if (mixer != null) mixer.update(delta);
 }
