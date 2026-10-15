@@ -9,7 +9,10 @@ var mixer = null;      // reproduce las animaciones del modelo
 
 // 3- movimiento y camara en tercera persona (misma estructura que el proyecto Tron)
 var slime = null;                              // grupo que contiene el modelo y se mueve por la escena
-var tamano_slime = 1;                          // tamaño del modelo: el resto de medidas son proporcionales
+var tamano_slime = 1;                          // tamaño ACTUAL del slime: camara, velocidad, sombras... son proporcionales
+var tamano_base = 1;                           // tamaño ORIGINAL del modelo: el escenario y los objetos se miden con el
+var tamano_objetivo = 1;                       // tamaño hacia el que crece (tamano_slime lo alcanza poco a poco)
+var cuerpo_slime = null;                       // grupo intermedio que se escala al crecer
 var rotacion_frente = 0;                       // si el slime camina "de espaldas", pon Math.PI
 var rotacion_visual = -0.01;                   // hacia donde mira el modelo (puede diferir de angulo)
 const pos_slime = new THREE.Vector3();
@@ -134,7 +137,7 @@ const ESCALAS = [
     // Objetos del nivel: [tipo, cantidad, tamañoMin, tamañoMax]
     // El tamaño es la mitad de su dimension mayor, en tamaños de slime
     catalogo: [
-      ['semilla', 30, 0.12, 0.18]
+      ['semilla', 3000, 0.12, 0.18]
     ]
   }
 ];
@@ -230,8 +233,15 @@ function loadObjGLTF()
 
             // El modelo va dentro de un grupo: movemos y giramos el grupo, y el
             // modelo queda centrado dentro de él (más abajo)
+            // Jerarquia:  slime (se mueve y gira)
+            //               └─ cuerpo_slime (se escala al crecer)
+            //                    └─ modelo glTF (centrado y apoyado en y = 0)
+            // Escalamos el grupo intermedio y no el modelo porque el modelo esta
+            // desplazado para centrarlo: al escalarlo se moveria de su sitio.
             slime = new THREE.Group();
-            slime.add(object);
+            cuerpo_slime = new THREE.Group();
+            slime.add(cuerpo_slime);
+            cuerpo_slime.add(object);
             scene.add(slime);
 
             // SOMBRAS- el slime proyecta sombra sobre el suelo
@@ -297,6 +307,8 @@ function loadObjGLTF()
             object.position.z -= center.z;
             object.position.y -= box.min.y;
             tamano_slime = maxDim;
+            tamano_base = maxDim;
+            tamano_objetivo = maxDim;
 
             // Escenario: suelo del primer nivel (su tamaño depende del slime)
             crearSuelo(0);
@@ -384,7 +396,7 @@ function generarObjetos(indice)
     const def = TIPOS[tipo];
 
     for (let k = 0; k < cantidad; k++) {
-      const tam = rand(min, max) * tamano_slime;
+      const tam = rand(min, max) * tamano_base;
       const radio = tam * def.huella;
       const pos = buscarPosicion(radioSuelo, radio);
       if (!pos) continue;   // no hay hueco libre: lo saltamos
@@ -434,6 +446,7 @@ function buscarPosicion(radioSuelo, radio)
 // juego, porque todo se mueve sobre el suelo.
 // ---------------------------------------------------------------------------
 const FACTOR_COMESTIBLE = 0.85;   // se puede comer lo que mida menos del 85 % del slime
+const FACTOR_CRECIMIENTO = 0.4;   // parte del "area" del objeto que se convierte en crecimiento
 const DURACION_BOCADO = 0.35;     // segundos que tarda un objeto en ser absorbido
 var comidos = 0;
 const _destinoBocado = new THREE.Vector3();
@@ -494,8 +507,43 @@ function comer(objeto)
   objeto.posicionInicial = objeto.grupo.position.clone();
   objeto.escalaInicial = objeto.grupo.scale.x;
 
+  // CRECIMIENTO- el slime crece "por area": su radio al cuadrado aumenta en
+  // proporcion al tamaño al cuadrado de lo que come. Comer algo grande se nota
+  // mucho; comer migajas cuando ya eres enorme, apenas.
+  const radioActual = tamano_objetivo / 2;
+  const radioNuevo = Math.sqrt(radioActual * radioActual + FACTOR_CRECIMIENTO * objeto.tam * objeto.tam);
+  tamano_objetivo = radioNuevo * 2;
+
   comidos++;
-  console.log('Comido:', objeto.def.nombre, '- total:', comidos);
+  console.log('Comido:', objeto.def.nombre, '- total:', comidos,
+              '- tamaño:', (tamano_objetivo / tamano_base).toFixed(2) + 'x');
+}
+
+// CRECIMIENTO- el tamaño actual se acerca suavemente al objetivo y todo lo que
+// depende de el (modelo, camaras, sombras, minimapa) se recalcula
+function actualizarCrecimiento(delta)
+{
+  tamano_slime = amortiguar(tamano_slime, tamano_objetivo, 5, delta);
+  cuerpo_slime.scale.setScalar(tamano_slime / tamano_base);
+
+  // Planos de recorte de la camara principal proporcionales al tamaño
+  camera.near = tamano_slime * 0.05;
+  camera.far = tamano_slime * 100;
+  camera.updateProjectionMatrix();
+
+  // Zona de sombras alrededor del slime
+  configurarSombras();
+
+  // El minimapa abarca siempre 6 tamaños de slime alrededor de el
+  alcance_hud = tamano_slime * 6;
+  cameraTop.left = -alcance_hud / 2;
+  cameraTop.right = alcance_hud / 2;
+  cameraTop.top = alcance_hud / 2;
+  cameraTop.bottom = -alcance_hud / 2;
+  cameraTop.near = tamano_slime * 0.1;
+  cameraTop.far = tamano_slime * 10;
+  cameraTop.updateProjectionMatrix();
+  centro_hud.y = tamano_slime * 2;
 }
 
 // El objeto viaja hacia el interior del slime y encoge hasta desaparecer.
@@ -535,8 +583,8 @@ function actualizarObjetos(delta)
 function crearSuelo(indice)
 {
   const E = ESCALAS[indice];
-  const radio = E.radioSuelo * tamano_slime;
-  const alto = E.altoBorde * tamano_slime;
+  const radio = E.radioSuelo * tamano_base;
+  const alto = E.altoBorde * tamano_base;
 
   const materialSuelo = new THREE.MeshStandardMaterial({ color: E.colorSuelo, roughness: 1 });
 
@@ -811,6 +859,9 @@ function update()
     // COLISIONES- comer lo que es mas pequeño y chocar con lo que es mas grande
     comprobarColisiones();
 
+    // CRECIMIENTO- aplicar el tamaño actual al modelo y a todo lo que depende de el
+    actualizarCrecimiento(delta);
+
     slime.position.copy(pos_slime);
 
     var rotacionObjetivo = angulo + (mirarAtras ? Math.PI : 0);
@@ -1058,4 +1109,4 @@ function render()
   renderer.render(hudBorderScene, cameraStencil);
 
   renderer.setScissorTest(false);
-}
+}wwwww
