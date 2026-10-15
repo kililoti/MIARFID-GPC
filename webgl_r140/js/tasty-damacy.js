@@ -397,7 +397,8 @@ function generarObjetos(indice)
       grupo.scale.setScalar(tam);
       scene.add(grupo);
 
-      objetos.push({ tipo: tipo, def: def, tam: tam, radio: radio, escala: indice, grupo: grupo });
+      // estado: 'activo' (en el suelo) o 'comiendo' (siendo absorbido por el slime)
+      objetos.push({ tipo: tipo, def: def, tam: tam, radio: radio, escala: indice, grupo: grupo, estado: 'activo' });
       creados++;
     }
   });
@@ -424,6 +425,104 @@ function buscarPosicion(radioSuelo, radio)
     if (!solapa) return { x: x, z: z };
   }
   return null;
+}
+
+// ---------------------------------------------------------------------------
+// COLISIONES Y COMER
+// Las colisiones se calculan con circulos en el plano XZ (el suelo): cada objeto
+// tiene un radio (su "huella") y el slime otro. Es barato y suficiente para este
+// juego, porque todo se mueve sobre el suelo.
+// ---------------------------------------------------------------------------
+const FACTOR_COMESTIBLE = 0.85;   // se puede comer lo que mida menos del 85 % del slime
+const DURACION_BOCADO = 0.35;     // segundos que tarda un objeto en ser absorbido
+var comidos = 0;
+const _destinoBocado = new THREE.Vector3();
+
+// Radio del slime: la mitad de su tamaño (tamano_slime es su dimension mayor)
+function radioSlime()
+{
+  return tamano_slime * 0.5;
+}
+
+function esComestible(objeto)
+{
+  return objeto.tam < radioSlime() * FACTOR_COMESTIBLE;
+}
+
+function comprobarColisiones()
+{
+  const r = radioSlime() * 0.9;   // un poco menos que el radio visual: se ve mas natural
+
+  for (let i = 0; i < objetos.length; i++) {
+    const objeto = objetos[i];
+    if (objeto.estado !== 'activo') continue;
+
+    const dx = pos_slime.x - objeto.grupo.position.x;
+    const dz = pos_slime.z - objeto.grupo.position.z;
+    const distancia = Math.hypot(dx, dz);
+
+    // Hay colision si la distancia entre centros es menor que la suma de radios
+    if (distancia >= r + objeto.radio) continue;
+
+    if (esComestible(objeto)) {
+      comer(objeto);
+    } else {
+      empujarFuera(objeto, dx, dz, distancia, r);
+    }
+  }
+}
+
+// Objeto demasiado grande: colocamos el slime justo en el borde del objeto,
+// en la direccion por la que llegaba, para que no pueda atravesarlo
+function empujarFuera(objeto, dx, dz, distancia, r)
+{
+  if (distancia < 0.000001) { dx = 1; dz = 0; distancia = 1; }
+  const minimo = r + objeto.radio;
+  pos_slime.x = objeto.grupo.position.x + (dx / distancia) * minimo;
+  pos_slime.z = objeto.grupo.position.z + (dz / distancia) * minimo;
+}
+
+function comer(objeto)
+{
+  objeto.estado = 'comiendo';
+  objeto.t = 0;
+
+  // Cambio en el grafo de escena: el objeto pasa de ser hijo de la escena a ser
+  // hijo del slime. attach() conserva su posicion en el mundo al cambiar de padre,
+  // asi que a partir de ahora se mueve con el slime.
+  slime.attach(objeto.grupo);
+  objeto.posicionInicial = objeto.grupo.position.clone();
+  objeto.escalaInicial = objeto.grupo.scale.x;
+
+  comidos++;
+  console.log('Comido:', objeto.def.nombre, '- total:', comidos);
+}
+
+// El objeto viaja hacia el interior del slime y encoge hasta desaparecer.
+// Como el slime es translucido, se ve como se hunde dentro de el.
+function actualizarObjetos(delta)
+{
+  // Recorremos al reves porque eliminamos elementos del array mientras lo recorremos
+  for (let i = objetos.length - 1; i >= 0; i--) {
+    const objeto = objetos[i];
+    if (objeto.estado !== 'comiendo') continue;
+
+    objeto.t += delta;
+    const k = Math.min(objeto.t / DURACION_BOCADO, 1);
+    const suave = k * k;   // empieza despacio y acelera: parece que lo "succiona"
+
+    // Destino en coordenadas locales del slime: su centro, algo por encima del suelo
+    _destinoBocado.set(0, tamano_slime * 0.35, 0);
+    objeto.grupo.position.lerpVectors(objeto.posicionInicial, _destinoBocado, suave);
+    objeto.grupo.scale.setScalar(Math.max(0.0001, objeto.escalaInicial * (1 - suave)));
+
+    if (k >= 1) {
+      // No hacemos dispose() de la geometria ni del material porque son compartidos
+      // con los demas objetos del mismo tipo
+      slime.remove(objeto.grupo);
+      objetos.splice(i, 1);
+    }
+  }
 }
 
 // ESCENARIOS- crea el suelo de una escala: un disco plano con un borde de tierra,
@@ -704,6 +803,9 @@ function update()
 
     limitarAlSuelo(pos_slime);
 
+    // COLISIONES- comer lo que es mas pequeño y chocar con lo que es mas grande
+    comprobarColisiones();
+
     slime.position.copy(pos_slime);
 
     var rotacionObjetivo = angulo + (mirarAtras ? Math.PI : 0);
@@ -725,6 +827,9 @@ function update()
     // Avanzar la animación según el tiempo transcurrido
     // ILUMINACION- el sol acompaña al slime para que su sombra siempre sea nitida
     actualizarLuz();
+
+    // COMER- animacion de los objetos que estan siendo absorbidos
+    actualizarObjetos(delta);
 
     if (mixer != null) mixer.update(delta);
 }
