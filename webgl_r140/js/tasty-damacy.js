@@ -327,9 +327,6 @@ function crearSuelo(indice)
   borde.position.y = -alto / 2;            // su parte de arriba coincide con el disco
   borde.name = 'borde';
 
-  // Rejilla circular PROVISIONAL: sin textura, un suelo liso no deja ver que el
-  // slime se mueve. Borra estas lineas cuando pongas tu textura.
-
   const grupo = new THREE.Group();
   grupo.name = 'suelo_' + indice;
   grupo.add(superficie, borde);
