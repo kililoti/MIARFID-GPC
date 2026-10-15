@@ -103,6 +103,11 @@ const ESCALAS = [
   }
 ];
 var escala_actual = 0;
+
+// ILUMINACION- como en el proyecto Tron: una luz ambiental y una direccional (el sol).
+// Aqui ademas el sol proyecta sombras y sigue al slime.
+var luzSol, luzAmbiente;
+const direccion_sol = new THREE.Vector3(30, 50, 20).normalize();  // misma direccion que en Tron
 var suelos = [];               // un registro por escala: { grupo, radio }
 
 // Minimapa: camara cenital ortografica en la esquina superior izquierda
@@ -124,12 +129,13 @@ function init()
   renderer.setClearColor( new THREE.Color(0xFFFFFF) );
   renderer.outputEncoding = THREE.sRGBEncoding;          // salida en sRGB: colores correctos
   renderer.toneMapping = THREE.ACESFilmicToneMapping;     // brillos más suaves
+  renderer.shadowMap.enabled = true;                      // SOMBRAS- activar el mapa de sombras
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;       // bordes de sombra suavizados
   document.getElementById('container').appendChild( renderer.domElement );
 
   stats = new Stats();
   stats.showPanel(0); // FPS inicialmente. Picar para cambiar panel.
-  stats.domElement.style.top = 'auto';      // por defecto va arriba a la izquierda...
-  stats.domElement.style.bottom = '0px';    // ...lo bajamos a la esquina inferior
+  // Stats se coloca por defecto arriba a la izquierda (position fixed, top 0, left 0)
   document.getElementById('container').appendChild( stats.domElement );
 
   scene = new THREE.Scene();
@@ -147,13 +153,7 @@ function init()
 
   crearMinimapa();
 
-  const light = new THREE.PointLight(0xffffff, 1, 50000000);
-  light.position.set(50, 50, 50);
-  scene.add(light);
-  
-  // O también una luz ambiental para afectar a todos los objetos de manera uniforme
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
-  scene.add(ambientLight);
+  crearLuces();
   
 
   window.addEventListener('resize', updateAspectRatio );
@@ -196,6 +196,11 @@ function loadObjGLTF()
             slime = new THREE.Group();
             slime.add(object);
             scene.add(slime);
+
+            // SOMBRAS- el slime proyecta sombra sobre el suelo
+            object.traverse(function (hijo) {
+                if (hijo.isMesh) hijo.castShadow = true;
+            });
 
             // Animaciones: un AnimationMixer reproduce los clips del modelo
             console.log('Animaciones:', gltf.animations);
@@ -258,6 +263,7 @@ function loadObjGLTF()
 
             // Escenario: suelo del primer nivel (su tamaño depende del slime)
             crearSuelo(0);
+            configurarSombras();
 
             // A partir de ahora manda la camara en tercera persona
             cameraControls.enabled = false;
@@ -310,6 +316,7 @@ function crearSuelo(indice)
   const superficie = new THREE.Mesh(new THREE.CircleGeometry(radio, 96), materialSuelo);
   superficie.rotation.x = -Math.PI / 2;    // el disco se crea en vertical: lo tumbamos
   superficie.name = 'superficie';
+  superficie.receiveShadow = true;           // SOMBRAS- el suelo recibe la sombra del slime
 
   // Borde: cilindro sin tapas (openEnded), un poco mas estrecho por abajo
   const materialBorde = new THREE.MeshStandardMaterial({ color: E.colorBorde, roughness: 1 });
@@ -346,6 +353,48 @@ function limitarAlSuelo(posicion)
     posicion.x *= limite / distancia;
     posicion.z *= limite / distancia;
   }
+}
+
+// ILUMINACION- basada en el proyecto Tron (AmbientLight + DirectionalLight).
+// La ambiental ilumina todo por igual para que las zonas en sombra no queden negras;
+// la direccional hace de sol: da volumen y es la que proyecta las sombras.
+function crearLuces()
+{
+  luzAmbiente = new THREE.AmbientLight(0xffffff, 0.4);   // algo menor que en Tron: el entorno PBR ya aporta luz
+  scene.add(luzAmbiente);
+
+  luzSol = new THREE.DirectionalLight(0xfff4e0, 0.8);    // blanco ligeramente calido
+  luzSol.position.copy(direccion_sol).multiplyScalar(50);
+  luzSol.castShadow = true;
+  luzSol.shadow.mapSize.set(2048, 2048);                 // resolucion del mapa de sombras
+  luzSol.shadow.bias = -0.0005;                          // evita el "acne" (rayas) de sombra
+  scene.add(luzSol);
+  scene.add(luzSol.target);                              // el target tambien debe estar en la escena
+}
+
+// La sombra de una DirectionalLight se calcula con una camara ortografica.
+// Su tamaño se ajusta al slime: una zona pequeña alrededor de el da sombras
+// mucho mas nitidas que cubrir todo el nivel con la misma resolucion.
+function configurarSombras()
+{
+  const camaraSombra = luzSol.shadow.camera;
+  const extension = tamano_slime * 4;          // zona con sombra: 8 tamaños de slime de lado
+  camaraSombra.left = -extension;
+  camaraSombra.right = extension;
+  camaraSombra.top = extension;
+  camaraSombra.bottom = -extension;
+  camaraSombra.near = tamano_slime * 0.1;
+  camaraSombra.far = tamano_slime * 40;
+  camaraSombra.updateProjectionMatrix();
+  luzSol.shadow.normalBias = tamano_slime * 0.01;   // evita el acne en superficies curvas
+}
+
+// El sol se coloca siempre en la misma direccion respecto al slime (la luz no
+// cambia de angulo), pero desplazado con el para que su sombra no salga del mapa.
+function actualizarLuz()
+{
+  luzSol.target.position.copy(slime.position);
+  luzSol.position.copy(slime.position).addScaledVector(direccion_sol, tamano_slime * 20);
 }
 
 // Mapa de entorno: un pequeño "estudio" (cielo degradado y dos paneles de luz)
@@ -528,6 +577,9 @@ function update()
     }
 
     // Avanzar la animación según el tiempo transcurrido
+    // ILUMINACION- el sol acompaña al slime para que su sombra siempre sea nitida
+    actualizarLuz();
+
     if (mixer != null) mixer.update(delta);
 }
 
@@ -608,7 +660,8 @@ function render()
   const lado = Math.min(window.innerWidth, window.innerHeight) / 3.5;
   const margen = 18;
   const x = margen;                                   // esquina izquierda
-  const y = window.innerHeight - lado - margen;
+  const alto_stats = 48;                              // el contador de FPS ocupa la esquina: bajamos el minimapa
+  const y = window.innerHeight - lado - margen - alto_stats;
 
   renderer.setViewport(x, y, lado, lado);
   renderer.setScissor(x, y, lado, lado);
