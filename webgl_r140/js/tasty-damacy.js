@@ -329,12 +329,10 @@ function crearSuelo(indice)
 
   // Rejilla circular PROVISIONAL: sin textura, un suelo liso no deja ver que el
   // slime se mueve. Borra estas lineas cuando pongas tu textura.
-  const rejilla = new THREE.PolarGridHelper(radio, 16, 8, 64, 0x48682a, 0x48682a);
-  rejilla.position.y = tamano_slime * 0.002;   // un pelin por encima para que no parpadee
 
   const grupo = new THREE.Group();
   grupo.name = 'suelo_' + indice;
-  grupo.add(superficie, borde, rejilla);
+  grupo.add(superficie, borde);
   scene.add(grupo);
 
   suelos[indice] = { grupo: grupo, radio: radio };
