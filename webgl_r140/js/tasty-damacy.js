@@ -31,14 +31,33 @@ const mirada_actual_camara = new THREE.Vector3();
 const aceleracion_camara = new THREE.Vector3();
 let camara_spring_iniciada = false;
 
-// DEBUG- permite cambiar entre tercera persona y camara orbital con la tecla C.
-var camara_orbital = false;
+// CAMARAS- la tecla C recorre estos modos en orden:
+//   'tercera'     -> camara en tercera persona con resorte (estilo Tron)
+//   'orbital'     -> camara orbital libre con el raton (OrbitControls, para depurar)
+//   'seguimiento' -> camara de seguimiento: orbita alrededor del slime con el raton
+//                    y el movimiento pasa a ser relativo a la camara
+const MODOS_CAMARA = ['tercera', 'orbital', 'seguimiento'];
+var modo_camara = 'tercera';
+
+// Estado de la camara de seguimiento
+const cam_seguimiento = {
+  yaw: 0,                 // giro horizontal alrededor del slime
+  pitch: 0.5,             // inclinacion (radianes)
+  zoom: 1,                // la rueda del raton lo cambia entre 0.6 y 1.8
+  dist: 1,                // distancia actual (se suaviza hacia la objetivo)
+  objetivo: new THREE.Vector3(),   // punto al que mira (sigue al slime con suavizado)
+  arrastre: null          // posicion del raton mientras se arrastra
+};
+const DISTANCIA_SEGUIMIENTO = 3.5;       // en tamaños de slime
+const _offsetSeguimiento = new THREE.Vector3();
 
 const controls = {
   moveForward: false,
   moveBackward: false,
   moveLeft: false,
   moveRight: false,
+  rotateCameraLeft: false,     // Q / E: girar la camara de seguimiento con el teclado
+  rotateCameraRight: false,
   speed: 1.5,          // tamaños de slime por segundo
   turnSpeed: 2.5       // radianes por segundo
 };
@@ -61,6 +80,12 @@ document.addEventListener('keydown', (event) => {
     case 'KeyD':
       controls.moveRight = true;
       break;
+    case 'KeyQ':
+      controls.rotateCameraLeft = true;
+      break;
+    case 'KeyE':
+      controls.rotateCameraRight = true;
+      break;
   }
 });
 
@@ -81,6 +106,12 @@ document.addEventListener('keyup', (event) => {
     case 'ArrowRight':
     case 'KeyD':
       controls.moveRight = false;
+      break;
+    case 'KeyQ':
+      controls.rotateCameraLeft = false;
+      break;
+    case 'KeyE':
+      controls.rotateCameraRight = false;
       break;
     // DEBUG- cambio de camara.
     case 'KeyC':
@@ -152,6 +183,7 @@ function init()
   cameraControls.target.set( 0, 0, 0 );
 
   crearMinimapa();
+  crearControlesCamaraSeguimiento();
 
   crearLuces();
   
@@ -540,23 +572,32 @@ function update()
         return;
     }
 
-    // 3- movimiento: A/D giran, W/S avanzan y retroceden
-    if (controls.moveLeft) angulo += controls.turnSpeed * delta;
-    if (controls.moveRight) angulo -= controls.turnSpeed * delta;
+    var mirarAtras = false;
 
-    velocity.set(Math.sin(angulo), 0, Math.cos(angulo));
+    if (modo_camara === 'seguimiento') {
+        // Movimiento relativo a la camara: W se aleja de la
+        // camara, S se acerca y A/D van de lado. El slime gira hacia donde va.
+        moverRelativoACamara(delta);
+    } else {
+        // 3- movimiento: A/D giran, W/S avanzan y retroceden
+        if (controls.moveLeft) angulo += controls.turnSpeed * delta;
+        if (controls.moveRight) angulo -= controls.turnSpeed * delta;
 
-    var avance = controls.speed * tamano_slime * delta;
-    if (controls.moveForward) pos_slime.addScaledVector(velocity, avance);
-    if (controls.moveBackward) pos_slime.addScaledVector(velocity, -avance * 0.6);
+        velocity.set(Math.sin(angulo), 0, Math.cos(angulo));
+
+        var avance = controls.speed * tamano_slime * delta;
+        if (controls.moveForward) pos_slime.addScaledVector(velocity, avance);
+        if (controls.moveBackward) pos_slime.addScaledVector(velocity, -avance * 0.6);
+
+        // Al ir hacia atras (S), el modelo se da la vuelta y camina de frente hacia
+        // la camara. La camara sigue usando "angulo", asi que no da la vuelta con el.
+        mirarAtras = controls.moveBackward && !controls.moveForward;
+    }
 
     limitarAlSuelo(pos_slime);
 
     slime.position.copy(pos_slime);
 
-    // Al ir hacia atras (S), el modelo se da la vuelta y camina de frente hacia
-    // la camara. La camara sigue usando "angulo", asi que no da la vuelta con el.
-    var mirarAtras = controls.moveBackward && !controls.moveForward;
     var rotacionObjetivo = angulo + (mirarAtras ? Math.PI : 0);
     // Giro suave por el camino mas corto (atan2 evita dar la vuelta larga)
     var diferencia = Math.atan2(Math.sin(rotacionObjetivo - rotacion_visual),
@@ -565,8 +606,10 @@ function update()
     slime.rotation.y = rotacion_visual + rotacion_frente;
 
     // DEBUG- actualizamos solamente la camara que esta activa.
-    if (camara_orbital) {
+    if (modo_camara === 'orbital') {
         cameraControls.update();
+    } else if (modo_camara === 'seguimiento') {
+        updateCameraSeguimiento(delta);
     } else {
         updateCamera(delta);
     }
@@ -622,20 +665,136 @@ function updateCamera(delta)
 function cambiarCamara()
 {
   if (slime === null) return;
-  camara_orbital = !camara_orbital;
-  cameraControls.enabled = camara_orbital;
 
-  if (camara_orbital) {
+  // Punto al que miraba la camara anterior, para que la siguiente empiece sin tirones
+  var miradaAnterior = new THREE.Vector3();
+  if (modo_camara === 'orbital') miradaAnterior.copy(cameraControls.target);
+  else if (modo_camara === 'seguimiento') miradaAnterior.copy(cam_seguimiento.objetivo);
+  else miradaAnterior.copy(mirada_actual_camara);
+
+  // Siguiente modo de la lista (al llegar al final vuelve al primero)
+  var indice = MODOS_CAMARA.indexOf(modo_camara);
+  modo_camara = MODOS_CAMARA[(indice + 1) % MODOS_CAMARA.length];
+  cameraControls.enabled = (modo_camara === 'orbital');
+
+  if (modo_camara === 'orbital') {
     cameraControls.target.copy(slime.position);
     cameraControls.update();
+  } else if (modo_camara === 'seguimiento') {
+    iniciarCamaraSeguimiento(miradaAnterior);
   } else {
-    // Volvemos suavemente desde la posicion orbital, sin tirones
+    // Volvemos suavemente desde la posicion anterior, sin tirones
     velocidad_camara.set(0, 0, 0);
     velocidad_mirada_camara.set(0, 0, 0);
-    mirada_actual_camara.copy(cameraControls.target);
+    mirada_actual_camara.copy(miradaAnterior);
   }
 
-  console.log(camara_orbital ? 'Camara orbital' : 'Camara en tercera persona');
+  console.log('Camara:', modo_camara);
+}
+
+
+// ---------------------------------------------------------------------------
+// CAMARA DE SEGUIMIENTO- orbita en tercera persona controlada por el usuario.
+// Su posicion se calcula en coordenadas esfericas alrededor del punto objetivo:
+//   x = objetivo.x + sin(yaw) * cos(pitch) * dist
+//   y = objetivo.y + sin(pitch) * dist
+//   z = objetivo.z + cos(yaw) * cos(pitch) * dist
+// ---------------------------------------------------------------------------
+function crearControlesCamaraSeguimiento()
+{
+  const lienzo = renderer.domElement;
+
+  // Arrastrar con el raton: gira la camara alrededor del slime
+  lienzo.addEventListener('pointerdown', function (e) {
+    if (modo_camara !== 'seguimiento') return;
+    cam_seguimiento.arrastre = { x: e.clientX, y: e.clientY };
+    lienzo.setPointerCapture(e.pointerId);
+  });
+  lienzo.addEventListener('pointermove', function (e) {
+    if (modo_camara !== 'seguimiento' || !cam_seguimiento.arrastre) return;
+    cam_seguimiento.yaw -= (e.clientX - cam_seguimiento.arrastre.x) * 0.006;
+    cam_seguimiento.pitch = THREE.MathUtils.clamp(cam_seguimiento.pitch + (e.clientY - cam_seguimiento.arrastre.y) * 0.004, 0.12, 1.3);
+    cam_seguimiento.arrastre.x = e.clientX;
+    cam_seguimiento.arrastre.y = e.clientY;
+  });
+  const soltar = function () { cam_seguimiento.arrastre = null; };
+  lienzo.addEventListener('pointerup', soltar);
+  lienzo.addEventListener('pointercancel', soltar);
+
+  // Rueda: acercar o alejar
+  lienzo.addEventListener('wheel', function (e) {
+    if (modo_camara !== 'seguimiento') return;
+    e.preventDefault();
+    cam_seguimiento.zoom = THREE.MathUtils.clamp(cam_seguimiento.zoom * Math.exp(e.deltaY * 0.001), 0.6, 1.8);
+  }, { passive: false });
+}
+
+// Al entrar en este modo calculamos yaw, pitch y distancia a partir de donde
+// esta la camara ahora, para que el cambio no dé un salto
+function iniciarCamaraSeguimiento(miradaAnterior)
+{
+  cam_seguimiento.objetivo.copy(miradaAnterior);
+  _offsetSeguimiento.copy(camera.position).sub(cam_seguimiento.objetivo);
+  cam_seguimiento.dist = Math.max(_offsetSeguimiento.length(), tamano_slime * 0.5);
+  cam_seguimiento.yaw = Math.atan2(_offsetSeguimiento.x, _offsetSeguimiento.z);
+  cam_seguimiento.pitch = THREE.MathUtils.clamp(Math.asin(_offsetSeguimiento.y / cam_seguimiento.dist), 0.12, 1.3);
+  cam_seguimiento.arrastre = null;
+}
+
+// Interpolacion exponencial: independiente de los FPS
+function amortiguar(actual, objetivo, rapidez, delta)
+{
+  return actual + (objetivo - actual) * (1 - Math.exp(-rapidez * delta));
+}
+
+function updateCameraSeguimiento(delta)
+{
+  // Q / E giran la camara con el teclado
+  if (controls.rotateCameraLeft) cam_seguimiento.yaw += 1.8 * delta;
+  if (controls.rotateCameraRight) cam_seguimiento.yaw -= 1.8 * delta;
+
+  // La distancia y el punto de mira siguen a su valor ideal con suavizado
+  var distObjetivo = DISTANCIA_SEGUIMIENTO * tamano_slime * cam_seguimiento.zoom;
+  cam_seguimiento.dist = amortiguar(cam_seguimiento.dist, distObjetivo, 2.5, delta);
+  cam_seguimiento.objetivo.x = amortiguar(cam_seguimiento.objetivo.x, slime.position.x, 10, delta);
+  cam_seguimiento.objetivo.y = amortiguar(cam_seguimiento.objetivo.y, slime.position.y + tamano_slime * 0.55, 6, delta);
+  cam_seguimiento.objetivo.z = amortiguar(cam_seguimiento.objetivo.z, slime.position.z, 10, delta);
+
+  var cp = Math.cos(cam_seguimiento.pitch);
+  camera.position.set(
+    cam_seguimiento.objetivo.x + Math.sin(cam_seguimiento.yaw) * cp * cam_seguimiento.dist,
+    cam_seguimiento.objetivo.y + Math.sin(cam_seguimiento.pitch) * cam_seguimiento.dist,
+    cam_seguimiento.objetivo.z + Math.cos(cam_seguimiento.yaw) * cp * cam_seguimiento.dist
+  );
+  camera.lookAt(cam_seguimiento.objetivo);
+}
+
+// Movimiento relativo a la camara: "adelante" es la direccion en la que mira la
+// camara (proyectada en el suelo) y "derecha" su perpendicular
+function moverRelativoACamara(delta)
+{
+  var adelante = 0, lado = 0;
+  if (controls.moveForward) adelante += 1;
+  if (controls.moveBackward) adelante -= 1;
+  if (controls.moveRight) lado += 1;
+  if (controls.moveLeft) lado -= 1;
+
+  var sy = Math.sin(cam_seguimiento.yaw), cy = Math.cos(cam_seguimiento.yaw);
+  var dx = -sy * adelante + cy * lado;
+  var dz = -cy * adelante - sy * lado;
+  var largo = Math.hypot(dx, dz);
+  if (largo === 0) return;
+  dx /= largo;
+  dz /= largo;
+
+  pos_slime.x += dx * controls.speed * tamano_slime * delta;
+  pos_slime.z += dz * controls.speed * tamano_slime * delta;
+
+  // El slime se orienta hacia donde se mueve. Actualizamos "angulo" y "velocity"
+  // para que, al volver a la camara en tercera persona, esta se coloque detras.
+  var objetivo = Math.atan2(dx, dz);
+  angulo += Math.atan2(Math.sin(objetivo - angulo), Math.cos(objetivo - angulo)) * (1 - Math.exp(-10 * delta));
+  velocity.set(Math.sin(angulo), 0, Math.cos(angulo));
 }
 
 function render()
