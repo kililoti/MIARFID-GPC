@@ -102,38 +102,41 @@ render();
 
 function init()
 {
-  renderer = new THREE.WebGLRenderer();
-  renderer.setSize( window.innerWidth, window.innerHeight );
-  renderer.setClearColor( new THREE.Color(0xFFFFFF) );
-  renderer.outputEncoding = THREE.sRGBEncoding;          // salida en sRGB: colores correctos
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;     // brillos más suaves
-  document.getElementById('container').appendChild( renderer.domElement );
+    renderer = new THREE.WebGLRenderer();
+    renderer.setSize( window.innerWidth, window.innerHeight );
+    renderer.setClearColor( new THREE.Color(0xFFFFFF) );
+    renderer.outputEncoding = THREE.sRGBEncoding;          // salida en sRGB: colores correctos
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;     // brillos más suaves
+    document.getElementById('container').appendChild( renderer.domElement );
 
-  scene = new THREE.Scene();
-  crearEntorno();                                         // reflejos para los materiales PBR
+    stats = new Stats();
+    stats.showPanel(0); // FPS inicialmente. Picar para cambiar panel.
+    document.getElementById('container').appendChild( stats.domElement );
 
-  // cargo el objeto
-  loadObjGLTF();
+    scene = new THREE.Scene();
+    crearEntorno();                                         // reflejos para los materiales PBR
 
-  var aspectRatio = window.innerWidth / window.innerHeight;
-  camera = new THREE.PerspectiveCamera( 50, aspectRatio , 1, 1000 );
-  camera.position.set( 10, 15, 20 );
+    // cargo el objeto
+    loadObjGLTF();
 
-  cameraControls = new THREE.OrbitControls( camera, renderer.domElement );
-  cameraControls.target.set( 0, 0, 0 );
+    var aspectRatio = window.innerWidth / window.innerHeight;
+    camera = new THREE.PerspectiveCamera( 50, aspectRatio , 1, 1000 );
+    camera.position.set( 10, 15, 20 );
 
-  crearMinimapa();
+    cameraControls = new THREE.OrbitControls( camera, renderer.domElement );
+    cameraControls.target.set( 0, 0, 0 );
 
-  const light = new THREE.PointLight(0xffffff, 1, 50000000);
-  light.position.set(50, 50, 50);
-  scene.add(light);
-  
-  // O también una luz ambiental para afectar a todos los objetos de manera uniforme
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
-  scene.add(ambientLight);
-  
+    crearMinimapa();
 
-  window.addEventListener('resize', updateAspectRatio );
+    const light = new THREE.PointLight(0xffffff, 1, 50000000);
+    light.position.set(50, 50, 50);
+    scene.add(light);
+    
+    // O también una luz ambiental para afectar a todos los objetos de manera uniforme
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+    scene.add(ambientLight);
+
+    window.addEventListener('resize', updateAspectRatio );
 }
 
 function loadObjGLTF()
@@ -395,6 +398,8 @@ function updateAspectRatio()
 
 function update()
 {
+    stats.update();
+
     // Limitamos el delta para evitar saltos bruscos al volver a la pestaña.
     var delta = Math.min(clock.getDelta(), 0.05);
 
@@ -435,6 +440,8 @@ function update()
 
     // Avanzar la animación según el tiempo transcurrido
     if (mixer != null) mixer.update(delta);
+
+
 }
 
 // Muelle amortiguado: el valor actual persigue al objetivo de forma elastica
