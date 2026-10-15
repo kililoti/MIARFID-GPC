@@ -3,6 +3,7 @@
 var loader;
 var renderer, scene, camera;
 var cameraControls;
+var stats;
 var angulo = -0.01;
 var mixer = null;      // reproduce las animaciones del modelo
 
@@ -88,6 +89,22 @@ document.addEventListener('keyup', (event) => {
   }
 });
 
+// ESCENARIOS- cada escala del mundo se describe con datos. Las medidas van en
+// "tamaños de slime", asi el escenario se adapta a la escala del modelo cargado.
+// De momento solo existe el primer nivel; los siguientes se añadiran a este array.
+const ESCALAS = [
+  {
+    nombre: 'El rincón del jardín',
+    radioSuelo: 14,            // radio del disco de suelo (en tamaños de slime)
+    altoBorde: 0.8,            // grosor del borde de tierra
+    colorSuelo: 0x5d8331,
+    colorBorde: 0x5b3a22,
+    repetirTextura: 6          // veces que se repetira tu textura sobre el disco
+  }
+];
+var escala_actual = 0;
+var suelos = [];               // un registro por escala: { grupo, radio }
+
 // Minimapa: camara cenital ortografica en la esquina superior izquierda
 var cameraTop, cameraStencil;
 var stencilScene, hudBorderScene;
@@ -102,41 +119,44 @@ render();
 
 function init()
 {
-    renderer = new THREE.WebGLRenderer();
-    renderer.setSize( window.innerWidth, window.innerHeight );
-    renderer.setClearColor( new THREE.Color(0xFFFFFF) );
-    renderer.outputEncoding = THREE.sRGBEncoding;          // salida en sRGB: colores correctos
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;     // brillos más suaves
-    document.getElementById('container').appendChild( renderer.domElement );
+  renderer = new THREE.WebGLRenderer();
+  renderer.setSize( window.innerWidth, window.innerHeight );
+  renderer.setClearColor( new THREE.Color(0xFFFFFF) );
+  renderer.outputEncoding = THREE.sRGBEncoding;          // salida en sRGB: colores correctos
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;     // brillos más suaves
+  document.getElementById('container').appendChild( renderer.domElement );
 
-    stats = new Stats();
-    stats.showPanel(0); // FPS inicialmente. Picar para cambiar panel.
-    document.getElementById('container').appendChild( stats.domElement );
+  stats = new Stats();
+  stats.showPanel(0); // FPS inicialmente. Picar para cambiar panel.
+  stats.domElement.style.top = 'auto';      // por defecto va arriba a la izquierda...
+  stats.domElement.style.bottom = '0px';    // ...lo bajamos a la esquina inferior
+  document.getElementById('container').appendChild( stats.domElement );
 
-    scene = new THREE.Scene();
-    crearEntorno();                                         // reflejos para los materiales PBR
+  scene = new THREE.Scene();
+  crearEntorno();                                         // reflejos para los materiales PBR
 
-    // cargo el objeto
-    loadObjGLTF();
+  // cargo el objeto
+  loadObjGLTF();
 
-    var aspectRatio = window.innerWidth / window.innerHeight;
-    camera = new THREE.PerspectiveCamera( 50, aspectRatio , 1, 1000 );
-    camera.position.set( 10, 15, 20 );
+  var aspectRatio = window.innerWidth / window.innerHeight;
+  camera = new THREE.PerspectiveCamera( 50, aspectRatio , 1, 1000 );
+  camera.position.set( 10, 15, 20 );
 
-    cameraControls = new THREE.OrbitControls( camera, renderer.domElement );
-    cameraControls.target.set( 0, 0, 0 );
+  cameraControls = new THREE.OrbitControls( camera, renderer.domElement );
+  cameraControls.target.set( 0, 0, 0 );
 
-    crearMinimapa();
+  crearMinimapa();
 
-    const light = new THREE.PointLight(0xffffff, 1, 50000000);
-    light.position.set(50, 50, 50);
-    scene.add(light);
-    
-    // O también una luz ambiental para afectar a todos los objetos de manera uniforme
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
-    scene.add(ambientLight);
+  const light = new THREE.PointLight(0xffffff, 1, 50000000);
+  light.position.set(50, 50, 50);
+  scene.add(light);
+  
+  // O también una luz ambiental para afectar a todos los objetos de manera uniforme
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+  scene.add(ambientLight);
+  
 
-    window.addEventListener('resize', updateAspectRatio );
+  window.addEventListener('resize', updateAspectRatio );
 }
 
 function loadObjGLTF()
@@ -236,9 +256,8 @@ function loadObjGLTF()
             object.position.y -= box.min.y;
             tamano_slime = maxDim;
 
-            // Suelo con rejilla: sin una referencia no se notaria que el slime avanza
-            var suelo = new THREE.GridHelper(maxDim * 60, 60, 0x90a4ae, 0xb0bec5);
-            scene.add(suelo);
+            // Escenario: suelo del primer nivel (su tamaño depende del slime)
+            crearSuelo(0);
 
             // A partir de ahora manda la camara en tercera persona
             cameraControls.enabled = false;
@@ -259,6 +278,74 @@ function loadObjGLTF()
         }
     );  
 
+}
+
+// ESCENARIOS- crea el suelo de una escala: un disco plano con un borde de tierra,
+// para que el nivel se vea como una "isla" (asi luego la siguiente escala podra
+// aparecer alrededor y la anterior quedara como una pequeña parte de ella).
+//
+//   grupo (se añade a la escena)
+//    ├─ superficie: disco plano (CircleGeometry) en y = 0
+//    └─ borde: cilindro abierto bajo el disco
+function crearSuelo(indice)
+{
+  const E = ESCALAS[indice];
+  const radio = E.radioSuelo * tamano_slime;
+  const alto = E.altoBorde * tamano_slime;
+
+  const materialSuelo = new THREE.MeshStandardMaterial({ color: E.colorSuelo, roughness: 1 });
+
+  // CircleGeometry reparte las UV de 0 a 1 sobre todo el disco, por eso hay que
+  // repetir la textura para que no quede estirada.
+
+  const textura = new THREE.TextureLoader().load('images/tasty_damacy/cesped.jpg');
+  textura.encoding = THREE.sRGBEncoding;
+  textura.wrapS = textura.wrapT = THREE.MirroredRepeatWrapping;
+  textura.repeat.set(E.repetirTextura, E.repetirTextura);
+  textura.magFilter = THREE.LinearMipMapLinearFilter;  // Filtrado  para la magnificación
+  textura.minFilter = THREE.LinearMipMapLinearFilter; 
+  materialSuelo.map = textura;
+  materialSuelo.color.set(0xffffff);   // blanco = la textura con sus colores originales
+
+  const superficie = new THREE.Mesh(new THREE.CircleGeometry(radio, 96), materialSuelo);
+  superficie.rotation.x = -Math.PI / 2;    // el disco se crea en vertical: lo tumbamos
+  superficie.name = 'superficie';
+
+  // Borde: cilindro sin tapas (openEnded), un poco mas estrecho por abajo
+  const materialBorde = new THREE.MeshStandardMaterial({ color: E.colorBorde, roughness: 1 });
+  const borde = new THREE.Mesh(
+    new THREE.CylinderGeometry(radio, radio * 0.92, alto, 96, 1, true),
+    materialBorde
+  );
+  borde.position.y = -alto / 2;            // su parte de arriba coincide con el disco
+  borde.name = 'borde';
+
+  // Rejilla circular PROVISIONAL: sin textura, un suelo liso no deja ver que el
+  // slime se mueve. Borra estas lineas cuando pongas tu textura.
+  const rejilla = new THREE.PolarGridHelper(radio, 16, 8, 64, 0x48682a, 0x48682a);
+  rejilla.position.y = tamano_slime * 0.002;   // un pelin por encima para que no parpadee
+
+  const grupo = new THREE.Group();
+  grupo.name = 'suelo_' + indice;
+  grupo.add(superficie, borde, rejilla);
+  scene.add(grupo);
+
+  suelos[indice] = { grupo: grupo, radio: radio };
+  console.log('Escenario creado:', E.nombre, '- radio', radio.toFixed(2));
+}
+
+// Impide que el slime salga del suelo de la escala actual
+function limitarAlSuelo(posicion)
+{
+  const suelo = suelos[escala_actual];
+  if (!suelo) return;
+
+  const limite = suelo.radio - tamano_slime * 0.5;    // margen: medio slime
+  const distancia = Math.hypot(posicion.x, posicion.z);
+  if (distancia > limite) {
+    posicion.x *= limite / distancia;
+    posicion.z *= limite / distancia;
+  }
 }
 
 // Mapa de entorno: un pequeño "estudio" (cielo degradado y dos paneles de luz)
@@ -419,6 +506,8 @@ function update()
     if (controls.moveForward) pos_slime.addScaledVector(velocity, avance);
     if (controls.moveBackward) pos_slime.addScaledVector(velocity, -avance * 0.6);
 
+    limitarAlSuelo(pos_slime);
+
     slime.position.copy(pos_slime);
 
     // Al ir hacia atras (S), el modelo se da la vuelta y camina de frente hacia
@@ -440,8 +529,6 @@ function update()
 
     // Avanzar la animación según el tiempo transcurrido
     if (mixer != null) mixer.update(delta);
-
-
 }
 
 // Muelle amortiguado: el valor actual persigue al objetivo de forma elastica
