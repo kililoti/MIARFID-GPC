@@ -1,0 +1,8 @@
+Model Information:
+* title:	Slime
+* source:	https://sketchfab.com/3d-models/slime-5a01f6ffafeb46989a9b76a66b582234
+* author:	powers28 (https://sketchfab.com/powers28)
+
+Model License:
+* license type:	SKETCHFAB Standard (https://sketchfab.com/licenses)
+* requirements:	Under basic restrictions, use worldwide, on all types of media, commercially or not, and in all types of derivative works

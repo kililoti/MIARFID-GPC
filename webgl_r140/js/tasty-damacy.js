@@ -157,7 +157,8 @@ const ESCALAS = [
     // Objetos del nivel: [tipo, cantidad, tamañoMin, tamañoMax]
     // El tamaño es la mitad de su dimension mayor, en tamaños de slime
     catalogo: [
-      ['semilla', 3000, 0.12, 0.18]
+      ['semilla', 30, 0.12, 0.18],
+      ['hormiga', 20, 0.3, 0.4]
     ]
   }
 ];
@@ -195,6 +196,17 @@ var canalesComer = [];         // reserva de Audio para que varios bocados pueda
 const MAX_CANALES_COMER = 6;  // como mucho, 6 bocados sonando simultaneamente
 var silenciado = false;
 
+// MODELOS- modelos glTF de los objetos comestibles. Van antes de init() porque
+// init() empieza a cargarlos y necesita que estas variables ya existan.
+const MODELOS_OBJETOS = {
+  // animQuieto / animAndar: nombre (o parte del nombre) de cada animacion del modelo.
+  // Mira en la consola la lista "animaciones" al cargar y ajustalos si no coinciden.
+  hormiga: { ruta: 'models/hormiga/scene.gltf', plantilla: null, animaciones: [],
+             animQuieto: 'Armature|Idle', animAndar: 'Armature|Walk' }
+};
+var promesaModelos = null;     // se cumple cuando todos los modelos estan cargados
+var mixersObjetos = [];        // AnimationMixer de cada copia animada
+
 const clock = new THREE.Clock();
 
 // HUD- estado que muestra la interfaz
@@ -213,6 +225,7 @@ var etiquetaVisor;             // nombre del objeto, en HTML, sobre el circulo
 var visorPendiente = null;     // tipo del ultimo objeto comido que aun no se ha mostrado
 var ultimoCambioVisor = -10;   // instante (s) en que cambio por ultima vez el modelo
 const INTERVALO_VISOR = 0.6;   // tiempo minimo que se muestra cada modelo
+const RADIO_VISOR = 0.75;      // radio de la esfera en la que se encaja cada modelo (mas alto = mas grande)
 
 const NOMBRES_CAMARA = {
   tercera: 'Tercera persona',
@@ -245,6 +258,7 @@ function init()
 
   // cargo el objeto
   loadObjGLTF();
+  promesaModelos = cargarModelosObjetos();   // MODELOS- se cargan a la vez que el slime
 
   var aspectRatio = window.innerWidth / window.innerHeight;
   camera = new THREE.PerspectiveCamera( 50, aspectRatio , 1, 1000 );
@@ -382,7 +396,11 @@ function loadObjGLTF()
             // Escenario: suelo del primer nivel (su tamaño depende del slime)
             crearSuelo(0);
             configurarSombras();
-            generarObjetos(0);     // OBJETOS- los comestibles del primer nivel
+            // OBJETOS- los comestibles del primer nivel. Esperamos a que esten
+            // cargados los modelos de los objetos (por ejemplo, la hormiga)
+            promesaModelos.then(function () {
+                generarObjetos(0);
+            });
 
             // HUD- presentamos el nivel con un aviso central
             mostrarAviso('Nivel 1: ' + ESCALAS[0].nombre, '', 2500);
@@ -440,8 +458,171 @@ const MATERIALES = {
 
 // Tabla de tipos: nombre visible, huella (radio de colision relativo a su tamaño)
 // y funcion que construye su modelo
+// ---------------------------------------------------------------------------
+// MODELOS- objetos que usan un modelo glTF en vez de primitivas.
+// Cada modelo se carga UNA vez (la "plantilla") y cada objeto del mundo es una
+// copia. Al cargarlo se normaliza: centrado, apoyado en y = 0 y con su
+// dimension mayor de tamaño 2, igual que los objetos hechos con primitivas,
+// para que el sistema de tamaños del catalogo funcione igual con todos.
+// ---------------------------------------------------------------------------
+// (MODELOS_OBJETOS, promesaModelos y mixersObjetos estan declarados antes de init())
+
+function cargarModelosObjetos()
+{
+  const cargador = new THREE.GLTFLoader();
+  const nombres = Object.keys(MODELOS_OBJETOS);
+
+  // Una promesa por modelo; Promise.all espera a que terminen todas
+  return Promise.all(nombres.map(function (nombre) {
+    const modelo = MODELOS_OBJETOS[nombre];
+    return new Promise(function (resolver) {
+      cargador.load(modelo.ruta, function (gltf) {
+        modelo.plantilla = normalizarModelo(gltf.scene);
+        modelo.animaciones = gltf.animations;
+        console.log('Modelo cargado:', nombre, '- animaciones:',
+                    gltf.animations.map(function (clip) { return clip.name; }));
+        resolver();
+      }, undefined, function () {
+        console.error('No se pudo cargar el modelo:', modelo.ruta);
+        resolver();   // seguimos igualmente: ese tipo de objeto no aparecera
+      });
+    });
+  }));
+}
+
+// MODELOS- caja envolvente REAL de un objeto.
+// Box3.setFromObject() mide las mallas animadas (SkinnedMesh) en su pose
+// original, sin aplicar los huesos. En muchos modelos el esqueleto lleva una
+// escala propia (malla en centimetros, huesos que la reducen...), asi que esa
+// medida no se parece al tamaño que se ve. Aqui calculamos donde queda de
+// verdad cada vertice despues de aplicarle sus huesos.
+function calcularCajaReal(objeto)
+{
+  objeto.updateMatrixWorld(true);              // posiciones de todos los nodos y huesos al dia
+  const caja = new THREE.Box3();
+  const v = new THREE.Vector3();
+
+  objeto.traverse(function (n) {
+    if (!n.isMesh) return;
+    const posiciones = n.geometry.attributes.position;
+
+    if (n.isSkinnedMesh) {
+      n.skeleton.update();
+      for (let i = 0; i < posiciones.count; i++) {
+        v.fromBufferAttribute(posiciones, i);
+        n.boneTransform(i, v);                 // aplica los huesos al vertice (espacio local de la malla)
+        v.applyMatrix4(n.matrixWorld);         // y lo pasa a coordenadas del mundo
+        caja.expandByPoint(v);
+      }
+    } else {
+      // Malla normal: basta con su caja de geometria transformada
+      if (n.geometry.boundingBox === null) n.geometry.computeBoundingBox();
+      caja.union(n.geometry.boundingBox.clone().applyMatrix4(n.matrixWorld));
+    }
+  });
+  return caja;
+}
+
+// Centra el modelo, lo apoya en y = 0 y lo escala a "unidades de objeto"
+function normalizarModelo(escenaModelo)
+{
+  const caja = calcularCajaReal(escenaModelo);   // con los huesos aplicados (ver la funcion)
+  const tam = caja.getSize(new THREE.Vector3());
+  const centro = caja.getCenter(new THREE.Vector3());
+  const escala = 2 / Math.max(tam.x, tam.y, tam.z);
+
+  escenaModelo.scale.multiplyScalar(escala);
+  escenaModelo.position.set(-centro.x * escala, -caja.min.y * escala, -centro.z * escala);
+  escenaModelo.traverse(function (n) {
+    if (n.isMesh) { n.castShadow = true; n.receiveShadow = true; }
+  });
+
+  // Lo metemos en un grupo para que la normalizacion no se pierda al escalar la copia
+  const plantilla = new THREE.Group();
+  plantilla.add(escenaModelo);
+  return plantilla;
+}
+
+// Añade al grupo una copia del modelo y, si tiene animaciones, la pone en marcha
+function anadirCopiaModelo(grupo, nombre)
+{
+  const modelo = MODELOS_OBJETOS[nombre];
+  if (!modelo.plantilla) return;
+
+  // Los modelos con esqueleto (animados) necesitan SkeletonUtils.clone para que
+  // cada copia tenga sus propios huesos; con clone() normal compartirian esqueleto
+  const copia = THREE.SkeletonUtils ? THREE.SkeletonUtils.clone(modelo.plantilla) : modelo.plantilla.clone();
+  grupo.add(copia);
+
+  if (modelo.animaciones.length > 0) {
+    const mixerCopia = new THREE.AnimationMixer(copia);
+
+    // ANIMACIONES- buscamos la de estar quieto y la de andar por su nombre.
+    // Si no se encuentran, usamos la primera y la segunda de la lista.
+    const clipQuieto = buscarClip(modelo.animaciones, modelo.animQuieto) || modelo.animaciones[0];
+    const clipAndar = buscarClip(modelo.animaciones, modelo.animAndar) || modelo.animaciones[1] || clipQuieto;
+
+    const quieto = mixerCopia.clipAction(clipQuieto);
+    quieto.time = Math.random() * clipQuieto.duration;   // desfasadas: no se mueven todas a la vez
+    grupo.userData.mixer = mixerCopia;
+    mixersObjetos.push(mixerCopia);
+
+    // Si el modelo solo tiene una animacion, la reproducimos y ya esta
+    if (clipAndar === clipQuieto) {
+      quieto.play();
+      return;
+    }
+
+    const andar = mixerCopia.clipAction(clipAndar);
+
+    // Las dos suenan a la vez y se mezclan por PESOS: al empezar, solo se ve la
+    // de quieto (peso 1) y la de andar no se nota (peso 0). moverSerVivo()
+    // reparte los pesos segun la velocidad.
+    quieto.play();
+    andar.play();
+    quieto.setEffectiveWeight(1);
+    andar.setEffectiveWeight(0);
+
+    andar.time = Math.random() * clipAndar.duration;
+    grupo.userData.acciones = { quieto: quieto, andar: andar };
+  }
+}
+
+// Busca una animacion cuyo nombre contenga el texto indicado (sin distinguir mayusculas)
+function buscarClip(clips, texto)
+{
+  if (!texto) return null;
+  texto = texto.toLowerCase();
+  for (let i = 0; i < clips.length; i++) {
+    if (clips[i].name.toLowerCase().indexOf(texto) !== -1) return clips[i];
+  }
+  return null;
+}
+
+// Deja de actualizar las animaciones de un grupo (al comerlo o quitarlo del visor)
+function quitarMixers(grupo)
+{
+  grupo.traverse(function (n) {
+    if (n.userData.mixer) {
+      const i = mixersObjetos.indexOf(n.userData.mixer);
+      if (i >= 0) mixersObjetos.splice(i, 1);
+    }
+  });
+}
+
+function crearHormiga(grupo)
+{
+  anadirCopiaModelo(grupo, 'hormiga');
+}
+
 const TIPOS = {
-  semilla: { nombre: 'Semilla', huella: 0.8, crear: crearSemilla }
+  semilla: { nombre: 'Semilla', huella: 0.8, crear: crearSemilla },
+  // comerDesde: tamaño minimo del slime para comerla, aunque sea pequeña
+  hormiga: { nombre: 'Hormiga', huella: 0.6, crear: crearHormiga, modelo: 'hormiga', comerDesde: 1.2, escalaVisor: 1,
+             // VIDA- se mueve por el nivel y huye del slime cuando este puede comersela
+             //   velocidad: medios cuerpos por segundo al pasear (al huir va mas rapido)
+             //   rotacionFrente: si camina de lado o hacia atras, prueba Math.PI / 2, -Math.PI / 2 o Math.PI
+             movil: { velocidad: 1.5, huye: true, rotacionFrente: Math.PI } }
 };
 
 // Cada constructor monta el objeto en "unidades de objeto": apoyado en y = 0 y con
@@ -467,6 +648,9 @@ function generarObjetos(indice)
     const tipo = entrada[0], cantidad = entrada[1], min = entrada[2], max = entrada[3];
     const def = TIPOS[tipo];
 
+    // MODELOS- si el tipo usa un modelo que no se pudo cargar, lo saltamos
+    if (def.modelo && !MODELOS_OBJETOS[def.modelo].plantilla) return;
+
     for (let k = 0; k < cantidad; k++) {
       const tam = rand(min, max) * tamano_base;
       const radio = tam * def.huella;
@@ -482,7 +666,19 @@ function generarObjetos(indice)
       scene.add(grupo);
 
       // estado: 'activo' (en el suelo) o 'comiendo' (siendo absorbido por el slime)
-      objetos.push({ tipo: tipo, def: def, tam: tam, radio: radio, escala: indice, grupo: grupo, estado: 'activo' });
+      const nuevo = { tipo: tipo, def: def, tam: tam, radio: radio, escala: indice, grupo: grupo, estado: 'activo' };
+
+      // VIDA- los tipos con "movil" llevan su propio estado de movimiento
+      if (def.movil) {
+        nuevo.movil = {
+          dir: grupo.rotation.y,          // direccion en la que camina (radianes)
+          dirObjetivo: grupo.rotation.y,  // direccion hacia la que quiere girar
+          temporizador: rand(0, 3),       // segundos hasta su proxima decision
+          parada: false,                  // a veces se detiene un rato
+          velActual: 0                    // velocidad actual (se suaviza)
+        };
+      }
+      objetos.push(nuevo);
       creados++;
     }
   });
@@ -860,17 +1056,23 @@ function actualizarVisor(delta)
 // uno nuevo con el mismo constructor, que comparte geometrias y materiales.
 function cambiarModeloVisor(def)
 {
-  if (pivoteVisor !== null) escenaVisor.remove(pivoteVisor);
+  if (pivoteVisor !== null) {
+    quitarMixers(pivoteVisor);    // MODELOS- la animacion del modelo anterior del visor
+    escenaVisor.remove(pivoteVisor);
+  }
 
   const modelo = new THREE.Group();
   def.crear(modelo);
 
   // Lo centramos y escalamos para que ocupe siempre lo mismo en el visor,
-  // sea una semilla o una montaña
-  const caja = new THREE.Box3().setFromObject(modelo);
-  const tam = caja.getSize(new THREE.Vector3());
-  const centro = caja.getCenter(new THREE.Vector3());
-  const escala = 1.6 / Math.max(tam.x, tam.y, tam.z);
+  // sea una semilla o una montaña. Usamos la ESFERA que envuelve al modelo y
+  // no su caja: como el modelo gira, un objeto alargado (la hormiga) ocupa
+  // mas espacio al ponerse de frente o en diagonal que lo que dice su caja.
+  // La esfera lo envuelve en cualquier orientacion, asi nunca se sale del circulo.
+  const caja = calcularCajaReal(modelo);
+  const esfera = caja.getBoundingSphere(new THREE.Sphere());
+  const centro = esfera.center;
+  const escala = RADIO_VISOR / esfera.radius * (def.escalaVisor || 1);
   modelo.scale.setScalar(escala);
   modelo.position.copy(centro).multiplyScalar(-escala);
 
@@ -902,7 +1104,22 @@ function radioSlime()
 
 function esComestible(objeto)
 {
-  return objeto.tam < radioSlime() * FACTOR_COMESTIBLE;
+  return (tamano_slime / tamano_base) >= tamanoParaComer(objeto);
+}
+
+// Tamaño del slime (el mismo que muestra el HUD: 1 = tamaño inicial) a partir
+// del cual se puede comer un objeto. Se combinan dos reglas y se aplica la mas
+// exigente:
+//  - por su tamaño: el objeto debe medir menos del 85 % del radio del slime
+//  - por su tipo: si tiene "comerDesde", el slime debe medir al menos eso
+// Asi "comerDesde" funciona como un minimo, pero un objeto muy grande sigue
+// necesitando que el slime sea lo bastante grande para el.
+function tamanoParaComer(objeto)
+{
+  const porTamano = objeto.tam / (0.5 * FACTOR_COMESTIBLE * tamano_base);
+
+  if (objeto.def.comerDesde !== undefined) return Math.max(porTamano, objeto.def.comerDesde);
+  return porTamano;
 }
 
 function comprobarColisiones()
@@ -939,7 +1156,8 @@ function empujarFuera(objeto, dx, dz, distancia, r)
 
   // HUD- aviso, como mucho uno cada 1,5 s (el choque dura varios fotogramas)
   if (clock.elapsedTime - ultimoAvisoChoque > 1.5) {
-    mostrarAviso(objeto.def.nombre + ': ¡demasiado grande!', 'peligro');
+    mostrarAviso(objeto.def.nombre + ': necesitas tamaño ' +
+                 tamanoParaComer(objeto).toFixed(2).replace('.', ','), 'peligro');
     ultimoAvisoChoque = clock.elapsedTime;
   }
 }
@@ -1023,6 +1241,90 @@ function actualizarCrecimiento(delta)
   centro_hud.y = tamano_slime * 2;
 }
 
+// ---------------------------------------------------------------------------
+// VIDA- comportamiento de los objetos que se mueven solos (hormigas...).
+// Cada uno tiene dos modos:
+//   - pasear: cada pocos segundos elige una direccion al azar y a veces se para
+//   - huir: si el slime esta cerca Y puede comerselo, corre en direccion contraria
+// Es una "maquina de estados" muy sencilla, la base de la IA de muchos juegos.
+// ---------------------------------------------------------------------------
+const DISTANCIA_HUIDA = 3;        // en tamaños del slime: a esta distancia empiezan a huir
+const MULTIPLICADOR_HUIDA = 2.5;  // al huir van 2,5 veces mas rapido que paseando
+
+function actualizarSeresVivos(delta)
+{
+  for (let i = 0; i < objetos.length; i++) {
+    const objeto = objetos[i];
+    if (objeto.estado === 'activo' && objeto.movil) moverSerVivo(objeto, delta);
+  }
+}
+
+function moverSerVivo(objeto, delta)
+{
+  const m = objeto.movil;
+  const config = objeto.def.movil;
+  const p = objeto.grupo.position;
+
+  // Velocidad proporcional a su tamaño: una hormiga grande da pasos mas largos
+  const velocidadPaseo = config.velocidad * objeto.tam;
+  let velocidad = velocidadPaseo;
+
+  // ¿Esta en peligro? Solo huye si el slime puede comerselo: si no, lo ignora
+  const dx = p.x - pos_slime.x;
+  const dz = p.z - pos_slime.z;
+  const distanciaSlime = Math.hypot(dx, dz);
+  const huyendo = config.huye && esComestible(objeto) && distanciaSlime < DISTANCIA_HUIDA * tamano_slime;
+
+  m.temporizador -= delta;
+  if (huyendo) {
+    m.dirObjetivo = Math.atan2(dx, dz);      // direccion contraria al slime
+    velocidad *= MULTIPLICADOR_HUIDA;
+    m.parada = false;
+  } else if (m.temporizador <= 0) {
+    // Nueva decision al pasear: girar un poco al azar y, a veces, pararse
+    m.dirObjetivo = m.dir + rand(-1.5, 1.5);
+    m.temporizador = rand(1.5, 4);
+    m.parada = Math.random() < 0.25;
+  }
+  if (m.parada && !huyendo) velocidad = 0;
+
+  // No salir del suelo: cerca del borde, da la vuelta hacia el centro
+  const limite = suelos[objeto.escala].radio * 0.92 - objeto.radio;
+  const distanciaCentro = Math.hypot(p.x, p.z);
+  if (distanciaCentro > limite) m.dirObjetivo = Math.atan2(-p.x, -p.z);
+
+  // Giro y velocidad suavizados: no cambian de golpe
+  m.dir = amortiguarAngulo(m.dir, m.dirObjetivo, huyendo ? 8 : 3, delta);
+  m.velActual = amortiguar(m.velActual, velocidad, 6, delta);
+
+  p.x += Math.sin(m.dir) * m.velActual * delta;
+  p.z += Math.cos(m.dir) * m.velActual * delta;
+
+  // Por si acaso (por ejemplo, al huir pegada al borde): nunca fuera del suelo
+  const nuevaDistancia = Math.hypot(p.x, p.z);
+  if (nuevaDistancia > limite) {
+    p.x *= limite / nuevaDistancia;
+    p.z *= limite / nuevaDistancia;
+  }
+
+  objeto.grupo.rotation.y = m.dir + (config.rotacionFrente || 0);
+
+  // ANIMACIONES- mezcla entre "quieto" y "andar" segun su velocidad.
+  // ritmo = 0 parada, 1 paseando, hasta 2,5 huyendo
+  const acciones = objeto.grupo.userData.acciones;
+  if (acciones) {
+    const ritmo = THREE.MathUtils.clamp(m.velActual / velocidadPaseo, 0, MULTIPLICADOR_HUIDA);
+    const pesoAndar = Math.min(ritmo, 1);          // de parada a paseando pasa de quieto a andar
+
+    acciones.andar.setEffectiveWeight(pesoAndar);
+    acciones.quieto.setEffectiveWeight(1 - pesoAndar);
+
+    // Al huir, la animacion de andar va mas deprisa (patas a toda prisa),
+    // pero nunca baja de la velocidad normal: asi no "patina" al arrancar
+    acciones.andar.setEffectiveTimeScale(Math.max(ritmo, 1));
+  }
+}
+
 // El objeto viaja hacia el interior del slime y encoge hasta desaparecer.
 // Como el slime es translucido, se ve como se hunde dentro de el.
 function actualizarObjetos(delta)
@@ -1044,6 +1346,7 @@ function actualizarObjetos(delta)
     if (k >= 1) {
       // No hacemos dispose() de la geometria ni del material porque son compartidos
       // con los demas objetos del mismo tipo
+      quitarMixers(objeto.grupo);   // MODELOS- su animacion deja de actualizarse
       slime.remove(objeto.grupo);
       objetos.splice(i, 1);
     }
@@ -1112,7 +1415,7 @@ function crearFondoCilindro(indice)
   const E = ESCALAS[indice];
   if (!E.fondo) return null;
 
-  const radio = E.radioSuelo * tamano_base * 1.00;     // un pelin fuera del borde del suelo
+  const radio = E.radioSuelo * tamano_base * 1.02;     // un pelin fuera del borde del suelo
   const alto = E.radioSuelo * tamano_base * E.altoFondo;
   const base = -E.altoBorde * tamano_base;              // empieza bajo el borde: sin huecos
   const altoTotal = alto - base;
@@ -1387,6 +1690,9 @@ function update()
 
     limitarAlSuelo(pos_slime);
 
+    // VIDA- los objetos con vida pasean y huyen
+    actualizarSeresVivos(delta);
+
     // COLISIONES- comer lo que es mas pequeño y chocar con lo que es mas grande
     comprobarColisiones();
 
@@ -1435,6 +1741,9 @@ function update()
     }
 
     if (mixer != null) mixer.update(delta);
+
+    // MODELOS- animaciones de los objetos con modelo animado (hormigas...)
+    for (let i = 0; i < mixersObjetos.length; i++) mixersObjetos[i].update(delta);
 }
 
 // Muelle amortiguado: el valor actual persigue al objetivo de forma elastica
@@ -1558,6 +1867,14 @@ function iniciarCamaraSeguimiento(miradaAnterior)
 }
 
 // Interpolacion exponencial: independiente de los FPS
+// Igual que amortiguar() pero para angulos: gira por el camino mas corto
+// (de 170º a -170º gira 20º, no 340º)
+function amortiguarAngulo(actual, objetivo, rapidez, delta)
+{
+  const diferencia = Math.atan2(Math.sin(objetivo - actual), Math.cos(objetivo - actual));
+  return actual + diferencia * (1 - Math.exp(-rapidez * delta));
+}
+
 function amortiguar(actual, objetivo, rapidez, delta)
 {
   return actual + (objetivo - actual) * (1 - Math.exp(-rapidez * delta));

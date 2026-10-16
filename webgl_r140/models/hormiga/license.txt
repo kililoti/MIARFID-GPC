@@ -1,0 +1,11 @@
+Model Information:
+* title:	Ant_lowpoly
+* source:	https://sketchfab.com/3d-models/ant-lowpoly-475519acb3e84f098132955e368d3565
+* author:	celso1.rochar (https://sketchfab.com/celso1.rochar)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Ant_lowpoly" (https://sketchfab.com/3d-models/ant-lowpoly-475519acb3e84f098132955e368d3565) by celso1.rochar (https://sketchfab.com/celso1.rochar) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
