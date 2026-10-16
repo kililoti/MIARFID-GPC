@@ -150,6 +150,10 @@ const ESCALAS = [
     colorBorde: 0x5b3a22,
     repetirTextura: 6,         // veces que se repetira tu textura sobre el disco
     umbral: 2.5,               // tamaño (en tamaños de slime) necesario para pasar al siguiente nivel
+    // FONDO- cilindro que rodea el suelo con una imagen panoramica por dentro
+    fondo: 'images/tasty_damacy/fondo_cesped2.jpg',   // panoramica que se repite en horizontal
+    altoFondo: 0.5,            // altura del cilindro respecto al radio del suelo
+    colorCielo: 0xcfe8ff,      // el cilindro esta abierto por arriba: este color se ve encima
     // Objetos del nivel: [tipo, cantidad, tamañoMin, tamañoMax]
     // El tamaño es la mitad de su dimension mayor, en tamaños de slime
     catalogo: [
@@ -244,6 +248,7 @@ function init()
 
   var aspectRatio = window.innerWidth / window.innerHeight;
   camera = new THREE.PerspectiveCamera( 50, aspectRatio , 1, 1000 );
+  camera.layers.enable(1);   // FONDO- la camara principal ve tambien la capa 1 (el cilindro)
   camera.position.set( 10, 15, 20 );
 
   cameraControls = new THREE.OrbitControls( camera, renderer.domElement );
@@ -1089,10 +1094,62 @@ function crearSuelo(indice)
   const grupo = new THREE.Group();
   grupo.name = 'suelo_' + indice;
   grupo.add(superficie, borde);
+
+  // FONDO- el cilindro panoramico forma parte del nivel
+  const fondo = crearFondoCilindro(indice);
+  if (fondo) grupo.add(fondo);
   scene.add(grupo);
 
   suelos[indice] = { grupo: grupo, radio: radio };
   console.log('Escenario creado:', E.nombre, '- radio', radio.toFixed(2));
+}
+
+// FONDO- cilindro abierto que rodea el suelo con la imagen por dentro.
+// Forma parte del nivel (va dentro del grupo del suelo), asi que cuando haya
+// varios niveles cada uno tendra el suyo y desaparecera con el.
+function crearFondoCilindro(indice)
+{
+  const E = ESCALAS[indice];
+  if (!E.fondo) return null;
+
+  const radio = E.radioSuelo * tamano_base * 1.00;     // un pelin fuera del borde del suelo
+  const alto = E.radioSuelo * tamano_base * E.altoFondo;
+  const base = -E.altoBorde * tamano_base;              // empieza bajo el borde: sin huecos
+  const altoTotal = alto - base;
+
+  // Cilindro sin tapas (openEnded). Lo invertimos en X para que la imagen se vea
+  // por dentro y sin quedar en espejo (el mismo truco que usan las panoramicas de Three.js)
+  const geometria = new THREE.CylinderGeometry(radio, radio, altoTotal, 96, 1, true);
+  geometria.scale(-1, 1, 1);
+
+  const textura = new THREE.TextureLoader().load(E.fondo, function (imagen) {
+    // Repetimos la imagen alrededor del cilindro las veces necesarias para que
+    // conserve su proporcion (si no, quedaria muy estirada en horizontal)
+    const proporcion = imagen.image.width / imagen.image.height;
+    const perimetro = 2 * Math.PI * radio;
+    textura.repeat.x = Math.max(1, Math.round(perimetro / (altoTotal * proporcion)));
+  }, undefined, function () {
+    console.error('No se pudo cargar el fondo:', E.fondo);
+  });
+  textura.encoding = THREE.sRGBEncoding;
+  textura.wrapS = THREE.RepeatWrapping;
+
+  // MeshBasicMaterial: no le afectan las luces ni las sombras, es un decorado.
+  // toneMapped false para que la imagen se vea con sus colores originales.
+  const material = new THREE.MeshBasicMaterial({ map: textura, toneMapped: false });
+
+  const cilindro = new THREE.Mesh(geometria, material);
+  cilindro.position.y = base + altoTotal / 2;
+  cilindro.name = 'fondo';
+
+  // Capa 1: la ve la camara principal pero no la cenital, asi en el minimapa
+  // no aparece como un anillo alrededor del nivel
+  cilindro.layers.set(1);
+
+  // Color del cielo que se ve por encima del cilindro
+  if (E.colorCielo !== undefined) renderer.setClearColor(new THREE.Color(E.colorCielo));
+
+  return cilindro;
 }
 
 // Impide que el slime salga del suelo de la escala actual
