@@ -179,15 +179,15 @@ const centro_hud = new THREE.Vector3(0, 10, 0); // punto sobre el que se coloca 
 // SONIDO- configuracion y estado del audio. Va antes de init() porque crearAudio()
 // se ejecuta dentro de init() y necesita que estas variables ya existan.
 const RUTA_MUSICA = 'sounds/9-lonely-rolling-star.mp3';
-const VOLUMEN_MUSICA = 0.1;
-const VOLUMEN_EFECTOS = 0.1;
+const VOLUMEN_MUSICA = 0.05;
+const VOLUMEN_EFECTOS = 0.2;
 
 // Sonidos de comer con su peso: cuanto mayor el peso, mas probable.
 const SONIDOS_COMER = [
-  { ruta: 'sounds/katamari_comer.wav', peso: 12 },
-  { ruta: 'sounds/mordisco.wav', peso: 6 },
-  { ruta: 'sounds/tragar.wav', peso: 3 },
-  { ruta: 'sounds/nom.wav', peso: 1 },
+  { ruta: 'sounds/katamari_comer2.wav', peso: 100 },
+  { ruta: 'sounds/mordisco.wav', peso: 50 },
+  { ruta: 'sounds/tragar.wav', peso: 10 },
+  { ruta: 'sounds/nom.wav', peso: 5 },
 ];
 
 var oyente;                    // AudioListener
