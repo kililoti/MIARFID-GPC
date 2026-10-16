@@ -10,7 +10,7 @@ var accionSlime = null; // la animacion del slime (AnimationAction), para cambia
 
 // VELOCIDAD ANIMACION- el slime se anima mas deprisa cuando se mueve
 const VELOCIDAD_ANIM_QUIETO = 1;        // 1 = velocidad normal del clip
-const VELOCIDAD_ANIM_MOVIENDOSE = 4;    // 4 = cuatro veces mas rapido
+const VELOCIDAD_ANIM_MOVIENDOSE = 2;    // 2 = el doble de rapido
 
 // 3- movimiento y camara en tercera persona (misma estructura que el proyecto Tron)
 var slime = null;                              // grupo que contiene el modelo y se mueve por la escena
@@ -149,6 +149,7 @@ const ESCALAS = [
     colorSuelo: 0x5d8331,
     colorBorde: 0x5b3a22,
     repetirTextura: 6,         // veces que se repetira tu textura sobre el disco
+    umbral: 2.5,               // tamaño (en tamaños de slime) necesario para pasar al siguiente nivel
     // Objetos del nivel: [tipo, cantidad, tamañoMin, tamañoMax]
     // El tamaño es la mitad de su dimension mayor, en tamaños de slime
     catalogo: [
@@ -192,6 +193,29 @@ var silenciado = false;
 
 const clock = new THREE.Clock();
 
+// HUD- estado que muestra la interfaz
+var puntos = 0;
+var tiempoJugado = 0;          // segundos jugando de verdad (no cuenta la carga ni la pestaña oculta)
+var hud = {};                  // referencias a los elementos HTML del HUD
+var cacheHUD = {};             // ultimo valor escrito en cada elemento (para no reescribir si no cambia)
+var temporizadorAviso = null;  // para ocultar el aviso central pasado un tiempo
+var ultimoAvisoChoque = -10;   // evita repetir "demasiado grande" en cada fotograma del choque
+// VISOR- circulo en la esquina inferior derecha con el ultimo objeto comido girando.
+// Es una escena aparte, con su propia camara y luces, que se dibuja encima de
+// la principal con la misma tecnica (viewport + stencil) que el minimapa.
+var escenaVisor, camaraVisor;
+var pivoteVisor = null;        // grupo que gira; dentro va el modelo del ultimo objeto comido
+var etiquetaVisor;             // nombre del objeto, en HTML, sobre el circulo
+var visorPendiente = null;     // tipo del ultimo objeto comido que aun no se ha mostrado
+var ultimoCambioVisor = -10;   // instante (s) en que cambio por ultima vez el modelo
+const INTERVALO_VISOR = 0.6;   // tiempo minimo que se muestra cada modelo
+
+const NOMBRES_CAMARA = {
+  tercera: 'Tercera persona',
+  orbital: 'Orbital',
+  seguimiento: 'Seguimiento'
+};
+
 init();
 render();
 
@@ -228,6 +252,8 @@ function init()
   crearMinimapa();
   crearControlesCamaraSeguimiento();
   crearAudio();
+  crearHUD();
+  crearVisor();
 
   crearLuces();
   
@@ -352,6 +378,9 @@ function loadObjGLTF()
             crearSuelo(0);
             configurarSombras();
             generarObjetos(0);     // OBJETOS- los comestibles del primer nivel
+
+            // HUD- presentamos el nivel con un aviso central
+            mostrarAviso('Nivel 1: ' + ESCALAS[0].nombre, '', 2500);
 
             // A partir de ahora manda la camara en tercera persona
             cameraControls.enabled = false;
@@ -584,7 +613,268 @@ function alternarSilencio()
   if (!oyente) return;
   silenciado = !silenciado;
   oyente.setMasterVolume(silenciado ? 0 : 1);
-  console.log(silenciado ? 'Sonido desactivado' : 'Sonido activado');
+  mostrarAviso(silenciado ? 'Sonido desactivado' : 'Sonido activado', 'info', 1000);
+}
+
+// ---------------------------------------------------------------------------
+// HUD- interfaz en HTML y CSS superpuesta al canvas. Es mas facil de maquetar
+// que texto en 3D, se ve nitido y no gasta GPU. Se crea desde aqui para no
+// tener que tocar el HTML.
+// ---------------------------------------------------------------------------
+function crearHUD()
+{
+  const estilo = document.createElement('style');
+  estilo.textContent = `
+    .hud-panel {
+      position: fixed;
+      top: 12px;
+      padding: 8px 16px 10px;
+      border-radius: 14px;
+      background: rgba(25, 30, 45, 0.72);
+      color: #ffffff;
+      font-family: 'Segoe UI', 'Trebuchet MS', sans-serif;
+      pointer-events: none;            /* los clics pasan al canvas (camara con raton) */
+      user-select: none;
+      z-index: 20;
+    }
+    .hud-etiqueta { font-size: 13px; opacity: 0.75; }
+    .hud-valor { font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.15; }
+    .hud-centro { left: 50%; transform: translateX(-50%); width: min(420px, 45vw); text-align: center; }
+    .hud-derecha { right: 12px; min-width: 140px; text-align: right; }
+    .hud-nivel { font-size: 17px; font-weight: 600; }
+    .hud-barra { height: 10px; margin: 7px 0 5px; border-radius: 5px; background: rgba(255,255,255,0.18); overflow: hidden; }
+    .hud-barra > div { height: 100%; width: 0; border-radius: 5px; background: linear-gradient(90deg, #7fe3d3, #b6ff7a); transition: width 0.2s; }
+    .hud-tamano { font-size: 13px; opacity: 0.8; font-variant-numeric: tabular-nums; }
+
+    /* Lista de bocados: mensajes que aparecen y se desvanecen bajo el panel derecho */
+    .hud-bocados {
+      position: fixed; top: 150px; right: 12px; z-index: 20;
+      display: flex; flex-direction: column; align-items: flex-end; gap: 5px;
+      pointer-events: none; font-family: 'Segoe UI', 'Trebuchet MS', sans-serif;
+    }
+    .hud-bocado {
+      padding: 4px 12px; border-radius: 999px;
+      background: rgba(25, 30, 45, 0.72); color: #ffffff; font-size: 15px;
+      animation: hud-entrar 0.25s ease-out;
+      transition: opacity 0.4s, transform 0.4s;
+    }
+    .hud-bocado b { color: #b6ff7a; margin-left: 8px; }
+    .hud-bocado.saliendo { opacity: 0; transform: translateX(20px); }
+    @keyframes hud-entrar { from { opacity: 0; transform: translateX(30px); } }
+
+    /* Aviso central: mensaje breve en el centro de la pantalla */
+    .hud-aviso {
+      position: fixed; top: 30%; left: 50%; z-index: 20;
+      transform: translate(-50%, -50%) scale(0.8);
+      color: #ffffff; font-family: 'Segoe UI', 'Trebuchet MS', sans-serif;
+      font-size: 34px; font-weight: 700; white-space: nowrap;
+      text-shadow: 0 3px 10px rgba(0, 0, 0, 0.6);
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.3s, transform 0.3s;
+    }
+    .hud-aviso.visible { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    .hud-aviso.peligro { color: #ff7a7a; }
+    .hud-aviso.info { font-size: 22px; font-weight: 600; }
+
+    /* Modo de camara: etiqueta fija abajo en el centro */
+    .hud-camara {
+      top: auto; bottom: 12px; left: 50%; transform: translateX(-50%);
+      padding: 6px 14px; font-size: 14px; white-space: nowrap;
+      transition: background 0.3s;
+    }
+    .hud-camara.cambio { background: rgba(60, 140, 130, 0.9); }   /* destello al cambiar */
+  `;
+  document.head.appendChild(estilo);
+
+  // Panel central: nivel, barra de progreso y tamaño
+  const centro = document.createElement('div');
+  centro.className = 'hud-panel hud-centro';
+  centro.innerHTML = '<div class="hud-nivel"></div>' +
+                     '<div class="hud-barra"><div></div></div>' +
+                     '<div class="hud-tamano"></div>';
+  document.body.appendChild(centro);
+
+  // Panel derecho: tiempo jugado y, debajo, los puntos
+  const derecha = document.createElement('div');
+  derecha.className = 'hud-panel hud-derecha';
+  derecha.innerHTML = '<div class="hud-etiqueta">Tiempo</div><div class="hud-valor hud-tiempo">0:00</div>' +
+                      '<div class="hud-etiqueta">Puntos</div><div class="hud-valor hud-puntos">0</div>';
+  document.body.appendChild(derecha);
+
+  hud.nivel = centro.querySelector('.hud-nivel');
+  hud.barra = centro.querySelector('.hud-barra > div');
+  hud.tamano = centro.querySelector('.hud-tamano');
+  hud.puntos = derecha.querySelector('.hud-puntos');
+  hud.tiempo = derecha.querySelector('.hud-tiempo');
+
+  // Lista de bocados
+  hud.bocados = document.createElement('div');
+  hud.bocados.className = 'hud-bocados';
+  document.body.appendChild(hud.bocados);
+
+  // Aviso central
+  hud.aviso = document.createElement('div');
+  hud.aviso.className = 'hud-aviso';
+  document.body.appendChild(hud.aviso);
+
+  // Modo de camara activo
+  hud.camara = document.createElement('div');
+  hud.camara.className = 'hud-panel hud-camara';
+  document.body.appendChild(hud.camara);
+  mostrarModoCamara(false);
+}
+
+// Escribe un valor en el HUD solo si ha cambiado: tocar el DOM en cada
+// fotograma sin necesidad es lento
+function fijarHUD(clave, valor, aplicar)
+{
+  if (cacheHUD[clave] === valor) return;
+  cacheHUD[clave] = valor;
+  aplicar(valor);
+}
+
+function formatoTiempo(segundos)
+{
+  const s = Math.floor(segundos);
+  const minutos = Math.floor(s / 60);
+  const resto = s % 60;
+  return minutos + ':' + (resto < 10 ? '0' : '') + resto;
+}
+
+function actualizarHUD()
+{
+  const E = ESCALAS[escala_actual];
+  const tamanoRelativo = tamano_slime / tamano_base;   // 1 = tamaño inicial
+
+  // Progreso en escala logaritmica: crecer de 1 a 1,5 cuesta lo mismo en la
+  // barra que de 2 a 3, que es como se siente al jugar (crecimiento "por area")
+  const progreso = THREE.MathUtils.clamp(Math.log(tamanoRelativo) / Math.log(E.umbral), 0, 1);
+
+  fijarHUD('nivel', 'Nivel ' + (escala_actual + 1) + ': ' + E.nombre, function (v) { hud.nivel.textContent = v; });
+  fijarHUD('barra', (progreso * 100).toFixed(1) + '%', function (v) { hud.barra.style.width = v; });
+  fijarHUD('tamano', 'Tamaño ' + tamanoRelativo.toFixed(2).replace('.', ',') +
+                     ' · objetivo ' + E.umbral.toFixed(2).replace('.', ','),
+           function (v) { hud.tamano.textContent = v; });
+  fijarHUD('puntos', puntos.toLocaleString('es-ES'), function (v) { hud.puntos.textContent = v; });
+  fijarHUD('tiempo', formatoTiempo(tiempoJugado), function (v) { hud.tiempo.textContent = v; });
+}
+
+// HUD- añade una linea a la lista de bocados ("Semilla +15") que desaparece sola
+function anunciarBocado(nombre, puntosBocado)
+{
+  const fila = document.createElement('div');
+  fila.className = 'hud-bocado';
+  fila.textContent = nombre;
+  const valor = document.createElement('b');
+  valor.textContent = '+' + puntosBocado;
+  fila.appendChild(valor);
+
+  hud.bocados.prepend(fila);                       // el mas reciente, arriba
+  while (hud.bocados.children.length > 5) {        // como mucho 5 a la vez
+    hud.bocados.lastChild.remove();
+  }
+  setTimeout(function () { fila.classList.add('saliendo'); }, 1500);   // se desvanece...
+  setTimeout(function () { fila.remove(); }, 1900);                    // ...y se elimina
+}
+
+// HUD- mensaje breve en el centro. tipo: '' (normal), 'peligro' (rojo) o 'info' (mas pequeño)
+function mostrarAviso(texto, tipo, duracion)
+{
+  hud.aviso.textContent = texto;
+  hud.aviso.className = 'hud-aviso visible ' + (tipo || '');
+  clearTimeout(temporizadorAviso);
+  temporizadorAviso = setTimeout(function () {
+    hud.aviso.classList.remove('visible');
+  }, duracion || 1500);
+}
+
+// HUD- muestra la camara activa; si destacar es true, la etiqueta destella un momento
+function mostrarModoCamara(destacar)
+{
+  hud.camara.textContent = 'Cámara: ' + NOMBRES_CAMARA[modo_camara] + ' · C para cambiar';
+  if (destacar) {
+    hud.camara.classList.add('cambio');
+    setTimeout(function () { hud.camara.classList.remove('cambio'); }, 400);
+  }
+}
+
+// VISOR- escena, camara, luces y etiqueta del visor del ultimo bocado
+function crearVisor()
+{
+  escenaVisor = new THREE.Scene();
+  escenaVisor.environment = scene.environment;    // mismos reflejos que la escena principal
+
+  camaraVisor = new THREE.PerspectiveCamera(35, 1, 0.1, 100);   // aspecto 1: el visor es cuadrado
+  camaraVisor.position.set(0, 0.9, 3.2);
+  camaraVisor.lookAt(0, 0, 0);
+
+  escenaVisor.add(new THREE.AmbientLight(0xffffff, 0.5));
+  const luz = new THREE.DirectionalLight(0xffffff, 1.0);
+  luz.position.set(2, 3, 2);
+  escenaVisor.add(luz);
+
+  // Nombre del objeto: una etiqueta HTML centrada sobre el borde superior del circulo
+  const estilo = document.createElement('style');
+  estilo.textContent = `
+    .hud-visor-nombre {
+      top: auto; transform: translateX(50%);
+      padding: 4px 14px; font-size: 15px; font-weight: 600; white-space: nowrap;
+    }
+  `;
+  document.head.appendChild(estilo);
+  etiquetaVisor = document.createElement('div');
+  etiquetaVisor.className = 'hud-panel hud-visor-nombre';
+  etiquetaVisor.textContent = 'Nada todavía';      // hasta el primer bocado el circulo esta vacio
+  document.body.appendChild(etiquetaVisor);
+}
+
+// VISOR- se llama al comer. No cambia el modelo directamente: solo apunta cual
+// es el ultimo objeto comido. actualizarVisor() lo mostrara cuando haya pasado
+// el intervalo minimo, asi al comer muchas cosas seguidas el visor no parpadea
+// y, aun asi, acaba mostrando siempre el ultimo de verdad.
+function mostrarEnVisor(objeto)
+{
+  visorPendiente = objeto.def;
+}
+
+// VISOR- en cada fotograma: gira el modelo y, si hay uno pendiente y ya ha
+// pasado el intervalo minimo, lo muestra
+function actualizarVisor(delta)
+{
+  if (pivoteVisor !== null) pivoteVisor.rotation.y += 1.2 * delta;
+
+  if (visorPendiente !== null && clock.elapsedTime - ultimoCambioVisor >= INTERVALO_VISOR) {
+    cambiarModeloVisor(visorPendiente);
+    visorPendiente = null;
+    ultimoCambioVisor = clock.elapsedTime;
+  }
+}
+
+// VISOR- sustituye el modelo del visor por uno del tipo indicado.
+// No reutilizamos el objeto comido (esta encogiendo dentro del slime): construimos
+// uno nuevo con el mismo constructor, que comparte geometrias y materiales.
+function cambiarModeloVisor(def)
+{
+  if (pivoteVisor !== null) escenaVisor.remove(pivoteVisor);
+
+  const modelo = new THREE.Group();
+  def.crear(modelo);
+
+  // Lo centramos y escalamos para que ocupe siempre lo mismo en el visor,
+  // sea una semilla o una montaña
+  const caja = new THREE.Box3().setFromObject(modelo);
+  const tam = caja.getSize(new THREE.Vector3());
+  const centro = caja.getCenter(new THREE.Vector3());
+  const escala = 1.6 / Math.max(tam.x, tam.y, tam.z);
+  modelo.scale.setScalar(escala);
+  modelo.position.copy(centro).multiplyScalar(-escala);
+
+  pivoteVisor = new THREE.Group();
+  pivoteVisor.rotation.x = 0.25;            // un poco inclinado para verlo mejor
+  pivoteVisor.add(modelo);
+  escenaVisor.add(pivoteVisor);
+
+  etiquetaVisor.textContent = def.nombre;
 }
 
 // ---------------------------------------------------------------------------
@@ -641,6 +931,12 @@ function empujarFuera(objeto, dx, dz, distancia, r)
   const minimo = r + objeto.radio;
   pos_slime.x = objeto.grupo.position.x + (dx / distancia) * minimo;
   pos_slime.z = objeto.grupo.position.z + (dz / distancia) * minimo;
+
+  // HUD- aviso, como mucho uno cada 1,5 s (el choque dura varios fotogramas)
+  if (clock.elapsedTime - ultimoAvisoChoque > 1.5) {
+    mostrarAviso(objeto.def.nombre + ': ¡demasiado grande!', 'peligro');
+    ultimoAvisoChoque = clock.elapsedTime;
+  }
 }
 
 function comer(objeto)
@@ -673,6 +969,12 @@ function comer(objeto)
     velocidadEstiramiento += 5.5;
     ultimoEmpujon = clock.elapsedTime;
   }
+
+  // HUD- puntos proporcionales al tamaño del objeto (una semilla da 12-18)
+  var puntosBocado = Math.max(1, Math.round(100 * objeto.tam / tamano_base));
+  puntos += puntosBocado;
+  anunciarBocado(objeto.def.nombre, puntosBocado);
+  mostrarEnVisor(objeto);
 
   comidos++;
   console.log('Comido:', objeto.def.nombre, '- total:', comidos,
@@ -949,9 +1251,11 @@ function updateCameraTop()
 // Activa temporalmente la comparacion contra el stencil en todos los
 // materiales de la escena. Se desactiva inmediatamente despues del HUD para
 // no afectar la vista principal del siguiente frame.
-function configurarStencilHUD(activo)
+function configurarStencilHUD(activo, escenaObjetivo)
 {
-  scene.traverse(function(objeto) {
+  // Por defecto la escena principal; el visor le pasa su propia escena
+  escenaObjetivo = escenaObjetivo || scene;
+  escenaObjetivo.traverse(function(objeto) {
     if (!objeto.material)
       return;
 
@@ -1031,6 +1335,13 @@ function update()
 
     // CRECIMIENTO- aplicar el tamaño actual al modelo y a todo lo que depende de el
     actualizarCrecimiento(delta);
+
+    // HUD- contamos el tiempo de juego y actualizamos la interfaz
+    tiempoJugado += delta;
+    actualizarHUD();
+
+    // VISOR- gira el modelo y lo cambia (como mucho cada INTERVALO_VISOR segundos)
+    actualizarVisor(delta);
 
     slime.position.copy(pos_slime);
 
@@ -1137,7 +1448,7 @@ function cambiarCamara()
     mirada_actual_camara.copy(miradaAnterior);
   }
 
-  console.log('Camara:', modo_camara);
+  mostrarModoCamara(true);
 }
 
 
@@ -1286,6 +1597,35 @@ function render()
   // Un aro cian hace legible el limite del minimapa.
   renderer.clearDepth();
   renderer.render(hudBorderScene, cameraStencil);
+
+  // VISOR- circulo en la esquina inferior derecha, visible desde el inicio
+  // (vacio hasta el primer bocado). Mismos pasos que el minimapa: mascara
+  // circular, escena del visor y aro.
+  {
+    const xv = window.innerWidth - lado - margen;
+    const yv = margen;                                // en WebGL, y se mide desde abajo
+
+    renderer.setViewport(xv, yv, lado, lado);
+    renderer.setScissor(xv, yv, lado, lado);
+
+    gl.stencilMask(0xff);
+    renderer.clear(false, true, true);
+    renderer.render(stencilScene, cameraStencil);
+
+    configurarStencilHUD(true, escenaVisor);
+    renderer.render(escenaVisor, camaraVisor);
+    configurarStencilHUD(false, escenaVisor);
+
+    renderer.clearDepth();
+    renderer.render(hudBorderScene, cameraStencil);
+
+    // La etiqueta HTML se coloca centrada sobre el borde superior del circulo
+    // (en CSS, bottom se mide desde abajo igual que el viewport)
+    fijarHUD('visorPos', lado + ',' + margen, function () {
+      etiquetaVisor.style.right = (margen + lado / 2) + 'px';
+      etiquetaVisor.style.bottom = (margen + lado - 16) + 'px';
+    });
+  }
 
   renderer.setScissorTest(false);
 }
