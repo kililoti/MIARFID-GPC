@@ -158,7 +158,10 @@ const ESCALAS = [
     // El tamaño es la mitad de su dimension mayor, en tamaños de slime
     catalogo: [
       ['semilla', 30, 0.12, 0.18],
-      ['hormiga', 20, 0.3, 0.4]
+      ['hormiga', 20, 0.3, 0.4],
+      ['piedra', 25, 0.15, 0.35],      // PACK- modelos sacados del pack de naturaleza
+      ['setaRoja', 12, 0.4, 0.7],
+      ['setaAzul', 12, 0.4, 0.7]
     ]
   }
 ];
@@ -179,7 +182,7 @@ const centro_hud = new THREE.Vector3(0, 10, 0); // punto sobre el que se coloca 
 // SONIDO- configuracion y estado del audio. Va antes de init() porque crearAudio()
 // se ejecuta dentro de init() y necesita que estas variables ya existan.
 const RUTA_MUSICA = 'sounds/9-lonely-rolling-star.mp3';
-const VOLUMEN_MUSICA = 0.05;
+const VOLUMEN_MUSICA = 0.025;
 const VOLUMEN_EFECTOS = 0.2;
 
 // Sonidos de comer con su peso: cuanto mayor el peso, mas probable.
@@ -202,7 +205,19 @@ const MODELOS_OBJETOS = {
   // animQuieto / animAndar: nombre (o parte del nombre) de cada animacion del modelo.
   // Mira en la consola la lista "animaciones" al cargar y ajustalos si no coinciden.
   hormiga: { ruta: 'models/hormiga/scene.gltf', plantilla: null, animaciones: [],
-             animQuieto: 'Armature|Idle', animAndar: 'Armature|Walk' }
+             animQuieto: 'Armature|Idle', animAndar: 'Armature|Walk' },
+
+  // PACK- varios modelos dentro del MISMO archivo. En este pack cada pieza es un
+  // nodo suelto, asi que:
+  //   nodo: ['pieza1', 'pieza2']  -> se juntan esas piezas en un solo modelo
+  //   variantes: ['a', 'b', 'c']  -> cada objeto usa una de ellas al azar
+  // Al cargar, la consola muestra los grupos de piezas que hay en el pack.
+  piedra:   { ruta: 'models/naturaleza/scene.gltf', plantilla: null, animaciones: [],
+              variantes: ['Icosphere008_52', 'Icosphere009_53', 'Icosphere010_54'] },
+  setaRoja: { ruta: 'models/naturaleza/scene.gltf', plantilla: null, animaciones: [],
+              nodo: ['Circle064_14', 'Circle065_15'] },    // tallo + sombrero rojo
+  setaAzul: { ruta: 'models/naturaleza/scene.gltf', plantilla: null, animaciones: [],
+              nodo: ['Circle066_16', 'Circle079_17'] }     // tallo + sombrero azul
 };
 var promesaModelos = null;     // se cumple cuando todos los modelos estan cargados
 var mixersObjetos = [];        // AnimationMixer de cada copia animada
@@ -471,24 +486,146 @@ function cargarModelosObjetos()
 {
   const cargador = new THREE.GLTFLoader();
   const nombres = Object.keys(MODELOS_OBJETOS);
+  const archivos = {};   // PACK- ruta -> promesa de su glTF: cada archivo se carga UNA vez
+
+  // Carga un archivo (o devuelve la carga que ya esta en marcha). Si el archivo
+  // es un pack (alguno de sus modelos usa "nodo"), muestra los modelos que contiene.
+  function cargarArchivo(ruta)
+  {
+    if (!archivos[ruta]) {
+      archivos[ruta] = new Promise(function (resolver) {
+        cargador.load(ruta, function (gltf) {
+          const esPack = nombres.some(function (n) {
+            const m = MODELOS_OBJETOS[n];
+            return m.ruta === ruta && (m.nodo || m.variantes);
+          });
+          if (esPack) listarModelosDelPack(ruta, gltf.scene);
+          resolver(gltf);
+        }, undefined, function () {
+          console.error('No se pudo cargar el modelo:', ruta);
+          resolver(null);   // seguimos igualmente: sus tipos de objeto no apareceran
+        });
+      });
+    }
+    return archivos[ruta];
+  }
 
   // Una promesa por modelo; Promise.all espera a que terminen todas
   return Promise.all(nombres.map(function (nombre) {
     const modelo = MODELOS_OBJETOS[nombre];
-    return new Promise(function (resolver) {
-      cargador.load(modelo.ruta, function (gltf) {
+    return cargarArchivo(modelo.ruta).then(function (gltf) {
+      if (!gltf) return;
+
+      if (modelo.variantes) {
+        // PACK- varias versiones del objeto: una plantilla por variante
+        modelo.plantillas = [];
+        modelo.variantes.forEach(function (variante) {
+          const pieza = extraerNodo(gltf.scene, variante);
+          if (pieza) modelo.plantillas.push(normalizarModelo(pieza));
+        });
+        if (modelo.plantillas.length === 0) return;
+        modelo.plantilla = modelo.plantillas[0];
+        modelo.animaciones = [];
+        console.log('Modelo cargado:', nombre, '(' + modelo.plantillas.length + ' variantes del pack)');
+      } else if (modelo.nodo) {
+        // PACK- un modelo del archivo, formado por una o varias piezas (sin animaciones)
+        const pieza = extraerNodo(gltf.scene, modelo.nodo);
+        if (!pieza) return;
+        modelo.plantilla = normalizarModelo(pieza);
+        modelo.animaciones = [];
+        console.log('Modelo cargado:', nombre, '(piezas del pack: ' + [].concat(modelo.nodo).join(', ') + ')');
+      } else {
+        // Archivo con un solo modelo: usamos la escena entera
         modelo.plantilla = normalizarModelo(gltf.scene);
         modelo.animaciones = gltf.animations;
         console.log('Modelo cargado:', nombre, '- animaciones:',
                     gltf.animations.map(function (clip) { return clip.name; }));
-        resolver();
-      }, undefined, function () {
-        console.error('No se pudo cargar el modelo:', modelo.ruta);
-        resolver();   // seguimos igualmente: ese tipo de objeto no aparecera
-      });
+      }
     });
   }));
 }
+
+// PACK- saca un modelo del pack por su nombre, conservando su orientacion y escala.
+// Los nodos padre del pack suelen llevar una rotacion (por ejemplo, de Z arriba a
+// Y arriba) y una escala (centimetros a metros). Si lo sacaramos tal cual, perderia
+// esas transformaciones y saldria tumbado o gigante; por eso le copiamos su
+// transformacion final en el mundo (matrixWorld), que incluye la de todos sus padres.
+// No modifica el pack original: trabaja sobre una copia.
+//
+// Si se le pasa una LISTA de nombres, junta todas esas piezas en un grupo. Como
+// cada pieza conserva su transformacion del mundo, quedan en la misma posicion
+// relativa que en el pack (el sombrero encima del tallo, etc.).
+function extraerNodo(escenaGltf, nombres)
+{
+  escenaGltf.updateMatrixWorld(true);
+  const lista = [].concat(nombres);   // admite un nombre suelto o una lista
+  const grupo = new THREE.Group();
+
+  for (let i = 0; i < lista.length; i++) {
+    const nodo = escenaGltf.getObjectByName(lista[i]);
+    if (!nodo) {
+      console.error('No existe el nodo "' + lista[i] + '" en el pack. Mira la tabla de grupos en la consola.');
+      return null;
+    }
+    const copia = nodo.clone();
+    nodo.matrixWorld.decompose(copia.position, copia.quaternion, copia.scale);
+    grupo.add(copia);
+  }
+  return grupo;
+}
+
+// PACK- muestra en la consola una tabla con los modelos que hay en el pack.
+// Los packs de Sketchfab suelen tener varios nodos "envoltorio" con un solo
+// hijo (Sketchfab_model > root > GLTF_SceneRootNode...): bajamos por ellos
+// hasta el nodo que tiene varios hijos, que son los modelos del pack.
+function listarModelosDelPack(ruta, escenaGltf)
+{
+  let contenedor = escenaGltf;
+  while (contenedor.children.length === 1) contenedor = contenedor.children[0];
+
+  escenaGltf.updateMatrixWorld(true);
+  const piezas = contenedor.children;
+  const cajas = piezas.map(function (p) { return calcularCajaReal(p); });
+
+  // Agrupamos las piezas que se tocan (con un pequeño margen): en un pack las
+  // piezas de un mismo modelo estan juntas y los modelos, separados entre si.
+  // Usamos "union-find": cada pieza apunta a un representante de su grupo.
+  const padre = piezas.map(function (p, i) { return i; });
+  function raiz(i) { while (padre[i] !== i) i = padre[i]; return i; }
+  const margen = 0.005;
+  for (let a = 0; a < piezas.length; a++) {
+    for (let b = a + 1; b < piezas.length; b++) {
+      if (cajas[a].clone().expandByScalar(margen).intersectsBox(cajas[b])) padre[raiz(a)] = raiz(b);
+    }
+  }
+
+  const grupos = {};
+  piezas.forEach(function (p, i) {
+    const r = raiz(i);
+    if (!grupos[r]) grupos[r] = { piezas: [], colores: [], caja: new THREE.Box3() };
+    grupos[r].piezas.push(p.name);
+    grupos[r].caja.union(cajas[i]);
+    p.traverse(function (o) {
+      if (o.isMesh && o.material && o.material.color) {
+        const hex = '#' + o.material.color.clone().convertLinearToSRGB().getHexString();
+        if (grupos[r].colores.indexOf(hex) === -1) grupos[r].colores.push(hex);
+      }
+    });
+  });
+
+  const tabla = Object.keys(grupos).map(function (r) {
+    const g = grupos[r];
+    const tam = g.caja.getSize(new THREE.Vector3());
+    return {
+      piezas: g.piezas.join(', '),
+      colores: g.colores.join(' '),
+      ancho: tam.x.toFixed(2), alto: tam.y.toFixed(2), fondo: tam.z.toFixed(2)
+    };
+  });
+  console.log('Grupos de piezas del pack', ruta + ' (cada fila suele ser un modelo):');
+  console.table(tabla);
+}
+
 
 // MODELOS- caja envolvente REAL de un objeto.
 // Box3.setFromObject() mide las mallas animadas (SkinnedMesh) en su pose
@@ -551,7 +688,9 @@ function anadirCopiaModelo(grupo, nombre)
 
   // Los modelos con esqueleto (animados) necesitan SkeletonUtils.clone para que
   // cada copia tenga sus propios huesos; con clone() normal compartirian esqueleto
-  const copia = THREE.SkeletonUtils ? THREE.SkeletonUtils.clone(modelo.plantilla) : modelo.plantilla.clone();
+  // PACK- si el modelo tiene variantes, cada copia usa una al azar
+  const base = modelo.plantillas ? elegir(modelo.plantillas) : modelo.plantilla;
+  const copia = THREE.SkeletonUtils ? THREE.SkeletonUtils.clone(base) : base.clone();
   grupo.add(copia);
 
   if (modelo.animaciones.length > 0) {
@@ -615,6 +754,15 @@ function crearHormiga(grupo)
   anadirCopiaModelo(grupo, 'hormiga');
 }
 
+// PACK- constructor generico para cualquier modelo de MODELOS_OBJETOS:
+// devuelve una funcion que añade una copia del modelo indicado al grupo
+function crearDesdeModelo(nombre)
+{
+  return function (grupo) {
+    anadirCopiaModelo(grupo, nombre);
+  };
+}
+
 const TIPOS = {
   semilla: { nombre: 'Semilla', huella: 0.8, crear: crearSemilla },
   // comerDesde: tamaño minimo del slime para comerla, aunque sea pequeña
@@ -622,7 +770,12 @@ const TIPOS = {
              // VIDA- se mueve por el nivel y huye del slime cuando este puede comersela
              //   velocidad: medios cuerpos por segundo al pasear (al huir va mas rapido)
              //   rotacionFrente: si camina de lado o hacia atras, prueba Math.PI / 2, -Math.PI / 2 o Math.PI
-             movil: { velocidad: 1.5, huye: true, rotacionFrente: Math.PI } }
+             movil: { velocidad: 1.5, huye: true, rotacionFrente: Math.PI } },
+
+  // PACK- modelos del pack de naturaleza
+  piedra:   { nombre: 'Piedrecita', huella: 0.8, crear: crearDesdeModelo('piedra'),   modelo: 'piedra' },
+  setaRoja: { nombre: 'Seta roja',  huella: 0.6, crear: crearDesdeModelo('setaRoja'), modelo: 'setaRoja' },
+  setaAzul: { nombre: 'Seta azul',  huella: 0.6, crear: crearDesdeModelo('setaAzul'), modelo: 'setaAzul' }
 };
 
 // Cada constructor monta el objeto en "unidades de objeto": apoyado en y = 0 y con
