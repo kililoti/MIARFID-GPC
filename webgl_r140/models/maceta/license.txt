@@ -1,0 +1,11 @@
+Model Information:
+* title:	Flower
+* source:	https://sketchfab.com/3d-models/flower-2e25182c2ea5407d85bb39e4f5cc68c6
+* author:	luccacatalan (https://sketchfab.com/luccacatalan)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Flower" (https://sketchfab.com/3d-models/flower-2e25182c2ea5407d85bb39e4f5cc68c6) by luccacatalan (https://sketchfab.com/luccacatalan) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

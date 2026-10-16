@@ -1,0 +1,11 @@
+Model Information:
+* title:	Street Light
+* source:	https://sketchfab.com/3d-models/street-light-b7dfecfd2dd34a5d8a67bf3e48666105
+* author:	Algirdas Lalys (https://sketchfab.com/alalys)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Street Light" (https://sketchfab.com/3d-models/street-light-b7dfecfd2dd34a5d8a67bf3e48666105) by Algirdas Lalys (https://sketchfab.com/alalys) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

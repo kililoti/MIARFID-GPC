@@ -1,0 +1,11 @@
+Model Information:
+* title:	Mushroom Low- Poly
+* source:	https://sketchfab.com/3d-models/mushroom-low-poly-a488c2fcf52741b1a1a5f9499abe43d1
+* author:	makinggamesdotcom (https://sketchfab.com/makinggamesdotcom)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Mushroom Low- Poly" (https://sketchfab.com/3d-models/mushroom-low-poly-a488c2fcf52741b1a1a5f9499abe43d1) by makinggamesdotcom (https://sketchfab.com/makinggamesdotcom) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

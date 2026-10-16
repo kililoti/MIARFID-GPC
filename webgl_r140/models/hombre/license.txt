@@ -1,0 +1,11 @@
+Model Information:
+* title:	Low Poly Guy + Rigged
+* source:	https://sketchfab.com/3d-models/low-poly-guy-rigged-49596042a3fb44b59a65cae49612303d
+* author:	NorTEEN_X (https://sketchfab.com/norten77077)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Low Poly Guy + Rigged" (https://sketchfab.com/3d-models/low-poly-guy-rigged-49596042a3fb44b59a65cae49612303d) by NorTEEN_X (https://sketchfab.com/norten77077) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

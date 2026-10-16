@@ -1,0 +1,11 @@
+Model Information:
+* title:	Low-Poly Mushroom 2
+* source:	https://sketchfab.com/3d-models/low-poly-mushroom-2-24dcf6673e2747529e0db5bd8b4eb027
+* author:	Saskia (https://sketchfab.com/zasl)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Low-Poly Mushroom 2" (https://sketchfab.com/3d-models/low-poly-mushroom-2-24dcf6673e2747529e0db5bd8b4eb027) by Saskia (https://sketchfab.com/zasl) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

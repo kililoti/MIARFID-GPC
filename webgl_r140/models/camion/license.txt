@@ -1,0 +1,11 @@
+Model Information:
+* title:	LowPoly Car With Animation - GameReady
+* source:	https://sketchfab.com/3d-models/lowpoly-car-with-animation-gameready-6a9fee4f7e7b41a28dab59fd278796dc
+* author:	vadzaecc (https://sketchfab.com/vadzaecc)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "LowPoly Car With Animation - GameReady" (https://sketchfab.com/3d-models/lowpoly-car-with-animation-gameready-6a9fee4f7e7b41a28dab59fd278796dc) by vadzaecc (https://sketchfab.com/vadzaecc) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

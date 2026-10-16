@@ -1,0 +1,11 @@
+Model Information:
+* title:	Low poly Black dog
+* source:	https://sketchfab.com/3d-models/low-poly-black-dog-ccb46d74399f442aad3f70341fd823ac
+* author:	Prism0 (https://sketchfab.com/Prism0)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Low poly Black dog" (https://sketchfab.com/3d-models/low-poly-black-dog-ccb46d74399f442aad3f70341fd823ac) by Prism0 (https://sketchfab.com/Prism0) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

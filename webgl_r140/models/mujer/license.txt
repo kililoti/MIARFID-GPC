@@ -1,0 +1,11 @@
+Model Information:
+* title:	Low-poly Woman
+* source:	https://sketchfab.com/3d-models/low-poly-woman-752778128b9a4b578586dbce40c0366f
+* author:	SingleWayArt (https://sketchfab.com/singlewayart)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Low-poly Woman" (https://sketchfab.com/3d-models/low-poly-woman-752778128b9a4b578586dbce40c0366f) by SingleWayArt (https://sketchfab.com/singlewayart) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

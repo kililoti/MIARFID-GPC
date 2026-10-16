@@ -1,0 +1,11 @@
+Model Information:
+* title:	Small_grass (low_poly)
+* source:	https://sketchfab.com/3d-models/small-grass-low-poly-cd2b499a96714c79a5e5d90c62325824
+* author:	Arigura (https://sketchfab.com/arigura)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Small_grass (low_poly)" (https://sketchfab.com/3d-models/small-grass-low-poly-cd2b499a96714c79a5e5d90c62325824) by Arigura (https://sketchfab.com/arigura) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

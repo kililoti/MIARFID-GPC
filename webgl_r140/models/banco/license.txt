@@ -1,0 +1,11 @@
+Model Information:
+* title:	Low-Poly Wooden Bench
+* source:	https://sketchfab.com/3d-models/low-poly-wooden-bench-a596523a7c41447181608f84ddb72183
+* author:	nick.3dartist (https://sketchfab.com/nick.3dartist)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Low-Poly Wooden Bench" (https://sketchfab.com/3d-models/low-poly-wooden-bench-a596523a7c41447181608f84ddb72183) by nick.3dartist (https://sketchfab.com/nick.3dartist) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

@@ -1,0 +1,11 @@
+Model Information:
+* title:	Excalibur
+* source:	https://sketchfab.com/3d-models/excalibur-293e22c0fcde4db0af8503198e45ac5e
+* author:	m.flowerlily (https://sketchfab.com/m.flowerlily)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Excalibur" (https://sketchfab.com/3d-models/excalibur-293e22c0fcde4db0af8503198e45ac5e) by m.flowerlily (https://sketchfab.com/m.flowerlily) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
