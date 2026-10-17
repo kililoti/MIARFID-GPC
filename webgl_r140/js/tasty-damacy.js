@@ -149,6 +149,7 @@ const ESCALAS = [
     colorSuelo: 0x5d8331,
     colorBorde: 0x5b3a22,
     repetirTextura: 6,         // veces que se repetira tu textura sobre el disco
+    texturaSuelo: 'images/tasty_damacy/cesped.jpg',
     umbral: 2.5,               // tamaño (en tamaños de slime) necesario para pasar al siguiente nivel
     // FONDO- cilindro que rodea el suelo con una imagen panoramica por dentro
     fondo: 'images/tasty_damacy/fondo_cesped2.jpg',   // panoramica que se repite en horizontal
@@ -157,13 +158,45 @@ const ESCALAS = [
     // Objetos del nivel: [tipo, cantidad, tamañoMin, tamañoMax]
     // El tamaño es la mitad de su dimension mayor, en tamaños de slime
     catalogo: [
+      ['maceta', 1, 4, 4],
       ['semilla', 30, 0.12, 0.18],
       ['hormiga', 20, 0.3, 0.4],
       ['piedra', 25, 0.15, 0.35],
       ['hierba', 12, 0.25, 0.5],
       ['flor', 12, 0.4, 0.7],
       ['setaRoja', 12, 0.7, 0.9],
-      ['setaAzul', 12, 0.7, 0.9]
+      ['setaAzul', 12, 0.7, 0.9],
+      ['lata', 1, 1.4, 1.4],
+      ['botella', 1, 1.8, 1.8],
+    ]
+  },
+  {
+    // TRANSICION- segundo nivel: rodea al primero, que queda como una pequeña
+    // parte de el. De momento sin objetos.
+    nombre: 'El parque',
+    radioSuelo: 120,           // mucho mayor que el del nivel 1 (14)
+    altoBorde: 6,
+    colorSuelo: 0x4c8a36,
+    colorBorde: 0x4a2f1b,
+    repetirTextura: 48,
+    texturaSuelo: 'images/tasty_damacy/nivel2.jpg',   // cambiala por la del nivel 2
+    umbral: 20,
+    fondo: 'images/tasty_damacy/fondo_nivel2.jpg',  // descomentar cuando tengas su panoramica
+    altoFondo: 0.5,
+    colorCielo: 0xcfe8ff,
+    // Tamaño necesario para comer cada objeto = su tamaño / 0,425 (el nivel va de 2,5 a 20).
+    // Los grandes van primero para que encuentren hueco al colocarse.
+    catalogo: [
+      ['farola', 1, 12, 12],           // necesita 28: no se puede comer en este nivel, solo se ve grande
+      ['banco', 8, 7.8, 8.5],          // necesita 18,4 - 20
+      ['excalibur', 1, 7.5, 7.5],      // necesita 17,6 (solo hay una)
+      ['hombre', 10, 6.0, 7.0],        // necesita 14,1 - 16,5
+      ['mujer', 10, 5.5, 6.5],         // necesita 12,9 - 15,3 (mujer <= hombre)
+      ['perro', 10, 4.0, 5.5],         // necesita 9,4 - 12,9
+      ['arbusto', 20, 3.5, 5.0],       // necesita 8,2 - 11,8
+      ['maceta', 18, 2.5, 4.0],        // necesita 5,9 - 9,4
+      ['botella', 30, 1.7, 2.2],       // necesita 4,0 - 5,2
+      ['lata', 40, 1.0, 1.5]           // necesita 2,4 - 3,5: lo primero que se come al llegar
     ]
   }
 ];
@@ -173,7 +206,11 @@ var escala_actual = 0;
 // Aqui ademas el sol proyecta sombras y sigue al slime.
 var luzSol, luzAmbiente;
 const direccion_sol = new THREE.Vector3(30, 50, 20).normalize();  // misma direccion que en Tron
-var suelos = [];               // un registro por escala: { grupo, radio }
+var suelos = [];               // un registro por escala: { grupo, radio, ... }
+
+// TRANSICION- estado del cambio de nivel
+const transicion = { activa: false, t: 0, duracion: 3.5 };
+const DURACION_CRECER_SUELO = 1.7;   // segundos que tarda el suelo nuevo en extenderse
 
 // Minimapa: camara cenital ortografica en la esquina superior izquierda
 var cameraTop, cameraStencil;
@@ -184,7 +221,7 @@ const centro_hud = new THREE.Vector3(0, 10, 0); // punto sobre el que se coloca 
 // SONIDO- configuracion y estado del audio. Va antes de init() porque crearAudio()
 // se ejecuta dentro de init() y necesita que estas variables ya existan.
 const RUTA_MUSICA = 'sounds/9-lonely-rolling-star.mp3';
-const VOLUMEN_MUSICA = 0.1;
+const VOLUMEN_MUSICA = 0.05;
 const VOLUMEN_EFECTOS = 0.2;
 
 // Sonidos de comer con su peso: cuanto mayor el peso, mas probable.
@@ -215,6 +252,16 @@ const MODELOS_OBJETOS = {
   setaAzul: { ruta: 'models/seta_azul/scene.gltf', plantilla: null, animaciones: []},
   hierba: { ruta: 'models/hierba/scene.gltf', plantilla: null, animaciones: []},
   flor: { ruta: 'models/flor/scene.gltf', plantilla: null, animaciones: []},
+  lata: { ruta: 'models/lata/scene.gltf', plantilla: null, animaciones: []},
+  botella: { ruta: 'models/botella/scene.gltf', plantilla: null, animaciones: []},
+  maceta: { ruta: 'models/maceta/scene.gltf', plantilla: null, animaciones: []},
+  arbusto: { ruta: 'models/arbusto/scene.gltf', plantilla: null, animaciones: []},
+  banco: { ruta: 'models/banco/scene.gltf', plantilla: null, animaciones: []},
+  perro: { ruta: 'models/perro/scene.gltf', plantilla: null, animaciones: [], animQuieto: 'Idle Small dog Anim', animAndar: 'Walk Animation-Animation|continous walk'},
+  hombre: { ruta: 'models/hombre/scene.gltf', plantilla: null, animaciones: [], animQuieto: 'Idle', animAndar: 'Walk'},
+  mujer: { ruta: 'models/mujer/scene.gltf', plantilla: null, animaciones: [], animQuieto: 'Idle', animAndar: 'Walk'},
+  excalibur: { ruta: 'models/excalibur/scene.gltf', plantilla: null, animaciones: []},
+  farola: { ruta: 'models/farola/scene.gltf', plantilla: null, animaciones: []},
 };
 var promesaModelos = null;     // se cumple cuando todos los modelos estan cargados
 var mixersObjetos = [];        // AnimationMixer de cada copia animada
@@ -637,21 +684,36 @@ function crearDesdeModelo(nombre)
   };
 }
 
+// huella: radio que ocupa el objeto en el suelo, como fraccion de su tamaño (la
+// mitad de su dimension MAYOR). Objetos altos y finos -> huella pequeña; bajos y
+// anchos -> cercana a 1; alargados (animales, bancos) -> intermedia.
 const TIPOS = {
-  semilla: { nombre: 'Semilla', huella: 0.8, crear: crearSemilla },
+  semilla: { nombre: 'Semilla', huella: 0.6, crear: crearSemilla },          // alargada y tumbada
   // comerDesde: tamaño minimo del slime para comerla, aunque sea pequeña
-  hormiga: { nombre: 'Hormiga', huella: 0.6, crear: crearHormiga, modelo: 'hormiga', comerDesde: 1.2, escalaVisor: 1,
+  hormiga: { nombre: 'Hormiga', huella: 0.5, crear: crearHormiga, modelo: 'hormiga', comerDesde: 1.2, escalaVisor: 1,
              // VIDA- se mueve por el nivel y huye del slime cuando este puede comersela
              //   velocidad: medios cuerpos por segundo al pasear (al huir va mas rapido)
              //   rotacionFrente: si camina de lado o hacia atras, prueba Math.PI / 2, -Math.PI / 2 o Math.PI
              movil: { velocidad: 1.5, huye: true, rotacionFrente: Math.PI } },
 
   // MODELOS- objetos del jardin
-  piedra:   { nombre: 'Piedrecita', huella: 0.8, crear: crearDesdeModelo('piedra'),   modelo: 'piedra' },
-  hierba:   { nombre: 'Hierba', huella: 0.8, crear: crearDesdeModelo('hierba'),   modelo: 'hierba' },
-  flor:     { nombre: 'Flor', huella: 0.8, crear: crearDesdeModelo('flor'),     modelo: 'flor' },
-  setaRoja: { nombre: 'Seta roja',  huella: 0.6, crear: crearDesdeModelo('setaRoja'), modelo: 'setaRoja' },
-  setaAzul: { nombre: 'Seta azul',  huella: 0.6, crear: crearDesdeModelo('setaAzul'), modelo: 'setaAzul' }
+  piedra:    { nombre: 'Piedrecita', huella: 0.85, crear: crearDesdeModelo('piedra'),    modelo: 'piedra' },     // baja y redondeada
+  hierba:    { nombre: 'Hierba',     huella: 0.6,  crear: crearDesdeModelo('hierba'),    modelo: 'hierba' },     // mata algo mas alta que ancha
+  flor:      { nombre: 'Flor',       huella: 0.3,  crear: crearDesdeModelo('flor'),      modelo: 'flor' },       // alta, con tallo fino
+  setaRoja:  { nombre: 'Seta roja',  huella: 0.6,  crear: crearDesdeModelo('setaRoja'),  modelo: 'setaRoja' },   // sombrero casi tan ancho como alta
+  setaAzul:  { nombre: 'Seta azul',  huella: 0.6,  crear: crearDesdeModelo('setaAzul'),  modelo: 'setaAzul' },
+  lata:      { nombre: 'Lata',       huella: 0.55, crear: crearDesdeModelo('lata'),      modelo: 'lata' },       // el doble de alta que de ancha
+  botella:   { nombre: 'Botella',    huella: 0.35, crear: crearDesdeModelo('botella'),   modelo: 'botella' },    // alta y estrecha
+  maceta:    { nombre: 'Maceta',     huella: 0.7,  crear: crearDesdeModelo('maceta'),    modelo: 'maceta' },     // casi tan ancha como alta
+
+  // MODELOS- objetos del parque (nivel 2)
+  arbusto:   { nombre: 'Arbusto',    huella: 0.85, crear: crearDesdeModelo('arbusto'),   modelo: 'arbusto' },    // mas ancho que alto
+  perro:  { nombre: 'Perro',  huella: 0.5,  crear: crearDesdeModelo('perro'),  modelo: 'perro', movil: { velocidad: 2, huye: true, rotacionFrente: -Math.PI / 2 } },
+  mujer:  { nombre: 'Mujer',  huella: 0.25, crear: crearDesdeModelo('mujer'),  modelo: 'mujer', movil: { velocidad: 1.2, huye: true, rotacionFrente: 0 } },
+  hombre: { nombre: 'Hombre', huella: 0.25, crear: crearDesdeModelo('hombre'), modelo: 'hombre', movil: { velocidad: 1.2, huye: true, rotacionFrente: 0 } },
+  excalibur: { nombre: 'Excalibur',  huella: 0.4,  crear: crearDesdeModelo('excalibur'), modelo: 'excalibur' },  // espada clavada en su roca
+  banco:     { nombre: 'Banco',      huella: 0.6,  crear: crearDesdeModelo('banco'),     modelo: 'banco' },      // largo y poco profundo
+  farola:    { nombre: 'Farola',     huella: 0.15, crear: crearDesdeModelo('farola'),    modelo: 'farola' }      // poste muy alto y fino
 };
 
 // Cada constructor monta el objeto en "unidades de objeto": apoyado en y = 0 y con
@@ -673,7 +735,7 @@ function generarObjetos(indice)
   const radioSuelo = suelos[indice].radio;
   let creados = 0;
 
-  E.catalogo.forEach(function (entrada) {
+  (E.catalogo || []).forEach(function (entrada) {
     const tipo = entrada[0], cantidad = entrada[1], min = entrada[2], max = entrada[3];
     const def = TIPOS[tipo];
 
@@ -978,7 +1040,10 @@ function actualizarHUD()
 
   // Progreso en escala logaritmica: crecer de 1 a 1,5 cuesta lo mismo en la
   // barra que de 2 a 3, que es como se siente al jugar (crecimiento "por area")
-  const progreso = THREE.MathUtils.clamp(Math.log(tamanoRelativo) / Math.log(E.umbral), 0, 1);
+  // Cada nivel empieza donde termino el anterior (en el nivel 1, en tamaño 1)
+  const inicioNivel = escala_actual > 0 ? ESCALAS[escala_actual - 1].umbral : 1;
+  const progreso = THREE.MathUtils.clamp(Math.log(tamanoRelativo / inicioNivel) /
+                                         Math.log(E.umbral / inicioNivel), 0, 1);
 
   fijarHUD('nivel', 'Nivel ' + (escala_actual + 1) + ': ' + E.nombre, function (v) { hud.nivel.textContent = v; });
   fijarHUD('barra', (progreso * 100).toFixed(1) + '%', function (v) { hud.barra.style.width = v; });
@@ -1361,6 +1426,22 @@ function actualizarObjetos(delta)
   // Recorremos al reves porque eliminamos elementos del array mientras lo recorremos
   for (let i = objetos.length - 1; i >= 0; i--) {
     const objeto = objetos[i];
+
+    // TRANSICION- objetos insignificantes que desaparecen al cambiar de nivel
+    if (objeto.estado === 'desvaneciendo') {
+      objeto.t += delta;
+      const d = Math.min(objeto.t / 1.2, 1);
+      objeto.materiales.forEach(function (m) { m.opacity = 1 - d; });
+      objeto.grupo.position.y = -d * objeto.tam * 0.5;       // se hunden un poco en el suelo
+      if (d >= 1) {
+        quitarMixers(objeto.grupo);
+        scene.remove(objeto.grupo);
+        objeto.materiales.forEach(function (m) { m.dispose(); });   // son copias: si se liberan
+        objetos.splice(i, 1);
+      }
+      continue;
+    }
+
     if (objeto.estado !== 'comiendo') continue;
 
     objeto.t += delta;
@@ -1395,19 +1476,27 @@ function crearSuelo(indice)
   const radio = E.radioSuelo * tamano_base;
   const alto = E.altoBorde * tamano_base;
 
-  const materialSuelo = new THREE.MeshStandardMaterial({ color: E.colorSuelo, roughness: 1 });
+  // TRANSICION- los suelos de varios niveles estan en el mismo plano (y = 0):
+  // el del nivel 1 queda dentro del del nivel 2. Para que no parpadeen al
+  // superponerse, polygonOffset "adelanta" un poco los niveles mas pequeños.
+  const prioridad = ESCALAS.length - 1 - indice;
+  const materialSuelo = new THREE.MeshStandardMaterial({
+    color: E.colorSuelo, roughness: 1,
+    polygonOffset: true, polygonOffsetFactor: -2 * prioridad, polygonOffsetUnits: -4 * prioridad
+  });
 
   // CircleGeometry reparte las UV de 0 a 1 sobre todo el disco, por eso hay que
   // repetir la textura para que no quede estirada.
-
-  const textura = new THREE.TextureLoader().load('images/tasty_damacy/cesped.jpg');
-  textura.encoding = THREE.sRGBEncoding;
-  textura.wrapS = textura.wrapT = THREE.MirroredRepeatWrapping;
-  textura.repeat.set(E.repetirTextura, E.repetirTextura);
-  textura.magFilter = THREE.LinearMipMapLinearFilter;  // Filtrado  para la magnificación
-  textura.minFilter = THREE.LinearMipMapLinearFilter; 
-  materialSuelo.map = textura;
-  materialSuelo.color.set(0xffffff);   // blanco = la textura con sus colores originales
+  if (E.texturaSuelo) {
+    const textura = new THREE.TextureLoader().load(E.texturaSuelo);
+    textura.encoding = THREE.sRGBEncoding;
+    textura.wrapS = textura.wrapT = THREE.MirroredRepeatWrapping;
+    textura.repeat.set(E.repetirTextura, E.repetirTextura);
+    textura.magFilter = THREE.LinearMipMapLinearFilter;  // Filtrado  para la magnificación
+    textura.minFilter = THREE.LinearMipMapLinearFilter; 
+    materialSuelo.map = textura;
+    materialSuelo.color.set(0xffffff);   // blanco = la textura con sus colores originales
+  }
 
   const superficie = new THREE.Mesh(new THREE.CircleGeometry(radio, 96), materialSuelo);
   superficie.rotation.x = -Math.PI / 2;    // el disco se crea en vertical: lo tumbamos
@@ -1432,7 +1521,13 @@ function crearSuelo(indice)
   if (fondo) grupo.add(fondo);
   scene.add(grupo);
 
-  suelos[indice] = { grupo: grupo, radio: radio };
+  // TRANSICION- el suelo de un nivel nuevo empieza del tamaño del anterior y
+  // crece hasta el suyo (actualizarSuelos): parece que el mundo se expande
+  const escalaInicial = indice === 0 ? 1 : ESCALAS[indice - 1].radioSuelo / E.radioSuelo;
+  grupo.scale.set(escalaInicial, 1, escalaInicial);
+
+  suelos[indice] = { grupo: grupo, radio: radio, escalaInicial: escalaInicial,
+                     t: indice === 0 ? 1 : 0, fondoDesvaneciendo: null };
   console.log('Escenario creado:', E.nombre, '- radio', radio.toFixed(2));
 }
 
@@ -1464,7 +1559,7 @@ function crearFondoCilindro(indice)
     console.error('No se pudo cargar el fondo:', E.fondo);
   });
   textura.encoding = THREE.sRGBEncoding;
-  textura.wrapS = THREE.RepeatWrapping;
+  textura.wrapS = THREE.MirroredRepeatWrapping;
 
   // MeshBasicMaterial: no le afectan las luces ni las sombras, es un decorado.
   // toneMapped false para que la imagen se vea con sus colores originales.
@@ -1482,6 +1577,122 @@ function crearFondoCilindro(indice)
   if (E.colorCielo !== undefined) renderer.setClearColor(new THREE.Color(E.colorCielo));
 
   return cilindro;
+}
+
+// ---------------------------------------------------------------------------
+// TRANSICION- cambio de nivel. Los niveles no son mundos separados: el nuevo
+// rodea al anterior, que queda como una pequeña parte de el.
+// ---------------------------------------------------------------------------
+function comprobarCambioNivel()
+{
+  const E = ESCALAS[escala_actual];
+  const esUltimo = escala_actual >= ESCALAS.length - 1;
+  if (transicion.activa || esUltimo) return;
+
+  // Usamos el tamaño objetivo (el que ya ha "ganado"), no el que se esta animando
+  if (tamano_objetivo / tamano_base >= E.umbral) iniciarTransicion(escala_actual + 1);
+}
+
+function iniciarTransicion(nueva)
+{
+  const anterior = escala_actual;
+  escala_actual = nueva;
+
+  // 1. Suelo (y fondo) del nivel nuevo, que crece alrededor del actual
+  crearSuelo(nueva);
+
+  // 2. Objetos del nivel nuevo (si su catalogo tiene alguno)
+  generarObjetos(nueva);
+
+  // 3. Lo que ya es insignificante desaparece: todo lo de hace dos niveles y,
+  //    del nivel anterior, lo que mida menos de un cuarto del slime.
+  //    Los objetos grandes se quedan y en el nuevo nivel se podran comer.
+  objetos.forEach(function (objeto) {
+    if (objeto.estado !== 'activo') return;
+    const muyAntiguo = objeto.escala <= nueva - 2;
+    const diminuto = objeto.escala === nueva - 1 && objeto.tam < tamano_slime * 0.25;
+    if (muyAntiguo || diminuto) desvanecerObjeto(objeto);
+  });
+
+  // 4. El fondo del nivel anterior se desvanece: si no, taparia el nivel nuevo
+  const fondoAnterior = suelos[anterior].grupo.getObjectByName('fondo');
+  if (fondoAnterior) {
+    fondoAnterior.material.transparent = true;
+    suelos[anterior].fondoDesvaneciendo = { malla: fondoAnterior, t: 0 };
+  }
+
+  // 5. Animacion de camara y aviso
+  transicion.activa = true;
+  transicion.t = 0;
+  mostrarAviso('Nivel ' + (nueva + 1) + ': ' + ESCALAS[nueva].nombre, '', 3000);
+}
+
+// Prepara un objeto para desaparecer. Sus materiales son compartidos con los demas
+// objetos de su tipo, asi que los clonamos: si no, al hacerlos transparentes
+// desaparecerian tambien los objetos que se quedan.
+function desvanecerObjeto(objeto)
+{
+  objeto.estado = 'desvaneciendo';
+  objeto.t = 0;
+  objeto.materiales = [];
+  objeto.grupo.traverse(function (n) {
+    if (!n.isMesh) return;
+    const clonar = function (m) {
+      const copia = m.clone();
+      copia.transparent = true;
+      objeto.materiales.push(copia);
+      return copia;
+    };
+    n.material = Array.isArray(n.material) ? n.material.map(clonar) : clonar(n.material);
+  });
+}
+
+function actualizarTransicion(delta)
+{
+  // Duracion de la animacion de camara
+  if (transicion.activa) {
+    transicion.t += delta;
+    if (transicion.t >= transicion.duracion) transicion.activa = false;
+  }
+
+  suelos.forEach(function (suelo) {
+    // Suelos que estan creciendo
+    if (suelo.t < 1) {
+      suelo.t = Math.min(suelo.t + delta / DURACION_CRECER_SUELO, 1);
+      const e = suelo.escalaInicial + (1 - suelo.escalaInicial) * suavizar(suelo.t);
+      suelo.grupo.scale.set(e, 1, e);
+    }
+    // Fondos que se estan desvaneciendo
+    const f = suelo.fondoDesvaneciendo;
+    if (f) {
+      f.t += delta;
+      const d = Math.min(f.t / 1.5, 1);
+      f.malla.material.opacity = 1 - d;
+      if (d >= 1) {
+        suelo.grupo.remove(f.malla);
+        f.malla.geometry.dispose();
+        f.malla.material.map.dispose();
+        f.malla.material.dispose();
+        suelo.fondoDesvaneciendo = null;
+      }
+    }
+  });
+}
+
+// Curva de la "revelacion": la distancia de la camara se multiplica por un
+// factor que sube y vuelve a 1 en forma de campana (alejarse, mirar, volver)
+function factorRevelacion()
+{
+  if (!transicion.activa) return 1;
+  const k = suavizar(transicion.t / transicion.duracion);
+  return 1 + 1.5 * Math.sin(Math.PI * k);
+}
+
+// Curva suave de 0 a 1 (empieza y termina despacio)
+function suavizar(t)
+{
+  t = THREE.MathUtils.clamp(t, 0, 1);
+  return t * t * (3 - 2 * t);
 }
 
 // Impide que el slime salga del suelo de la escala actual
@@ -1728,6 +1939,10 @@ function update()
     // CRECIMIENTO- aplicar el tamaño actual al modelo y a todo lo que depende de el
     actualizarCrecimiento(delta);
 
+    // TRANSICION- al alcanzar el umbral del nivel, se pasa al siguiente
+    comprobarCambioNivel();
+    actualizarTransicion(delta);
+
     // HUD- contamos el tiempo de juego y actualizamos la interfaz
     tiempoJugado += delta;
     actualizarHUD();
@@ -1792,10 +2007,12 @@ function actualizarResorte(actual, velocidadActual, objetivo, delta)
 function updateCamera(delta)
 {
   // Detras del slime (en sentido contrario a donde mira) y algo por encima
+  // TRANSICION- durante el cambio de nivel la camara se aleja y vuelve
+  const revelacion = factorRevelacion();
   posicion_objetivo_camara
     .copy(slime.position)
-    .addScaledVector(velocity, -distancia_camara * tamano_slime);
-  posicion_objetivo_camara.y += altura_camara * tamano_slime;
+    .addScaledVector(velocity, -distancia_camara * tamano_slime * revelacion);
+  posicion_objetivo_camara.y += altura_camara * tamano_slime * revelacion;
 
   mirada_objetivo_camara.copy(slime.position);
   mirada_objetivo_camara.y += desfase_lookat_y * tamano_slime;
@@ -1916,7 +2133,7 @@ function updateCameraSeguimiento(delta)
   if (controls.rotateCameraRight) cam_seguimiento.yaw -= 1.8 * delta;
 
   // La distancia y el punto de mira siguen a su valor ideal con suavizado
-  var distObjetivo = DISTANCIA_SEGUIMIENTO * tamano_slime * cam_seguimiento.zoom;
+  var distObjetivo = DISTANCIA_SEGUIMIENTO * tamano_slime * cam_seguimiento.zoom * factorRevelacion();
   cam_seguimiento.dist = amortiguar(cam_seguimiento.dist, distObjetivo, 2.5, delta);
   cam_seguimiento.objetivo.x = amortiguar(cam_seguimiento.objetivo.x, slime.position.x, 10, delta);
   cam_seguimiento.objetivo.y = amortiguar(cam_seguimiento.objetivo.y, slime.position.y + tamano_slime * 0.55, 6, delta);
