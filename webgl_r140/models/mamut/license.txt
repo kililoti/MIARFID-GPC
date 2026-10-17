@@ -1,0 +1,11 @@
+Model Information:
+* title:	Low poly Columbian mammoth (Mammuthus columbi)
+* source:	https://sketchfab.com/3d-models/low-poly-columbian-mammoth-mammuthus-columbi-e47d442b22d64fbd9a3b7a539fc47987
+* author:	Natural History Museum of Los Angeles County (https://sketchfab.com/NHMLA)
+
+Model License:
+* license type:	CC-BY-NC-SA-4.0 (http://creativecommons.org/licenses/by-nc-sa/4.0/)
+* requirements:	Author must be credited. No commercial use. Modified versions must have the same license.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Low poly Columbian mammoth (Mammuthus columbi)" (https://sketchfab.com/3d-models/low-poly-columbian-mammoth-mammuthus-columbi-e47d442b22d64fbd9a3b7a539fc47987) by Natural History Museum of Los Angeles County (https://sketchfab.com/NHMLA) licensed under CC-BY-NC-SA-4.0 (http://creativecommons.org/licenses/by-nc-sa/4.0/)

@@ -1,0 +1,11 @@
+Model Information:
+* title:	Forest Tile
+* source:	https://sketchfab.com/3d-models/forest-tile-ab902c6348824dcaa67bb51521f45548
+* author:	amiutass (https://sketchfab.com/amiutass)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Forest Tile" (https://sketchfab.com/3d-models/forest-tile-ab902c6348824dcaa67bb51521f45548) by amiutass (https://sketchfab.com/amiutass) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

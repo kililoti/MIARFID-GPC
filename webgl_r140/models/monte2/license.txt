@@ -1,0 +1,11 @@
+Model Information:
+* title:	Low Poly mountain
+* source:	https://sketchfab.com/3d-models/low-poly-mountain-17f304ac1d314e19a81af0e643bf9ecd
+* author:	lifekors (https://sketchfab.com/lifekors)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Low Poly mountain" (https://sketchfab.com/3d-models/low-poly-mountain-17f304ac1d314e19a81af0e643bf9ecd) by lifekors (https://sketchfab.com/lifekors) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

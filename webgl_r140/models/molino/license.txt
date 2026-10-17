@@ -1,0 +1,11 @@
+Model Information:
+* title:	Windmill ( Animated )
+* source:	https://sketchfab.com/3d-models/windmill-animated-6ce5667e8d5c47068ea13196036efd52
+* author:	Adrian Hage (https://sketchfab.com/data3anshow)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Windmill ( Animated )" (https://sketchfab.com/3d-models/windmill-animated-6ce5667e8d5c47068ea13196036efd52) by Adrian Hage (https://sketchfab.com/data3anshow) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

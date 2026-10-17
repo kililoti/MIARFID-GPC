@@ -1,0 +1,8 @@
+Model Information:
+* title:	Seraphim
+* source:	https://sketchfab.com/3d-models/seraphim-686cb03daf6a404e9bff239eae0ef3e2
+* author:	CsDani50 (https://sketchfab.com/csonkadani0214)
+
+Model License:
+* license type:	SKETCHFAB Standard (https://sketchfab.com/licenses)
+* requirements:	Under basic restrictions, use worldwide, on all types of media, commercially or not, and in all types of derivative works
