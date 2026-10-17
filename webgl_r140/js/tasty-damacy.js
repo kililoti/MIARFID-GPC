@@ -198,6 +198,41 @@ const ESCALAS = [
       ['botella', 30, 1.7, 2.2],       // necesita 4,0 - 5,2
       ['lata', 40, 1.0, 1.5]           // necesita 2,4 - 3,5: lo primero que se come al llegar
     ]
+  },
+  {
+    // TRANSICION- tercer nivel: rodea al parque, que queda como una pequeña parte de el.
+    // De momento sin objetos.
+    nombre: 'La ciudad',
+    radioSuelo: 1000,          // unas 8 veces el del nivel 2 (120), como del 1 al 2
+    altoBorde: 50,
+    colorSuelo: 0x9a9a95,
+    colorBorde: 0x5c5850,
+    // TEXTURA- en vez de "cuantas veces se repite", indicamos cuanto mide cada
+    // baldosa de la textura (en tamaños de slime). Asi el dibujo tiene un tamaño
+    // proporcional al slime de este nivel, y no se ve diminuto ni repetitivo.
+    tamanoBaldosa: 120,        // 2 x 1000 / 120 = unas 17 repeticiones sobre todo el disco
+    texturaSuelo: 'images/tasty_damacy/nivel33.jpg',
+    umbral: 150,
+    fondo: 'images/tasty_damacy/fondo_nivel3.jpg',
+    altoFondo: 0.5,
+    colorCielo: 0xcfe8ff,
+    // Tamaño necesario para comer cada objeto = su tamaño / 0,425 (el nivel va de 20 a 150).
+    // Al llegar quedan los objetos grandes del parque (bancos, personas, la farola...).
+    catalogo: [
+      ['torre3', 3, 120, 120],           // necesita 146 - 165: el reto final (algunas no caben en el nivel)
+      ['torre2', 4, 110, 110],           // necesita 132 - 146
+      ['torre1', 5, 100, 100],           // necesita 118 - 132
+      ['casa5', 6, 44, 50],            // necesita 104 - 118
+      ['casa4', 8, 40, 45],            // necesita 94 - 106
+      ['casa3', 10, 36, 40],           // necesita 85 - 94
+      ['casa2', 10, 33, 37],           // necesita 78 - 87
+      ['casa1', 12, 30, 34],           // necesita 71 - 80
+      ['arbol3', 15, 27, 32],          // necesita 64 - 75
+      ['arbol2', 18, 22, 27],          // necesita 52 - 64
+      ['arbol1', 20, 18, 22],          // necesita 42 - 52
+      ['coche', 50, 8, 11],           // necesita 26 - 33
+      ['farola', 50, 11, 14]            // necesita 19 - 28: lo primero que se come al llegar
+    ]
   }
 ];
 var escala_actual = 0;
@@ -262,6 +297,20 @@ const MODELOS_OBJETOS = {
   mujer: { ruta: 'models/mujer/scene.gltf', plantilla: null, animaciones: [], animQuieto: 'Idle', animAndar: 'Walk'},
   excalibur: { ruta: 'models/excalibur/scene.gltf', plantilla: null, animaciones: []},
   farola: { ruta: 'models/farola/scene.gltf', plantilla: null, animaciones: []},
+  // La unica animacion del coche (Plane|PlaneAction) es un giro de exhibicion
+  // (como en un escaparate): no la usamos, el movimiento ya lo hace moverSerVivo()
+  coche: { ruta: 'models/coche/scene.gltf', plantilla: null, animaciones: [], sinAnimaciones: true },
+  arbol1: { ruta: 'models/arbol1/scene.gltf', plantilla: null, animaciones: []},
+  arbol2: { ruta: 'models/arbol2/scene.gltf', plantilla: null, animaciones: []},
+  arbol3: { ruta: 'models/arbol3/scene.gltf', plantilla: null, animaciones: []},
+  casa1: { ruta: 'models/casa1/scene.gltf', plantilla: null, animaciones: []},
+  casa2: { ruta: 'models/casa2/scene.gltf', plantilla: null, animaciones: []},
+  casa3: { ruta: 'models/casa3/scene.gltf', plantilla: null, animaciones: []},
+  casa4: { ruta: 'models/casa4/scene.gltf', plantilla: null, animaciones: []},
+  casa5: { ruta: 'models/casa5/scene.gltf', plantilla: null, animaciones: []},
+  torre1: { ruta: 'models/torre1/scene.gltf', plantilla: null, animaciones: []},
+  torre2: { ruta: 'models/torre2/scene.gltf', plantilla: null, animaciones: []},
+  torre3: { ruta: 'models/torre3/scene.gltf', plantilla: null, animaciones: []},
 };
 var promesaModelos = null;     // se cumple cuando todos los modelos estan cargados
 var mixersObjetos = [];        // AnimationMixer de cada copia animada
@@ -537,7 +586,9 @@ function cargarModelosObjetos()
     return new Promise(function (resolver) {
       cargador.load(modelo.ruta, function (gltf) {
         modelo.plantilla = normalizarModelo(gltf.scene);
-        modelo.animaciones = gltf.animations;
+        // Algunos modelos traen animaciones que no queremos (por ejemplo, un giro
+        // de exhibicion): con sinAnimaciones: true se ignoran
+        modelo.animaciones = modelo.sinAnimaciones ? [] : gltf.animations;
         console.log('Modelo cargado:', nombre, '- animaciones:',
                     gltf.animations.map(function (clip) { return clip.name; }));
         resolver();
@@ -713,7 +764,21 @@ const TIPOS = {
   hombre: { nombre: 'Hombre', huella: 0.25, crear: crearDesdeModelo('hombre'), modelo: 'hombre', movil: { velocidad: 1.2, huye: true, rotacionFrente: 0 } },
   excalibur: { nombre: 'Excalibur',  huella: 0.4,  crear: crearDesdeModelo('excalibur'), modelo: 'excalibur' },  // espada clavada en su roca
   banco:     { nombre: 'Banco',      huella: 0.6,  crear: crearDesdeModelo('banco'),     modelo: 'banco' },      // largo y poco profundo
-  farola:    { nombre: 'Farola',     huella: 0.15, crear: crearDesdeModelo('farola'),    modelo: 'farola' }      // poste muy alto y fino
+  farola:    { nombre: 'Farola',     huella: 0.15, crear: crearDesdeModelo('farola'),    modelo: 'farola' },     // poste muy alto y fino
+
+  // MODELOS- objetos de la ciudad (nivel 3)
+  coche:     { nombre: 'Coche',          huella: 0.5,  crear: crearDesdeModelo('coche'),  modelo: 'coche', movil: { velocidad: 1.2, huye: true, rotacionFrente: 0 } },    // largo, la mitad de ancho
+  arbol1:    { nombre: 'Arbolito',       huella: 0.4,  crear: crearDesdeModelo('arbol1'), modelo: 'arbol1' },   // alto: la huella es la copa
+  arbol2:    { nombre: 'Árbol',          huella: 0.4,  crear: crearDesdeModelo('arbol2'), modelo: 'arbol2' },
+  arbol3:    { nombre: 'Árbol gigante',  huella: 0.4,  crear: crearDesdeModelo('arbol3'), modelo: 'arbol3' },
+  casa1:     { nombre: 'Caseta',         huella: 0.75, crear: crearDesdeModelo('casa1'),  modelo: 'casa1' },    // casi tan anchas como altas
+  casa2:     { nombre: 'Casa',           huella: 0.75, crear: crearDesdeModelo('casa2'),  modelo: 'casa2' },
+  casa3:     { nombre: 'Chalet',         huella: 0.75, crear: crearDesdeModelo('casa3'),  modelo: 'casa3' },
+  casa4:     { nombre: 'Casa grande',    huella: 0.75, crear: crearDesdeModelo('casa4'),  modelo: 'casa4' },
+  casa5:     { nombre: 'Mansión',        huella: 0.75, crear: crearDesdeModelo('casa5'),  modelo: 'casa5' },
+  torre1:    { nombre: 'Torre',          huella: 0.3,  crear: crearDesdeModelo('torre1'), modelo: 'torre1' },   // altas y estrechas
+  torre2:    { nombre: 'Torre alta',     huella: 0.3,  crear: crearDesdeModelo('torre2'), modelo: 'torre2' },
+  torre3:    { nombre: 'Rascacielos',    huella: 0.3,  crear: crearDesdeModelo('torre3'), modelo: 'torre3' }
 };
 
 // Cada constructor monta el objeto en "unidades de objeto": apoyado en y = 0 y con
@@ -1491,7 +1556,10 @@ function crearSuelo(indice)
     const textura = new THREE.TextureLoader().load(E.texturaSuelo);
     textura.encoding = THREE.sRGBEncoding;
     textura.wrapS = textura.wrapT = THREE.MirroredRepeatWrapping;
-    textura.repeat.set(E.repetirTextura, E.repetirTextura);
+    // CircleGeometry reparte las UV de 0 a 1 en todo el diametro: con tamanoBaldosa
+    // calculamos las repeticiones para que cada baldosa mida eso en el mundo
+    const repeticiones = E.tamanoBaldosa ? (2 * E.radioSuelo) / E.tamanoBaldosa : E.repetirTextura;
+    textura.repeat.set(repeticiones, repeticiones);
     textura.magFilter = THREE.LinearMipMapLinearFilter;  // Filtrado  para la magnificación
     textura.minFilter = THREE.LinearMipMapLinearFilter; 
     materialSuelo.map = textura;
