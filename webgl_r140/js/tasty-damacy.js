@@ -72,7 +72,7 @@ const controls = {
   moveRight: false,
   rotateCameraLeft: false,     // Q / E: girar la camara de seguimiento con el teclado
   rotateCameraRight: false,
-  speed: 1.5,          // tamaños de slime por segundo
+  speed: 1.8,          // tamaños de slime por segundo
   turnSpeed: 2.5       // radianes por segundo
 };
 
@@ -154,10 +154,10 @@ const ESCALAS = [
     colorBorde: 0x5b3a22,
     repetirTextura: 6,         // veces que se repetira tu textura sobre el disco
     texturaSuelo: 'images/tasty_damacy/cesped.jpg',
-    umbral: 2.5,               // tamaño (en tamaños de slime) necesario para pasar al siguiente nivel
+    umbral: 5,                 // tamaño (en tamaños de slime) necesario para pasar al siguiente nivel
     // FONDO- cilindro que rodea el suelo con una imagen panoramica por dentro
     fondo: 'images/tasty_damacy/fondo_cesped2.jpg',   // panoramica que se repite en horizontal
-    altoFondo: 0.5,            // altura del cilindro respecto al radio del suelo
+    altoFondo: 0.8,              // altura del cilindro respecto al radio del suelo
     colorCielo: 0xcfe8ff,      // el cilindro esta abierto por arriba: este color se ve encima
     // Objetos del nivel: [tipo, cantidad, tamañoMin, tamañoMax]
     // El tamaño es la mitad de su dimension mayor, en tamaños de slime
@@ -184,21 +184,30 @@ const ESCALAS = [
     colorBorde: 0x4a2f1b,
     repetirTextura: 48,
     texturaSuelo: 'images/tasty_damacy/nivel2.jpg',   // cambiala por la del nivel 2
-    umbral: 20,
+    umbral: 40,
     fondo: 'images/tasty_damacy/fondo_nivel2.jpg',  // descomentar cuando tengas su panoramica
-    altoFondo: 0.5,
+    altoFondo: 0.8,
     colorCielo: 0xcfe8ff,
     // Tamaño necesario para comer cada objeto = su tamaño / 0,425 (el nivel va de 2,5 a 20).
     // Los grandes van primero para que encuentren hueco al colocarse.
     catalogo: [
-      ['farola', 1, 12, 12],           // necesita 28: no se puede comer en este nivel, solo se ve grande
+      ['arbol3', 1, 22, 22],           // necesita 51,8 (arboles: uno de cada, muy grandes, no comestibles en este nivel)
+      ['arbol2', 1, 20, 20],           // necesita 47,1
+      ['arbol1', 1, 18, 18],           // necesita 42,4
+      ['farola', 3, 17.5, 17.5],       // necesita 41,2: no se pueden comer en este nivel (llega a 40), solo se ven grandes
       ['banco', 8, 7.8, 8.5],          // necesita 18,4 - 20
       ['excalibur', 1, 7.5, 7.5],      // necesita 17,6 (solo hay una)
       ['hombre', 10, 6.0, 7.0],        // necesita 14,1 - 16,5
       ['mujer', 10, 5.5, 6.5],         // necesita 12,9 - 15,3 (mujer <= hombre)
-      ['perro', 10, 4.0, 5.5],         // necesita 9,4 - 12,9
+      ['perro', 10, 3.2, 4.5],         // necesita 7,5 - 10,6
       ['arbusto', 20, 3.5, 5.0],       // necesita 8,2 - 11,8
+      ['casa_calamardo', 1, 3.5, 3.5], // necesita 8,2 (casas: una de cada, tamaño de maceta, las tres iguales)
+      ['casa_esponja', 1, 3.5, 3.5],   // necesita 8,2
+      ['casa_patricio', 1, 3.5, 3.5],  // necesita 8,2
       ['maceta', 18, 2.5, 4.0],        // necesita 5,9 - 9,4
+      ['calamardo', 1, 2.0, 2.0],      // necesita 4,7 (personajes: uno de cada, tamaño de botella, los tres iguales)
+      ['patricio', 1, 2.0, 2.0],       // necesita 4,7
+      ['esponja', 1, 2.0, 2.0],        // necesita 4,7
       ['botella', 30, 1.7, 2.2],       // necesita 4,0 - 5,2
       ['lata', 40, 1.0, 1.5]           // necesita 2,4 - 3,5: lo primero que se come al llegar
     ]
@@ -216,9 +225,9 @@ const ESCALAS = [
     // proporcional al slime de este nivel, y no se ve diminuto ni repetitivo.
     tamanoBaldosa: 120,        // 2 x 1000 / 120 = unas 17 repeticiones sobre todo el disco
     texturaSuelo: 'images/tasty_damacy/nivel33.jpg',
-    umbral: 150,
+    umbral: 300,
     fondo: 'images/tasty_damacy/fondo_nivel3.jpg',
-    altoFondo: 0.5,
+    altoFondo: 0.8,
     colorCielo: 0xcfe8ff,
     // Tamaño necesario para comer cada objeto = su tamaño / 0,425 (el nivel va de 20 a 150).
     // Al llegar quedan los objetos grandes del parque (bancos, personas, la farola...).
@@ -226,6 +235,7 @@ const ESCALAS = [
       ['torre3', 3, 120, 120],           // necesita 146 - 165: el reto final (algunas no caben en el nivel)
       ['torre2', 4, 110, 110],           // necesita 132 - 146
       ['torre1', 5, 100, 100],           // necesita 118 - 132
+      ['fuente', 5, 46, 50],           // necesita 108 - 118: como las mansiones
       ['casa5', 6, 44, 50],            // necesita 104 - 118
       ['casa4', 8, 40, 45],            // necesita 94 - 106
       ['casa3', 10, 36, 40],           // necesita 85 - 94
@@ -234,8 +244,13 @@ const ESCALAS = [
       ['arbol3', 15, 27, 32],          // necesita 64 - 75
       ['arbol2', 18, 22, 27],          // necesita 52 - 64
       ['arbol1', 20, 18, 22],          // necesita 42 - 52
-      ['coche', 50, 8, 11],           // necesita 26 - 33
-      ['farola', 50, 11, 14]            // necesita 19 - 28: lo primero que se come al llegar
+      ['farola2', 25, 13, 16],         // necesita 30,6 - 37,6 (algo mas grande que la farola)
+      ['farola', 50, 11, 14],          // necesita 25,9 - 32,9
+      ['coche2', 30, 8, 11],           // necesita 18,8 - 25,9 (igual que el coche)
+      ['coche', 50, 8, 11],            // necesita 18,8 - 25,9
+      ['hombre', 40, 6.0, 7.0],        // necesita 14,1 - 16,5: la gente de la ciudad, comida desde el principio
+      ['mujer', 40, 5.5, 6.5],         // necesita 12,9 - 15,3
+      ['perro', 30, 3.2, 4.5]          // necesita 7,5 - 10,6
     ]
   }
 ];
@@ -322,6 +337,12 @@ const MODELOS_OBJETOS = {
   flor: { ruta: 'models/flor/scene.gltf', plantilla: null, animaciones: []},
   lata: { ruta: 'models/lata/scene.gltf', plantilla: null, animaciones: []},
   botella: { ruta: 'models/botella/scene.gltf', plantilla: null, animaciones: []},
+  esponja: { ruta: 'models/esponja/scene.gltf', plantilla: null, animaciones: [], animQuieto: 'IDLE01', animAndar: 'RUN01'},
+  patricio: { ruta: 'models/patricio/scene.gltf', plantilla: null, animaciones: [], animQuieto: 'patrick_bind.dff|patrick_idlenorm_new.anm', animAndar: 'patrick_bind.dff|patrick_runnorm.anm'},
+  calamardo: { ruta: 'models/calamardo/scene.gltf', plantilla: null, animaciones: [], animQuieto: 'Take 001', animAndar: 'Take 001'},
+  casa_esponja: { ruta: 'models/casa_esponja/scene.gltf', plantilla: null, animaciones: []},
+  casa_patricio: { ruta: 'models/casa_patricio/scene.gltf', plantilla: null, animaciones: []},
+  casa_calamardo: { ruta: 'models/casa_calamardo/scene.gltf', plantilla: null, animaciones: []},
   maceta: { ruta: 'models/maceta/scene.gltf', plantilla: null, animaciones: []},
   arbusto: { ruta: 'models/arbusto/scene.gltf', plantilla: null, animaciones: []},
   banco: { ruta: 'models/banco/scene.gltf', plantilla: null, animaciones: []},
@@ -330,9 +351,11 @@ const MODELOS_OBJETOS = {
   mujer: { ruta: 'models/mujer/scene.gltf', plantilla: null, animaciones: [], animQuieto: 'Idle', animAndar: 'Walk'},
   excalibur: { ruta: 'models/excalibur/scene.gltf', plantilla: null, animaciones: []},
   farola: { ruta: 'models/farola/scene.gltf', plantilla: null, animaciones: []},
+  farola2: { ruta: 'models/farola2/scene.gltf', plantilla: null, animaciones: []},
   // La unica animacion del coche (Plane|PlaneAction) es un giro de exhibicion
   // (como en un escaparate): no la usamos, el movimiento ya lo hace moverSerVivo()
   coche: { ruta: 'models/coche/scene.gltf', plantilla: null, animaciones: [], sinAnimaciones: true },
+  coche2: { ruta: 'models/coche2/scene.gltf', plantilla: null, animaciones: [], sinAnimaciones: true },
   arbol1: { ruta: 'models/arbol1/scene.gltf', plantilla: null, animaciones: []},
   arbol2: { ruta: 'models/arbol2/scene.gltf', plantilla: null, animaciones: []},
   arbol3: { ruta: 'models/arbol3/scene.gltf', plantilla: null, animaciones: []},
@@ -341,6 +364,7 @@ const MODELOS_OBJETOS = {
   casa3: { ruta: 'models/casa3/scene.gltf', plantilla: null, animaciones: []},
   casa4: { ruta: 'models/casa4/scene.gltf', plantilla: null, animaciones: []},
   casa5: { ruta: 'models/casa5/scene.gltf', plantilla: null, animaciones: []},
+  fuente: { ruta: 'models/fuente/scene.gltf', plantilla: null, animaciones: []},
   torre1: { ruta: 'models/torre1/scene.gltf', plantilla: null, animaciones: []},
   torre2: { ruta: 'models/torre2/scene.gltf', plantilla: null, animaciones: []},
   torre3: { ruta: 'models/torre3/scene.gltf', plantilla: null, animaciones: []},
@@ -800,9 +824,11 @@ const TIPOS = {
   excalibur: { nombre: 'Excalibur',  huella: 0.4,  crear: crearDesdeModelo('excalibur'), modelo: 'excalibur' },  // espada clavada en su roca
   banco:     { nombre: 'Banco',      huella: 0.6,  crear: crearDesdeModelo('banco'),     modelo: 'banco' },      // largo y poco profundo
   farola:    { nombre: 'Farola',     huella: 0.15, crear: crearDesdeModelo('farola'),    modelo: 'farola' },     // poste muy alto y fino
+  farola2:   { nombre: 'Farola Moderna', huella: 0.15, crear: crearDesdeModelo('farola2'), modelo: 'farola2' },  // como la farola, algo mayor
 
   // MODELOS- objetos de la ciudad (nivel 3)
   coche:     { nombre: 'Coche',          huella: 0.5,  crear: crearDesdeModelo('coche'),  modelo: 'coche', movil: { velocidad: 1.2, huye: true, rotacionFrente: 0 } },    // largo, la mitad de ancho
+  coche2:    { nombre: 'Coche',          huella: 0.5,  crear: crearDesdeModelo('coche2'), modelo: 'coche2', movil: { velocidad: 1.2, huye: true, rotacionFrente: 0 } },
   arbol1:    { nombre: 'Arbolito',       huella: 0.4,  crear: crearDesdeModelo('arbol1'), modelo: 'arbol1' },   // alto: la huella es la copa
   arbol2:    { nombre: 'Árbol',          huella: 0.4,  crear: crearDesdeModelo('arbol2'), modelo: 'arbol2' },
   arbol3:    { nombre: 'Árbol gigante',  huella: 0.4,  crear: crearDesdeModelo('arbol3'), modelo: 'arbol3' },
@@ -813,7 +839,16 @@ const TIPOS = {
   casa5:     { nombre: 'Mansión',        huella: 0.75, crear: crearDesdeModelo('casa5'),  modelo: 'casa5' },
   torre1:    { nombre: 'Torre',          huella: 0.3,  crear: crearDesdeModelo('torre1'), modelo: 'torre1' },   // altas y estrechas
   torre2:    { nombre: 'Torre alta',     huella: 0.3,  crear: crearDesdeModelo('torre2'), modelo: 'torre2' },
-  torre3:    { nombre: 'Rascacielos',    huella: 0.3,  crear: crearDesdeModelo('torre3'), modelo: 'torre3' }
+  torre3:    { nombre: 'Rascacielos',    huella: 0.3,  crear: crearDesdeModelo('torre3'), modelo: 'torre3' },
+  fuente:    { nombre: 'Fuente',         huella: 0.9,  crear: crearDesdeModelo('fuente'), modelo: 'fuente' },   // pilon ancho y bajo
+
+  // MODELOS- Fondo de Bikini (nivel 2): un personaje y una casa de cada
+  esponja:        { nombre: 'Bob Esponja',          huella: 0.6,  crear: crearDesdeModelo('esponja'),        modelo: 'esponja', movil: { velocidad: 1.2, huye: true, rotacionFrente: 0 } },        // cuadrado: casi tan ancho como alto
+  patricio:       { nombre: 'Patricio',             huella: 0.55, crear: crearDesdeModelo('patricio'),       modelo: 'patricio', movil: { velocidad: 1.2, huye: true, rotacionFrente: 0 } },       // estrella: brazos abiertos
+  calamardo:      { nombre: 'Calamardo',            huella: 0.35, crear: crearDesdeModelo('calamardo'),      modelo: 'calamardo', movil: { velocidad: 1.2, huye: true, rotacionFrente: 0, seDetiene: false } },      // alto y estrecho. Solo tiene animacion de andar: no se para
+  casa_esponja:   { nombre: 'Casa de Bob Esponja',  huella: 0.5,  crear: crearDesdeModelo('casa_esponja'),   modelo: 'casa_esponja' },   // la piña: mas alta que ancha
+  casa_patricio:  { nombre: 'Casa de Patricio',     huella: 0.85, crear: crearDesdeModelo('casa_patricio'),  modelo: 'casa_patricio' },  // la roca: baja y ancha
+  casa_calamardo: { nombre: 'Casa de Calamardo',    huella: 0.45, crear: crearDesdeModelo('casa_calamardo'), modelo: 'casa_calamardo' }  // la cabeza moai: alta
 };
 
 // Cada constructor monta el objeto en "unidades de objeto": apoyado en y = 0 y con
@@ -1671,7 +1706,9 @@ function moverSerVivo(objeto, delta)
     // Nueva decision al pasear: girar un poco al azar y, a veces, pararse
     m.dirObjetivo = m.dir + rand(-1.5, 1.5);
     m.temporizador = rand(1.5, 4);
-    m.parada = Math.random() < 0.25;
+    // Con "seDetiene: false" en su movil, nunca se para (util si su modelo solo
+    // tiene animacion de andar: parado, caminaria en el sitio)
+    m.parada = config.seDetiene !== false && Math.random() < 0.25;
   }
   if (m.parada && !huyendo) velocidad = 0;
 
