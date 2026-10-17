@@ -310,10 +310,26 @@ const ESCALAS = [
     // Los objetos que queden de niveles anteriores (montes, castillos...) tambien
     // desaparecen: si no, flotarian en el espacio. Pon false para conservarlos.
     borrarObjetosAnteriores: true,
-    radioSuelo: 64000,         // unas 8 veces el del nivel 4 (8000), como entre los anteriores
+    radioSuelo: 128000,        // 16 veces el del nivel 4 (8000): el espacio es inmenso
     altoBorde: 0,
-    umbral: 38400,             // el slime llega con 4800 y debe crecer unas 8 veces
-    catalogo: []
+    umbral: 58800,             // el slime llega con 4800 y debe crecer unas 8 veces
+    // Tamaño necesario para comer cada objeto = su tamaño / 0,425 (el nivel va de 4800 a 38400).
+    // Los grandes van primero para que encuentren hueco al colocarse.
+    catalogo: [
+      ['tierra', 1, 15000, 15000],         // necesita 35294: el gran final del nivel
+      ['luna', 1, 9000, 9000],             // necesita 21176
+      // Meteoritos: rango muy amplio, desde algo menos que un astronauta hasta casi un tercio de la luna
+      ['meteorito1', 30, 1000, 5000],      // necesita 2353 - 11765
+      ['meteorito2', 30, 1000, 5000],
+      ['meteorito3', 30, 1000, 5000],
+      ['meteorito4', 30, 1000, 5000],
+      ['ovni', 20, 2800, 3600],            // necesita 6588 - 8470
+      ['cohete', 20, 2800, 3600],
+      ['robot', 20, 2800, 3600],
+      ['satelite', 25, 1900, 2500],        // necesita 4470 - 5882
+      ['satelite2', 25, 1900, 2500],
+      ['astronauta', 30, 1300, 1700]       // necesita 3059 - 4000: lo primero que se come al llegar
+    ]
   }
 ];
 var escala_actual = 0;
@@ -457,7 +473,17 @@ const MODELOS_OBJETOS = {
   halucinogena: { ruta: 'models/halucinogena/scene.gltf', plantilla: null, animaciones: [], animQuieto: 'animation.hallucigenia.move', animAndar: 'animation.hallucigenia.move'},
   golem: { ruta: 'models/golem/scene.gltf', plantilla: null, animaciones: [], animQuieto: 'ArmatureAction', animAndar: 'ArmatureAction'},
   esqueleto: { ruta: 'models/esqueleto/scene.gltf', plantilla: null, animaciones: [], animQuieto: 'Skeleton_Bones|Esqueleto_Parado', animAndar: 'Skeleton_Bones|Esquelto_Caminhar'},
-
+  
+  astronauta: { ruta: 'models/astronauta/scene.gltf', plantilla: null, animaciones: []},
+  satelite: { ruta: 'models/satelite/scene.gltf', plantilla: null, animaciones: []},
+  satelite2: { ruta: 'models/satelite2/scene.gltf', plantilla: null, animaciones: []},
+  ovni: { ruta: 'models/ovni/scene.gltf', plantilla: null, animaciones: []},
+  cohete: { ruta: 'models/cohete/scene.gltf', plantilla: null, animaciones: []},
+  robot: { ruta: 'models/robot/scene.gltf', plantilla: null, animaciones: []},
+  meteorito1: { ruta: 'models/meteorito1/scene.gltf', plantilla: null, animaciones: []},
+  meteorito2: { ruta: 'models/meteorito2/scene.gltf', plantilla: null, animaciones: []},
+  meteorito3: { ruta: 'models/meteorito3/scene.gltf', plantilla: null, animaciones: []},
+  meteorito4: { ruta: 'models/meteorito4/scene.gltf', plantilla: null, animaciones: []},
 };
 var promesaModelos = null;     // se cumple cuando todos los modelos estan cargados
 var mixersObjetos = [];        // AnimationMixer de cada copia animada
@@ -954,12 +980,102 @@ const TIPOS = {
   godzilla:     { nombre: 'Godzilla',     huella: 0.35, crear: crearDesdeModelo('godzilla'),     modelo: 'godzilla', movil: { velocidad: 0.8, huye: true, rotacionFrente: Math.PI } },     // alto, de pie
   serafin:      { nombre: 'Serafín',      huella: 0.5,  crear: crearDesdeModelo('serafin'),      modelo: 'serafin', movil: { velocidad: 1.2, huye: true, rotacionFrente: Math.PI } },      // con alas
   halucinogena: { nombre: 'Alucinógena',  huella: 0.6,  crear: crearDesdeModelo('halucinogena'), modelo: 'halucinogena', movil: { velocidad: '0.2', huye: true, rotacionFrente: Math.PI, seDetiene: false } },
-  golem: { nombre: 'Golem',  huella: 0.6,  crear: crearDesdeModelo('golem'), modelo: 'golem', movil: { velocidad: 0-6, huye: true, rotacionFrente: 0, seDetiene: false } },
-  esqueleto: { nombre: 'Esqueleto',  huella: 0.6,  crear: crearDesdeModelo('esqueleto'), modelo: 'esqueleto', movil: { velocidad: 1.2, huye: true, rotacionFrente: 0 } }
+  golem: { nombre: 'Golem',  huella: 0.6,  crear: crearDesdeModelo('golem'), modelo: 'golem', movil: { velocidad: 0.6, huye: true, rotacionFrente: 0, seDetiene: false } },
+  esqueleto: { nombre: 'Esqueleto',  huella: 0.6,  crear: crearDesdeModelo('esqueleto'), modelo: 'esqueleto', movil: { velocidad: 1.2, huye: true, rotacionFrente: 0 } },
+
+  // MODELOS- objetos del espacio (nivel 5)
+  //   rotacionAleatoria: true -> cada copia aparece girada al azar en los tres ejes,
+  //   como si flotara sin gravedad
+  //   tumbo: radianes por segundo -> ademas gira sin parar sobre un eje al azar
+  astronauta: { nombre: 'Astronauta',  huella: 0.3,  crear: crearDesdeModelo('astronauta'), modelo: 'astronauta', rotacionAleatoria: true, movil: { velocidad: 0.6, huye: false, rotacionFrente: 0, seDetiene: false } },  // figura humana
+  satelite:   { nombre: 'Satélite',    huella: 0.7,  crear: crearDesdeModelo('satelite'),   modelo: 'satelite',   rotacionAleatoria: true, movil: { velocidad: 0.6, huye: false, rotacionFrente: 0, seDetiene: false } },  // paneles extendidos
+  satelite2:  { nombre: 'Satélite',    huella: 0.7,  crear: crearDesdeModelo('satelite2'),  modelo: 'satelite2',  rotacionAleatoria: true, movil: { velocidad: 0.6, huye: false, rotacionFrente: 0, seDetiene: false } },
+  ovni:       { nombre: 'OVNI',        huella: 0.9,  crear: crearDesdeModelo('ovni'),       modelo: 'ovni', movil: { velocidad: 0.6, huye: false, rotacionFrente: 0, seDetiene: false } },        // platillo: ancho y plano (siempre horizontal)
+  cohete:     { nombre: 'Cohete',      huella: 0.25, crear: crearDesdeModelo('cohete'),     modelo: 'cohete',     rotacionAleatoria: true, movil: { velocidad: 0.6, huye: false, rotacionFrente: 0, seDetiene: false } },  // alto y estrecho
+  robot:      { nombre: 'Robot',       huella: 0.35, crear: crearDesdeModelo('robot'),      modelo: 'robot',      rotacionAleatoria: true, movil: { velocidad: 0.6, huye: false, rotacionFrente: 0, seDetiene: false } },  // humanoide
+  meteorito1: { nombre: 'Meteorito',   huella: 0.85, crear: crearDesdeModelo('meteorito1'), modelo: 'meteorito1', rotacionAleatoria: true, tumbo: 0.3, movil: { velocidad: 0.6, huye: false, rotacionFrente: 0, seDetiene: false } },  // rocas casi redondas
+  meteorito2: { nombre: 'Meteorito',   huella: 0.85, crear: crearDesdeModelo('meteorito2'), modelo: 'meteorito2', rotacionAleatoria: true, tumbo: 0.3, movil: { velocidad: 0.6, huye: false, rotacionFrente: 0, seDetiene: false } },
+  meteorito3: { nombre: 'Meteorito',   huella: 0.85, crear: crearDesdeModelo('meteorito3'), modelo: 'meteorito3', rotacionAleatoria: true, tumbo: 0.3, movil: { velocidad: 0.6, huye: false, rotacionFrente: 0, seDetiene: false } },
+  meteorito4: { nombre: 'Meteorito',   huella: 0.85, crear: crearDesdeModelo('meteorito4'), modelo: 'meteorito4', rotacionAleatoria: true, tumbo: 0.3, movil: { velocidad: 0.6, huye: false, rotacionFrente: 0, seDetiene: false } },
+
+  // ESFERAS- la Tierra y la Luna: esferas con textura que giran despacio sobre si mismas
+  //   gira: radianes por segundo
+  tierra: { nombre: 'La Tierra', huella: 1, crear: crearEsferaTexturizada('tierra'), gira: 0.1 },
+  luna:   { nombre: 'La Luna',   huella: 1, crear: crearEsferaTexturizada('luna'),   gira: 0.05 }
 };
 
 // Cada constructor monta el objeto en "unidades de objeto": apoyado en y = 0 y con
 // su dimension mayor de tamaño 2 (de -1 a 1). Despues el grupo se escala a su tamaño real.
+// ---------------------------------------------------------------------------
+// ESFERAS- planetas y lunas: una esfera con una imagen como textura.
+// La imagen debe ser un mapa del planeta en proyeccion equirectangular
+// (proporcion 2:1), que es como se distribuyen las coordenadas UV de una esfera.
+// ---------------------------------------------------------------------------
+const TEXTURAS_ESFERAS = {
+  tierra: 'images/tasty_damacy/tierra.jpg',   // cambia las rutas por las de tus imagenes
+  luna:   'images/tasty_damacy/luna.jpg'
+};
+var materialesEsferas = {};    // un material por esfera, creado la primera vez que se usa
+
+// Devuelve el constructor de la esfera indicada (como crearDesdeModelo)
+function crearEsferaTexturizada(nombre)
+{
+  return function (grupo) {
+    // El material (con su textura) se crea una sola vez y se comparte entre copias
+    // (por ejemplo, la del mundo y la del visor del ultimo bocado)
+    if (!materialesEsferas[nombre]) {
+      const textura = new THREE.TextureLoader().load(TEXTURAS_ESFERAS[nombre], undefined, undefined, function () {
+        console.error('No se pudo cargar la textura de', nombre + ':', TEXTURAS_ESFERAS[nombre]);
+      });
+      textura.encoding = THREE.sRGBEncoding;
+      materialesEsferas[nombre] = new THREE.MeshStandardMaterial({ map: textura, roughness: 0.8, metalness: 0 });
+    }
+
+    // En "unidades de objeto": radio 1 y apoyada en y = 0 (centro en y = 1)
+    const esfera = new THREE.Mesh(new THREE.SphereGeometry(1, 64, 32), materialesEsferas[nombre]);
+    esfera.position.y = 1;
+    esfera.name = 'esfera';
+    esfera.castShadow = true;
+    esfera.receiveShadow = true;
+    grupo.add(esfera);
+  };
+}
+
+// ESPACIO- gira el contenido del grupo al azar en los tres ejes, alrededor de su
+// CENTRO. Los modelos se construyen apoyados en y = 0 con el centro en y = 1;
+// si giraramos el grupo entero, rotaria alrededor de su base y se desplazaria.
+// Por eso metemos el modelo en un pivote situado en su centro y giramos el pivote.
+// (El grupo en si no se toca: su giro en Y lo sigue usando el resto del juego.)
+function rotarAleatoriamente(grupo)
+{
+  const pivote = new THREE.Group();
+  pivote.position.y = 1;
+  while (grupo.children.length > 0) {
+    const hijo = grupo.children[0];
+    hijo.position.y -= 1;          // compensamos para que no cambie de sitio
+    pivote.add(hijo);              // add() lo saca del grupo y lo mete en el pivote
+  }
+  pivote.rotation.set(rand(0, Math.PI * 2), rand(0, Math.PI * 2), rand(0, Math.PI * 2));
+  pivote.name = 'pivoteGiro';      // para encontrarlo despues (lo usa el giro continuo)
+  grupo.add(pivote);
+}
+
+// ESFERAS- los objetos con "gira" rotan despacio sobre su eje
+function actualizarGiros(delta)
+{
+  for (let i = 0; i < objetos.length; i++) {
+    const objeto = objetos[i];
+    if (objeto.estado !== 'activo') continue;
+
+    // ESPACIO- giro continuo alrededor de un eje cualquiera
+    if (objeto.tumbo) objeto.tumbo.pivote.rotateOnAxis(objeto.tumbo.eje, objeto.tumbo.velocidad * delta);
+
+    if (!objeto.def.gira) continue;
+    const esfera = objeto.grupo.getObjectByName('esfera');
+    if (esfera) esfera.rotation.y += objeto.def.gira * delta;
+  }
+}
+
 function crearSemilla(grupo)
 {
   const semilla = new THREE.Mesh(GEOMETRIAS.esfera, elegir(MATERIALES.semillas));
@@ -993,6 +1109,7 @@ function generarObjetos(indice)
       const grupo = new THREE.Group();
       grupo.name = tipo;
       def.crear(grupo);
+      if (def.rotacionAleatoria) rotarAleatoriamente(grupo);   // ESPACIO- giro en los 3 ejes
       grupo.position.set(pos.x, 0, pos.z);
       grupo.rotation.y = rand(0, Math.PI * 2);
       grupo.scale.setScalar(tam);
@@ -1009,6 +1126,16 @@ function generarObjetos(indice)
           temporizador: rand(0, 3),       // segundos hasta su proxima decision
           parada: false,                  // a veces se detiene un rato
           velActual: 0                    // velocidad actual (se suaviza)
+        };
+      }
+      // ESPACIO- los tipos con "tumbo" giran lentamente sin parar, cada uno sobre
+      // un eje al azar y a su propia velocidad (como los asteroides de ¡GLUP!)
+      if (def.tumbo) {
+        if (!grupo.getObjectByName('pivoteGiro')) rotarAleatoriamente(grupo);
+        nuevo.tumbo = {
+          pivote: grupo.getObjectByName('pivoteGiro'),
+          eje: new THREE.Vector3(rand(-1, 1), rand(-1, 1), rand(-1, 1)).normalize(),
+          velocidad: def.tumbo * rand(0.6, 1.4)
         };
       }
       objetos.push(nuevo);
@@ -2489,6 +2616,7 @@ function update()
 
     // VIDA- los objetos con vida pasean y huyen
     actualizarSeresVivos(delta);
+    actualizarGiros(delta);          // ESFERAS- la Tierra y la Luna giran sobre si mismas
 
     // COLISIONES- comer lo que es mas pequeño y chocar con lo que es mas grande
     comprobarColisiones();
