@@ -135,6 +135,10 @@ document.addEventListener('keyup', (event) => {
     case 'KeyM':
       alternarSilencio();
       break;
+    // FLECHA- activar / desactivar la flecha guia
+    case 'KeyN':
+      alternarFlecha();
+      break;
   }
 });
 
@@ -287,6 +291,12 @@ var temblor = 0;               // intensidad actual de la sacudida (1 al chocar,
 const DISTANCIA_RESALTE = 3;   // en tamaños de slime: hasta donde se buscan objetos
 var anilloResalte;
 var objetoResaltado = null;
+
+// FLECHA- flecha sobre el slime que apunta al mejor objeto comestible de la zona
+const DISTANCIA_FLECHA = 6;    // en tamaños de slime: hasta donde busca
+var flechaActiva = true;       // la tecla N la activa o la desactiva
+var flecha;
+var objetivoFlecha = null;
 var chocandoAntes = false;     // si en el fotograma anterior el slime ya estaba chocando
 var chocandoAhora = false;     // si en este fotograma esta chocando
 
@@ -404,6 +414,7 @@ function init()
   crearAudio();
   crearHUD();
   crearResalte();
+  crearFlecha();
   crearVisor();
 
   crearLuces();
@@ -1374,11 +1385,11 @@ function crearResalte()
   scene.add(anilloResalte);
 }
 
-function actualizarResalte()
+// Busca, entre los objetos que se pueden comer a menos de "alcance" (distancia
+// hasta su borde), el de mayor tamaño; si dos miden lo mismo, el mas cercano.
+// La usan el anillo (alcance corto) y la flecha (alcance largo).
+function buscarMejorPresa(alcance)
 {
-  // Buscamos, entre los objetos cercanos que se pueden comer, el de mayor tamaño
-  // (si dos miden lo mismo, gana el mas cercano)
-  const alcance = DISTANCIA_RESALTE * tamano_slime;
   let mejor = null, mejorDistancia = Infinity;
 
   for (let i = 0; i < objetos.length; i++) {
@@ -1397,6 +1408,13 @@ function actualizarResalte()
     }
   }
 
+  return mejor;
+}
+
+function actualizarResalte()
+{
+  const mejor = buscarMejorPresa(DISTANCIA_RESALTE * tamano_slime);
+
   objetoResaltado = mejor;
   if (mejor === null) {
     anilloResalte.visible = false;
@@ -1408,6 +1426,74 @@ function actualizarResalte()
   anilloResalte.position.set(mejor.grupo.position.x, 0, mejor.grupo.position.z);
   const latido = 1 + 0.08 * Math.sin(clock.elapsedTime * 6);
   anilloResalte.scale.setScalar((mejor.radio * 1.3 + tamano_slime * 0.05) * latido);
+}
+
+// ---------------------------------------------------------------------------
+// FLECHA- flecha flotante sobre el slime que señala la mejor presa de la zona.
+// Complementa al anillo: el anillo marca lo que tienes al lado; la flecha te
+// guia hacia lo que merece la pena aunque todavia no lo veas.
+// ---------------------------------------------------------------------------
+function crearFlecha()
+{
+  const material = new THREE.MeshBasicMaterial({ color: 0xffd23f, toneMapped: false });
+
+  // Se construye apuntando hacia +z (hacia delante) en "unidades de flecha"
+  // y despues se escala segun el tamaño del slime
+  flecha = new THREE.Group();
+
+  const cuerpo = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.6, 12), material);
+  cuerpo.rotation.x = Math.PI / 2;      // el cilindro se crea en vertical: lo tumbamos
+  cuerpo.position.z = -0.1;
+  flecha.add(cuerpo);
+
+  const punta = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.4, 16), material);
+  punta.rotation.x = Math.PI / 2;       // la punta del cono pasa de +y a +z
+  punta.position.z = 0.4;
+  flecha.add(punta);
+
+  flecha.visible = false;
+  scene.add(flecha);                    // en la escena, no dentro del slime: asi no
+                                        // hereda su giro ni su aplastamiento al comer
+}
+
+// FLECHA- activa o desactiva la flecha guia (tecla N)
+function alternarFlecha()
+{
+  flechaActiva = !flechaActiva;
+  if (!flechaActiva) flecha.visible = false;
+  mostrarAviso(flechaActiva ? 'Flecha guía activada' : 'Flecha guía desactivada', 'info', 1000);
+}
+
+function actualizarFlecha(delta)
+{
+  // Desactivada: ni se busca objetivo ni se muestra
+  if (!flechaActiva) return;
+
+  objetivoFlecha = buscarMejorPresa(DISTANCIA_FLECHA * tamano_slime);
+  if (objetivoFlecha === null) {
+    flecha.visible = false;
+    return;
+  }
+
+  const dx = objetivoFlecha.grupo.position.x - pos_slime.x;
+  const dz = objetivoFlecha.grupo.position.z - pos_slime.z;
+
+  // Si ya esta practicamente encima, la flecha sobra (y giraria sin control)
+  if (Math.hypot(dx, dz) - objetivoFlecha.radio < tamano_slime * 0.5) {
+    flecha.visible = false;
+    return;
+  }
+
+  flecha.visible = true;
+
+  // Flota sobre el slime, subiendo y bajando un poco
+  const flotar = Math.sin(clock.elapsedTime * 3) * 0.05;
+  flecha.position.set(pos_slime.x, tamano_slime * (1.1 + flotar), pos_slime.z);
+  flecha.scale.setScalar(tamano_slime * 0.35);
+
+  // Gira suavemente hacia el objetivo (por el camino mas corto)
+  const angulo = Math.atan2(dx, dz);
+  flecha.rotation.y = amortiguarAngulo(flecha.rotation.y, angulo, 10, delta);
 }
 
 function comprobarColisiones()
@@ -2148,6 +2234,9 @@ function update()
 
     // RESALTE- marca el objeto comestible mas grande que hay cerca
     actualizarResalte();
+
+    // FLECHA- apunta al objeto comestible mas grande de la zona
+    actualizarFlecha(delta);
 
     // CHOQUE- la sacudida se apaga sola en 0,35 s
     temblor = Math.max(0, temblor - delta / 0.35);
