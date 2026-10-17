@@ -275,6 +275,11 @@ const FUERZA_TEMBLOR = 0.02;   // amplitud de la sacudida, en tamaños de slime
 var canalChoque;               // THREE.Audio del sonido de choque
 var ultimoChoque = -10;        // instante (s) del ultimo efecto de choque
 var temblor = 0;               // intensidad actual de la sacudida (1 al chocar, baja a 0)
+
+// RESALTE- anillo bajo el objeto comestible mas grande que haya cerca
+const DISTANCIA_RESALTE = 3;   // en tamaños de slime: hasta donde se buscan objetos
+var anilloResalte;
+var objetoResaltado = null;
 var chocandoAntes = false;     // si en el fotograma anterior el slime ya estaba chocando
 var chocandoAhora = false;     // si en este fotograma esta chocando
 
@@ -391,6 +396,7 @@ function init()
   crearControlesCamaraSeguimiento();
   crearAudio();
   crearHUD();
+  crearResalte();
   crearVisor();
 
   crearLuces();
@@ -1326,6 +1332,67 @@ function tamanoParaComer(objeto)
   return porTamano;
 }
 
+// ---------------------------------------------------------------------------
+// RESALTE- un anillo en el suelo que marca el objeto mas grande que el slime
+// puede comerse entre los que tiene cerca: la mejor presa del momento.
+// ---------------------------------------------------------------------------
+function crearResalte()
+{
+  anilloResalte = new THREE.Mesh(
+    new THREE.RingGeometry(0.85, 1, 48),
+    new THREE.MeshBasicMaterial({
+      color: 0x8dffb5,
+      transparent: true,
+      opacity: 0.85,
+      depthWrite: false,          // no tapa nada de lo que se dibuje despues
+      toneMapped: false,          // color vivo, sin el tone mapping de la escena
+      // Esta en el mismo plano que el suelo: polygonOffset lo dibuja siempre por
+      // encima (con mas prioridad que cualquiera de los suelos superpuestos)
+      polygonOffset: true, polygonOffsetFactor: -10, polygonOffsetUnits: -20
+    })
+  );
+  anilloResalte.rotation.x = -Math.PI / 2;   // RingGeometry se crea en vertical: lo tumbamos
+  anilloResalte.renderOrder = 1;             // despues de los objetos opacos
+  anilloResalte.visible = false;
+  scene.add(anilloResalte);
+}
+
+function actualizarResalte()
+{
+  // Buscamos, entre los objetos cercanos que se pueden comer, el de mayor tamaño
+  // (si dos miden lo mismo, gana el mas cercano)
+  const alcance = DISTANCIA_RESALTE * tamano_slime;
+  let mejor = null, mejorDistancia = Infinity;
+
+  for (let i = 0; i < objetos.length; i++) {
+    const objeto = objetos[i];
+    if (objeto.estado !== 'activo' || !esComestible(objeto)) continue;
+
+    // Distancia hasta el borde del objeto, no hasta su centro
+    const distancia = Math.hypot(objeto.grupo.position.x - pos_slime.x,
+                                 objeto.grupo.position.z - pos_slime.z) - objeto.radio;
+    if (distancia > alcance) continue;
+
+    if (mejor === null || objeto.tam > mejor.tam ||
+        (objeto.tam === mejor.tam && distancia < mejorDistancia)) {
+      mejor = objeto;
+      mejorDistancia = distancia;
+    }
+  }
+
+  objetoResaltado = mejor;
+  if (mejor === null) {
+    anilloResalte.visible = false;
+    return;
+  }
+
+  // El anillo sigue al objeto (algunos se mueven) y "late" suavemente para llamar la atencion
+  anilloResalte.visible = true;
+  anilloResalte.position.set(mejor.grupo.position.x, 0, mejor.grupo.position.z);
+  const latido = 1 + 0.08 * Math.sin(clock.elapsedTime * 6);
+  anilloResalte.scale.setScalar((mejor.radio * 1.3 + tamano_slime * 0.05) * latido);
+}
+
 function comprobarColisiones()
 {
   const r = radioSlime() * 0.9;   // un poco menos que el radio visual: se ve mas natural
@@ -2061,6 +2128,9 @@ function update()
 
     // COLISIONES- comer lo que es mas pequeño y chocar con lo que es mas grande
     comprobarColisiones();
+
+    // RESALTE- marca el objeto comestible mas grande que hay cerca
+    actualizarResalte();
 
     // CHOQUE- la sacudida se apaga sola en 0,35 s
     temblor = Math.max(0, temblor - delta / 0.35);
