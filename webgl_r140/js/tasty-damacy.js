@@ -139,6 +139,18 @@ document.addEventListener('keyup', (event) => {
     case 'KeyN':
       alternarFlecha();
       break;
+    // DEBUG- saltar directamente a un nivel con las teclas numericas (1, 2, 3, 4...)
+    case 'Digit1':
+    case 'Digit2':
+    case 'Digit3':
+    case 'Digit4':
+    case 'Digit5':
+    case 'Digit6':
+    case 'Digit7':
+    case 'Digit8':
+    case 'Digit9':
+      saltarANivel(parseInt(event.code.charAt(5), 10) - 1);
+      break;
   }
 });
 
@@ -243,7 +255,7 @@ const ESCALAS = [
       ['casa1', 12, 30, 34],           // necesita 71 - 80
       ['arbol3', 15, 27, 32],          // necesita 64 - 75
       ['arbol2', 18, 22, 27],          // necesita 52 - 64
-      ['arbol1', 20, 18, 22],          // necesita 42 - 52
+      ['arbol1', 200, 18, 22],          // necesita 42 - 52
       ['farola2', 25, 13, 16],         // necesita 30,6 - 37,6 (algo mas grande que la farola)
       ['farola', 50, 11, 14],          // necesita 25,9 - 32,9
       ['coche2', 30, 8, 11],           // necesita 18,8 - 25,9 (igual que el coche)
@@ -252,6 +264,23 @@ const ESCALAS = [
       ['mujer', 40, 5.5, 6.5],         // necesita 12,9 - 15,3
       ['perro', 30, 3.2, 4.5]          // necesita 7,5 - 10,6
     ]
+  },
+    {
+    // TRANSICION- cuarto nivel: rodea a la ciudad, que queda como una pequeña parte de el.
+    // De momento sin objetos.
+    nombre: 'El campo',
+    radioSuelo: 8000,          // unas 8 veces el del nivel 3 (1000), como entre los anteriores
+    altoBorde: 400,
+    colorSuelo: 0x5e8f3a,
+    colorBorde: 0x4a3220,
+    // Baldosas proporcionales al slime de este nivel (el nivel 3 usa 120 con un slime 8 veces menor)
+    tamanoBaldosa: 960,        // 2 x 8000 / 960 = unas 17 repeticiones, como en el nivel 3
+    texturaSuelo: 'images/tasty_damacy/nivel4.jpg',   // cambiala por la del nivel 4
+    umbral: 2400,
+    fondo: 'images/tasty_damacy/fondo_nivel4.jpg',  // descomentar cuando tengas su panoramica
+    altoFondo: 0.8,
+    colorCielo: 0xcfe8ff,
+    catalogo: []
   }
 ];
 var escala_actual = 0;
@@ -1924,6 +1953,31 @@ function comprobarCambioNivel()
 
   // Usamos el tamaño objetivo (el que ya ha "ganado"), no el que se esta animando
   if (tamano_objetivo / tamano_base >= E.umbral) iniciarTransicion(escala_actual + 1);
+}
+
+// DEBUG- salta al nivel indicado (0 = nivel 1) pasando por todos los intermedios,
+// como si el slime hubiera crecido hasta el umbral de cada uno. Sirve para probar
+// los niveles avanzados sin tener que jugar los anteriores.
+function saltarANivel(destino)
+{
+  if (slime === null) return;
+  if (destino >= ESCALAS.length) {
+    mostrarAviso('El nivel ' + (destino + 1) + ' no existe', 'peligro', 1200);
+    return;
+  }
+  if (destino <= escala_actual) {
+    mostrarAviso('Solo se puede saltar hacia delante', 'info', 1200);
+    return;
+  }
+
+  while (escala_actual < destino) {
+    // El slime pasa a medir el umbral del nivel actual (justo lo necesario para
+    // el siguiente) y se hace la transicion normal: suelo, objetos, limpieza...
+    const tamanoNuevo = ESCALAS[escala_actual].umbral * tamano_base;
+    tamano_objetivo = tamanoNuevo;
+    tamano_slime = tamanoNuevo;          // sin animacion de crecimiento: de golpe
+    iniciarTransicion(escala_actual + 1);
+  }
 }
 
 function iniciarTransicion(nueva)
