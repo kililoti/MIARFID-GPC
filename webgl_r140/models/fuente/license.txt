@@ -1,0 +1,11 @@
+Model Information:
+* title:	Low-poly outdoor water fountain
+* source:	https://sketchfab.com/3d-models/low-poly-outdoor-water-fountain-04818a36d01843288ccf5958456218da
+* author:	pino (https://sketchfab.com/toomuchpino)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Low-poly outdoor water fountain" (https://sketchfab.com/3d-models/low-poly-outdoor-water-fountain-04818a36d01843288ccf5958456218da) by pino (https://sketchfab.com/toomuchpino) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

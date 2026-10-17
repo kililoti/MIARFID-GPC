@@ -1,0 +1,11 @@
+Model Information:
+* title:	Patrick BFBB Animation Pack
+* source:	https://sketchfab.com/3d-models/patrick-bfbb-animation-pack-07ca54448b3d4c7684ee75c2c9d334bd
+* author:	SMF Features Developed From Cheryl Hill (https://sketchfab.com/cherylhill28)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Patrick BFBB Animation Pack" (https://sketchfab.com/3d-models/patrick-bfbb-animation-pack-07ca54448b3d4c7684ee75c2c9d334bd) by SMF Features Developed From Cheryl Hill (https://sketchfab.com/cherylhill28) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

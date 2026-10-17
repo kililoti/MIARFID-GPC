@@ -1,107 +1,144 @@
 {
   "accessors": [
     {
-      "bufferView": 1,
+      "bufferView": 2,
       "componentType": 5126,
-      "count": 1063,
+      "count": 1734,
       "max": [
-        0.6080899834632874,
-        16.624759674072266,
-        4.457129955291748
+        0.04025914520025253,
+        0.043097496032714844,
+        0.459084153175354
       ],
       "min": [
-        -0.6080899834632874,
-        0.0,
-        -0.17552000284194946
+        -0.04025930166244507,
+        -0.04065752029418945,
+        -0.41015625
       ],
       "type": "VEC3"
     },
     {
-      "bufferView": 1,
-      "byteOffset": 12756,
+      "bufferView": 2,
+      "byteOffset": 20808,
       "componentType": 5126,
-      "count": 1063,
+      "count": 1734,
       "max": [
-        0.9994744062423706,
-        1.0,
+        0.9859490394592285,
+        0.9801129102706909,
         1.0
       ],
       "min": [
-        -0.9994744062423706,
+        -0.9859490394592285,
         -1.0,
         -1.0
       ],
       "type": "VEC3"
     },
     {
+      "bufferView": 1,
+      "componentType": 5126,
+      "count": 1734,
+      "max": [
+        1.312671422958374,
+        1.0
+      ],
+      "min": [
+        0.0,
+        -0.22863700985908508
+      ],
+      "type": "VEC2"
+    },
+    {
       "bufferView": 0,
       "componentType": 5125,
-      "count": 1734,
+      "count": 2820,
       "type": "SCALAR"
     },
     {
-      "bufferView": 1,
-      "byteOffset": 25512,
+      "bufferView": 2,
+      "byteOffset": 41616,
       "componentType": 5126,
-      "count": 192,
+      "count": 20,
       "max": [
-        0.42085000872612,
-        16.246660232543945,
-        4.296440124511719
+        0.030260398983955383,
+        0.03210783004760742,
+        0.39712780714035034
       ],
       "min": [
-        -0.421889990568161,
-        15.988260269165039,
-        3.0536999702453613
+        -0.030260547995567322,
+        -0.026493072509765625,
+        0.3244504928588867
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 2,
+      "byteOffset": 41856,
+      "componentType": 5126,
+      "count": 20,
+      "max": [
+        0.9262689352035522,
+        0.7812549471855164,
+        -0.23375354707241058
+      ],
+      "min": [
+        -0.9262689352035522,
+        -0.9714198112487793,
+        -0.2373683601617813
       ],
       "type": "VEC3"
     },
     {
       "bufferView": 1,
-      "byteOffset": 27816,
+      "byteOffset": 13872,
       "componentType": 5126,
-      "count": 192,
+      "count": 20,
       "max": [
-        0.8947571516036987,
-        -0.4081489145755768,
-        0.892196774482727
+        0.973773181438446,
+        0.964246928691864
       ],
       "min": [
-        -0.8943066000938416,
-        -0.9997828602790833,
-        -0.718505322933197
+        0.026226811110973358,
+        0.5357534885406494
       ],
-      "type": "VEC3"
+      "type": "VEC2"
     },
     {
       "bufferView": 0,
-      "byteOffset": 6936,
+      "byteOffset": 11280,
       "componentType": 5125,
-      "count": 288,
+      "count": 30,
       "type": "SCALAR"
     }
   ],
   "asset": {
     "extras": {
-      "author": "Algirdas Lalys (https://sketchfab.com/alalys)",
+      "author": "Llamorak (https://sketchfab.com/Lamorak420)",
       "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
-      "source": "https://sketchfab.com/3d-models/street-light-b7dfecfd2dd34a5d8a67bf3e48666105",
-      "title": "Street Light"
+      "source": "https://sketchfab.com/3d-models/lamppost-9dd240ea790a46539d249b768d628744",
+      "title": "Lamppost"
     },
-    "generator": "Sketchfab-12.68.0",
+    "generator": "Sketchfab-13.51.0",
     "version": "2.0"
   },
   "bufferViews": [
     {
       "buffer": 0,
-      "byteLength": 8088,
+      "byteLength": 11400,
       "name": "floatBufferViews",
       "target": 34963
     },
     {
       "buffer": 0,
-      "byteLength": 30120,
-      "byteOffset": 8088,
+      "byteLength": 14032,
+      "byteOffset": 11400,
+      "byteStride": 8,
+      "name": "floatBufferViews",
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteLength": 42096,
+      "byteOffset": 25432,
       "byteStride": 12,
       "name": "floatBufferViews",
       "target": 34962
@@ -109,64 +146,71 @@
   ],
   "buffers": [
     {
-      "byteLength": 38208,
+      "byteLength": 67528,
       "uri": "scene.bin"
     }
   ],
   "materials": [
     {
       "doubleSided": true,
-      "name": "Street_Light_Mat",
+      "name": "metal",
       "pbrMetallicRoughness": {
         "baseColorFactor": [
-          0.566834568977356,
-          0.566834568977356,
-          0.566834568977356,
+          0.003815980000000003,
+          0.021979000000000005,
+          0.0009286500000000006,
           1.0
         ],
-        "metallicFactor": 0.0,
-        "roughnessFactor": 0.6
+        "metallicFactor": 0.30933427606636515,
+        "roughnessFactor": 0.9962886399597389
       }
     },
     {
       "doubleSided": true,
-      "name": "Glass",
+      "emissiveFactor": [
+        1.0,
+        1.0,
+        0.060046299999999914
+      ],
+      "name": "Material.001",
       "pbrMetallicRoughness": {
         "baseColorFactor": [
-          0.051531367003917694,
-          0.04667878523468971,
-          0.8000000715255737,
+          1.0,
+          0.96385,
+          0.0,
           1.0
         ],
         "metallicFactor": 0.0,
-        "roughnessFactor": 0.6
+        "roughnessFactor": 0.7983188505278604
       }
     }
   ],
   "meshes": [
     {
-      "name": "Cube_0",
+      "name": "lantern_metal_0",
       "primitives": [
         {
           "attributes": {
             "NORMAL": 1,
-            "POSITION": 0
+            "POSITION": 0,
+            "TEXCOORD_0": 2
           },
-          "indices": 2,
+          "indices": 3,
           "material": 0,
           "mode": 4
         }
       ]
     },
     {
-      "name": "Cube_1",
+      "name": "lantern_Material.001_0",
       "primitives": [
         {
           "attributes": {
-            "NORMAL": 4,
-            "POSITION": 3
+            "NORMAL": 5,
+            "POSITION": 4,
+            "TEXCOORD_0": 6
           },
-          "indices": 5,
+          "indices": 7,
           "material": 1,
           "mode": 4
         }
@@ -202,24 +246,17 @@
       "children": [
         2
       ],
-      "name": "Root"
-    },
-    {
-      "children": [
-        3,
-        4
-      ],
       "matrix": [
-        0.4,
+        0.009999999776482582,
         0.0,
         0.0,
         0.0,
         0.0,
         0.0,
-        0.4,
+        0.009999999776482582,
         0.0,
         0.0,
-        -0.50318,
+        -0.009999999776482582,
         0.0,
         0.0,
         0.0,
@@ -227,15 +264,46 @@
         0.0,
         1.0
       ],
-      "name": "Cube"
+      "name": "d3cf92d851824edc899ff67fdc49ea07.fbx"
+    },
+    {
+      "children": [
+        3
+      ],
+      "name": "RootNode"
+    },
+    {
+      "children": [
+        4,
+        5
+      ],
+      "matrix": [
+        619.6447143554688,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        -9.91582050720899e-05,
+        -608.6287231445232,
+        0.0,
+        0.0,
+        530.5278930663992,
+        -8.643396477469579e-05,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "name": "lantern"
     },
     {
       "mesh": 0,
-      "name": "Cube_0"
+      "name": "lantern_metal_0"
     },
     {
       "mesh": 1,
-      "name": "Cube_1"
+      "name": "lantern_Material.001_0"
     }
   ],
   "scene": 0,
