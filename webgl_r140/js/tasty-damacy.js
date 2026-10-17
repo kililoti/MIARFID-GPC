@@ -267,6 +267,17 @@ const SONIDOS_COMER = [
   { ruta: 'sounds/nom.wav', peso: 5 },
 ];
 
+// CHOQUE- sonido y sacudida de pantalla al chocar con algo que no se puede comer
+const RUTA_SONIDO_CHOQUE = 'sounds/katamari_no.wav';   // cambia la ruta por la de tu archivo
+const VOLUMEN_CHOQUE = 0.4;
+const INTERVALO_CHOQUE = 0.6;  // segundos minimos entre dos efectos de choque
+const FUERZA_TEMBLOR = 0.02;   // amplitud de la sacudida, en tamaños de slime
+var canalChoque;               // THREE.Audio del sonido de choque
+var ultimoChoque = -10;        // instante (s) del ultimo efecto de choque
+var temblor = 0;               // intensidad actual de la sacudida (1 al chocar, baja a 0)
+var chocandoAntes = false;     // si en el fotograma anterior el slime ya estaba chocando
+var chocandoAhora = false;     // si en este fotograma esta chocando
+
 var oyente;                    // AudioListener
 var musica;                    // THREE.Audio de la musica de fondo
 var canalesComer = [];         // reserva de Audio para que varios bocados puedan sonar a la vez
@@ -902,6 +913,15 @@ function crearAudio()
   // Empezamos con unos pocos canales; si hacen falta mas, se crean al vuelo
   for (let i = 0; i < 4; i++) crearCanalComer();
 
+  // CHOQUE- sonido de choque: un solo canal basta (nunca suenan dos a la vez)
+  canalChoque = new THREE.Audio(oyente);
+  canalChoque.setVolume(VOLUMEN_CHOQUE);
+  cargador.load(RUTA_SONIDO_CHOQUE, function (buffer) {
+    canalChoque.setBuffer(buffer);
+  }, undefined, function () {
+    console.error('No se pudo cargar el sonido de choque:', RUTA_SONIDO_CHOQUE);
+  });
+
   // Los navegadores no dejan reproducir sonido hasta que el usuario interactua
   // con la pagina: con la primera tecla o clic activamos el audio y la musica
   const activarAudio = function () {
@@ -957,6 +977,31 @@ function reproducirSonidoComer()
 
 // Crea un canal (THREE.Audio) para los sonidos de comer y lo añade a la reserva.
 // Cuando el sonido termina, Three.js pone isPlaying a false y el canal queda libre.
+// CHOQUE- reproduce el sonido de choque con una ligera variacion de tono
+function reproducirSonidoChoque()
+{
+  if (!canalChoque || !canalChoque.buffer) return;
+  if (canalChoque.isPlaying) canalChoque.stop();
+  canalChoque.setPlaybackRate(rand(0.9, 1.1));
+  canalChoque.play();
+}
+
+// CHOQUE- desplazamiento aleatorio de la camara mientras dura el temblor.
+// Se aplica solo al dibujar y se deshace justo despues: asi no altera la
+// posicion real de la camara (la camara con resorte la usa para calcular la
+// siguiente) ni se acumula fotograma a fotograma.
+function aplicarTemblor(camara, activo)
+{
+  if (activo) {
+    const a = temblor * FUERZA_TEMBLOR * tamano_slime;
+    camara.userData.desplazamientoTemblor = new THREE.Vector3(rand(-a, a), rand(-a, a), rand(-a, a));
+    camara.position.add(camara.userData.desplazamientoTemblor);
+  } else if (camara.userData.desplazamientoTemblor) {
+    camara.position.sub(camara.userData.desplazamientoTemblor);
+    camara.userData.desplazamientoTemblor = null;
+  }
+}
+
 function crearCanalComer()
 {
   const canal = new THREE.Audio(oyente);
@@ -1285,6 +1330,10 @@ function comprobarColisiones()
 {
   const r = radioSlime() * 0.9;   // un poco menos que el radio visual: se ve mas natural
 
+  // CHOQUE- recordamos si en el fotograma anterior ya estaba chocando
+  chocandoAntes = chocandoAhora;
+  chocandoAhora = false;
+
   for (let i = 0; i < objetos.length; i++) {
     const objeto = objetos[i];
     if (objeto.estado !== 'activo') continue;
@@ -1312,6 +1361,15 @@ function empujarFuera(objeto, dx, dz, distancia, r)
   const minimo = r + objeto.radio;
   pos_slime.x = objeto.grupo.position.x + (dx / distancia) * minimo;
   pos_slime.z = objeto.grupo.position.z + (dz / distancia) * minimo;
+
+  // CHOQUE- efecto solo al EMPEZAR a chocar (no mientras sigue empujando contra
+  // el objeto) y, ademas, como mucho una vez cada INTERVALO_CHOQUE segundos
+  chocandoAhora = true;
+  if (!chocandoAntes && clock.elapsedTime - ultimoChoque > INTERVALO_CHOQUE) {
+    ultimoChoque = clock.elapsedTime;
+    temblor = 1;
+    reproducirSonidoChoque();
+  }
 
   // HUD- aviso, como mucho uno cada 1,5 s (el choque dura varios fotogramas)
   if (clock.elapsedTime - ultimoAvisoChoque > 1.5) {
@@ -2004,6 +2062,9 @@ function update()
     // COLISIONES- comer lo que es mas pequeño y chocar con lo que es mas grande
     comprobarColisiones();
 
+    // CHOQUE- la sacudida se apaga sola en 0,35 s
+    temblor = Math.max(0, temblor - delta / 0.35);
+
     // CRECIMIENTO- aplicar el tamaño actual al modelo y a todo lo que depende de el
     actualizarCrecimiento(delta);
 
@@ -2255,7 +2316,11 @@ function render()
   renderer.setScissorTest(false);
   renderer.setViewport(0, 0, window.innerWidth, window.innerHeight);
   renderer.clear(true, true, true);
+
+  // CHOQUE- sacudida de la camara (solo en la vista principal, no en el minimapa)
+  aplicarTemblor(camera, temblor > 0);
   renderer.render( scene, camera );
+  aplicarTemblor(camera, false);
 
   // HUD circular en la esquina superior izquierda.
   const lado = Math.min(window.innerWidth, window.innerHeight) / 3.5;
