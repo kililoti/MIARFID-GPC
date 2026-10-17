@@ -268,7 +268,14 @@ const SONIDOS_COMER = [
 ];
 
 // CHOQUE- sonido y sacudida de pantalla al chocar con algo que no se puede comer
-const RUTA_SONIDO_CHOQUE = 'sounds/katamari_no.wav';   // cambia la ruta por la de tu archivo
+// Sonidos de choque con su peso: cuanto mayor el peso, mas probable.
+// Añade aqui tus otros sonidos de choque con el peso que quieras.
+const SONIDOS_CHOQUE = [
+  { ruta: 'sounds/katamari_no.wav', peso: 10 },
+  { ruta: 'sounds/katamari_no2.wav', peso: 8 },
+  { ruta: 'sounds/katamari_no3.wav', peso: 5 },
+  { ruta: 'sounds/ouch.wav', peso: 1 },
+];
 const VOLUMEN_CHOQUE = 0.3;
 const INTERVALO_CHOQUE = 0.6;  // segundos minimos entre dos efectos de choque
 const FUERZA_TEMBLOR = 0.02;   // amplitud de la sacudida, en tamaños de slime
@@ -922,10 +929,13 @@ function crearAudio()
   // CHOQUE- sonido de choque: un solo canal basta (nunca suenan dos a la vez)
   canalChoque = new THREE.Audio(oyente);
   canalChoque.setVolume(VOLUMEN_CHOQUE);
-  cargador.load(RUTA_SONIDO_CHOQUE, function (buffer) {
-    canalChoque.setBuffer(buffer);
-  }, undefined, function () {
-    console.error('No se pudo cargar el sonido de choque:', RUTA_SONIDO_CHOQUE);
+  // Cargamos cada sonido una vez y guardamos su buffer en su entrada de la lista
+  SONIDOS_CHOQUE.forEach(function (sonido) {
+    cargador.load(sonido.ruta, function (buffer) {
+      sonido.buffer = buffer;
+    }, undefined, function () {
+      console.error('No se pudo cargar el sonido de choque:', sonido.ruta);
+    });
   });
 
   // Los navegadores no dejan reproducir sonido hasta que el usuario interactua
@@ -983,12 +993,19 @@ function reproducirSonidoComer()
 
 // Crea un canal (THREE.Audio) para los sonidos de comer y lo añade a la reserva.
 // Cuando el sonido termina, Three.js pone isPlaying a false y el canal queda libre.
-// CHOQUE- reproduce el sonido de choque con una ligera variacion de tono
+// CHOQUE- reproduce un sonido de choque elegido al azar segun su peso
 function reproducirSonidoChoque()
 {
-  if (!canalChoque || !canalChoque.buffer) return;
+  if (!canalChoque) return;
+
+  // Solo elegimos entre los sonidos que ya se han cargado
+  const cargados = SONIDOS_CHOQUE.filter(function (s) { return s.buffer; });
+  if (cargados.length === 0) return;
+
+  const sonido = elegirConPeso(cargados);
   if (canalChoque.isPlaying) canalChoque.stop();
-  canalChoque.setPlaybackRate(rand(0.9, 1.1));
+  canalChoque.setBuffer(sonido.buffer);          // el sonido elegido se asigna al reproducir
+  canalChoque.setPlaybackRate(rand(0.9, 1.1));   // ligera variacion de tono
   canalChoque.play();
 }
 
