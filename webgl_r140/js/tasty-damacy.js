@@ -298,9 +298,37 @@ const ESCALAS = [
       ['molino2', 30, 100, 130],       // necesita 235 - 306: lo primero que se come al llegar
       ['molino', 30, 100, 130]         // necesita 235 - 306
     ]
+  },
+  {
+    // TRANSICION- quinto nivel: rodea al campo, que queda como una pequeña parte de el.
+    // De momento sin objetos.
+    nombre: 'El espacio',
+    // ESPACIO- sin suelo: el slime flota en el plano y = 0. Al llegar desaparecen
+    // los suelos de todos los niveles anteriores. radioSuelo sigue marcando hasta
+    // donde puede moverse el slime y donde se colocan los objetos.
+    espacio: true,
+    // Los objetos que queden de niveles anteriores (montes, castillos...) tambien
+    // desaparecen: si no, flotarian en el espacio. Pon false para conservarlos.
+    borrarObjetosAnteriores: true,
+    radioSuelo: 64000,         // unas 8 veces el del nivel 4 (8000), como entre los anteriores
+    altoBorde: 0,
+    umbral: 38400,             // el slime llega con 4800 y debe crecer unas 8 veces
+    catalogo: []
   }
 ];
 var escala_actual = 0;
+
+// CIELO- imagen de fondo de la escena (detras de todo, a distancia infinita).
+// Cada entrada se usa desde su nivel hasta que otra la sustituye: la primera
+// sirve para los niveles 1 a 4, la segunda para el 5 y la tercera para el 6.
+// equirectangular: true  -> panoramica 360º (proporcion 2:1): rodea la escena
+// equirectangular: false -> imagen normal: se queda fija detras, como un decorado
+const CIELOS = [
+  { desdeNivel: 1, imagen: 'images/tasty_damacy/arcoiris_fondo.jpg', equirectangular: true },
+  { desdeNivel: 5, imagen: 'images/tasty_damacy/fondo_nivel5.jpg', equirectangular: true },
+  { desdeNivel: 6, imagen: 'images/tasty_damacy/fondo_nivel6.jpg', equirectangular: true }
+];
+var cieloActual = null;        // entrada de CIELOS que se esta mostrando
 
 // ILUMINACION- como en el proyecto Tron: una luz ambiental y una direccional (el sol).
 // Aqui ademas el sol proyecta sombras y sigue al slime.
@@ -429,6 +457,7 @@ const MODELOS_OBJETOS = {
   halucinogena: { ruta: 'models/halucinogena/scene.gltf', plantilla: null, animaciones: [], animQuieto: 'animation.hallucigenia.move', animAndar: 'animation.hallucigenia.move'},
   golem: { ruta: 'models/golem/scene.gltf', plantilla: null, animaciones: [], animQuieto: 'ArmatureAction', animAndar: 'ArmatureAction'},
   esqueleto: { ruta: 'models/esqueleto/scene.gltf', plantilla: null, animaciones: [], animQuieto: 'Skeleton_Bones|Esqueleto_Parado', animAndar: 'Skeleton_Bones|Esquelto_Caminhar'},
+
 };
 var promesaModelos = null;     // se cumple cuando todos los modelos estan cargados
 var mixersObjetos = [];        // AnimationMixer de cada copia animada
@@ -481,6 +510,7 @@ function init()
 
   scene = new THREE.Scene();
   crearEntorno();                                         // reflejos para los materiales PBR
+  actualizarCielo(0);                                     // CIELO- el del primer nivel
 
   // cargo el objeto
   loadObjGLTF();
@@ -1883,6 +1913,16 @@ function crearSuelo(indice)
   const radio = E.radioSuelo * tamano_base;
   const alto = E.altoBorde * tamano_base;
 
+  // ESPACIO- un nivel espacial no tiene suelo ni fondo: solo guardamos su
+  // registro (el radio limita el movimiento y la colocacion de objetos)
+  if (E.espacio) {
+    const vacio = new THREE.Group();
+    vacio.name = 'suelo_' + indice;
+    scene.add(vacio);
+    suelos[indice] = { grupo: vacio, radio: radio, escalaInicial: 1, t: 1, fondoDesvaneciendo: null };
+    return;
+  }
+
   // TRANSICION- los suelos de varios niveles estan en el mismo plano (y = 0):
   // el del nivel 1 queda dentro del del nivel 2. Para que no parpadeen al
   // superponerse, polygonOffset "adelanta" un poco los niveles mas pequeños.
@@ -2056,10 +2096,71 @@ function iniciarTransicion(nueva)
     suelos[anterior].fondoDesvaneciendo = { malla: fondoAnterior, t: 0 };
   }
 
+  // ESPACIO- al entrar en un nivel espacial desaparecen todos los suelos
+  // anteriores (y, si el nivel lo indica, todos los objetos anteriores)
+  if (ESCALAS[nueva].espacio) {
+    for (let k = 0; k < nueva; k++) desvanecerSuelo(k);
+    if (ESCALAS[nueva].borrarObjetosAnteriores) {
+      objetos.forEach(function (objeto) {
+        if (objeto.estado === 'activo' && objeto.escala < nueva) desvanecerObjeto(objeto);
+      });
+    }
+  }
+
   // 5. Animacion de camara y aviso
   transicion.activa = true;
   transicion.t = 0;
   mostrarAviso('Nivel ' + (nueva + 1) + ': ' + ESCALAS[nueva].nombre, '', 3000);
+
+  // 6. CIELO- si el nivel nuevo usa otra imagen de cielo, se cambia
+  actualizarCielo(nueva);
+}
+
+// CIELO- busca que imagen de CIELOS corresponde a un nivel: la ultima entrada
+// cuyo "desdeNivel" sea menor o igual que el (indice 0 = nivel 1)
+function cieloParaNivel(indice)
+{
+  let elegido = null;
+  for (let i = 0; i < CIELOS.length; i++) {
+    if (CIELOS[i].desdeNivel <= indice + 1) elegido = CIELOS[i];
+  }
+  return elegido;
+}
+
+// CIELO- pone como fondo de la escena la imagen del nivel (si no es la que ya hay)
+function actualizarCielo(indice)
+{
+  const cielo = cieloParaNivel(indice);
+  if (!cielo || cielo === cieloActual) return;   // la misma imagen: no hay nada que cambiar
+  cieloActual = cielo;
+
+  new THREE.TextureLoader().load(cielo.imagen, function (textura) {
+    textura.encoding = THREE.sRGBEncoding;
+    if (cielo.equirectangular) textura.mapping = THREE.EquirectangularReflectionMapping;
+
+    // Liberamos la imagen del cielo anterior
+    if (scene.background && scene.background.isTexture) scene.background.dispose();
+    scene.background = textura;
+  }, undefined, function () {
+    console.error('No se pudo cargar el cielo:', cielo.imagen);
+  });
+}
+
+// ESPACIO- prepara un suelo (disco, borde y fondo) para desaparecer
+function desvanecerSuelo(indice)
+{
+  const suelo = suelos[indice];
+  if (!suelo || suelo.desvaneciendo || suelo.eliminado) return;
+
+  suelo.fondoDesvaneciendo = null;      // el fondo desaparece con todo el grupo
+  const materiales = [];
+  suelo.grupo.traverse(function (n) {
+    if (!n.isMesh) return;
+    n.material.transparent = true;      // cada suelo tiene sus propios materiales: no hace falta clonarlos
+    n.material.needsUpdate = true;
+    materiales.push(n.material);
+  });
+  suelo.desvaneciendo = { t: 0, materiales: materiales };
 }
 
 // Prepara un objeto para desaparecer. Sus materiales son compartidos con los demas
@@ -2091,6 +2192,27 @@ function actualizarTransicion(delta)
   }
 
   suelos.forEach(function (suelo) {
+    // ESPACIO- suelos que estan desapareciendo (con su borde y su fondo)
+    if (suelo.desvaneciendo) {
+      const v = suelo.desvaneciendo;
+      v.t += delta;
+      const d = Math.min(v.t / 2, 1);                 // 2 segundos
+      v.materiales.forEach(function (m) { m.opacity = 1 - d; });
+      if (d >= 1) {
+        scene.remove(suelo.grupo);
+        suelo.grupo.traverse(function (n) {
+          if (!n.isMesh) return;
+          n.geometry.dispose();
+          if (n.material.map) n.material.map.dispose();
+          n.material.dispose();
+        });
+        suelo.desvaneciendo = null;
+        suelo.eliminado = true;
+      }
+      return;
+    }
+    if (suelo.eliminado) return;
+
     // Suelos que estan creciendo
     if (suelo.t < 1) {
       suelo.t = Math.min(suelo.t + delta / DURACION_CRECER_SUELO, 1);
@@ -2659,7 +2781,12 @@ function render()
 
   // Luego la vista cenital solo pasa donde el stencil vale 1.
   configurarStencilHUD(true);
+  // CIELO- lo quitamos un momento: el minimapa debe ver solo el suelo desde arriba
+  // (el fondo no respeta la mascara circular y taparia todo el cuadrado)
+  const cieloGuardado = scene.background;
+  scene.background = null;
   renderer.render(scene, cameraTop);
+  scene.background = cieloGuardado;
   configurarStencilHUD(false);
 
   // Un aro cian hace legible el limite del minimapa.
