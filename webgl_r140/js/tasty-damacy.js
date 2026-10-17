@@ -276,11 +276,28 @@ const ESCALAS = [
     // Baldosas proporcionales al slime de este nivel (el nivel 3 usa 120 con un slime 8 veces menor)
     tamanoBaldosa: 960,        // 2 x 8000 / 960 = unas 17 repeticiones, como en el nivel 3
     texturaSuelo: 'images/tasty_damacy/nivel4.jpg',   // cambiala por la del nivel 4
-    umbral: 2400,
+    umbral: 4800,
     fondo: 'images/tasty_damacy/fondo_nivel4.jpg',  // descomentar cuando tengas su panoramica
-    altoFondo: 0.8,
+    altoFondo: 1,
     colorCielo: 0xcfe8ff,
-    catalogo: []
+    // Tamaño necesario para comer cada objeto = su tamaño / 0,425 (el nivel va de 300 a 2400).
+    // Los grandes van primero para que encuentren hueco al colocarse.
+    catalogo: [
+      ['godzilla', 1, 1400, 1400],       // necesita 2235 (criaturas: una de cada, iguales: el gran final)
+      ['serafin', 1, 950, 950],
+      ['halucinogena', 1, 1200, 1200],
+      ['golem', 1, 950, 950],
+      ['esqueleto', 1, 950, 950],
+      ['monte3', 10, 650, 800],        // necesita 1529 - 1882 (montes: muchos y de tamaños muy variados)
+      ['monte2', 14, 450, 650],        // necesita 1059 - 1529
+      ['monte1', 18, 300, 500],        // necesita 706 - 1176
+      ['ciudad', 4, 260, 320],         // necesita 612 - 753 (pocas)
+      ['castillo', 15, 160, 210],      // necesita 376 - 494
+      ['bosque', 40, 160, 210],        // necesita 376 - 494
+      ['mamut', 8, 160, 210],          // necesita 376 - 494
+      ['molino2', 30, 100, 130],       // necesita 235 - 306: lo primero que se come al llegar
+      ['molino', 30, 100, 130]         // necesita 235 - 306
+    ]
   }
 ];
 var escala_actual = 0;
@@ -397,6 +414,21 @@ const MODELOS_OBJETOS = {
   torre1: { ruta: 'models/torre1/scene.gltf', plantilla: null, animaciones: []},
   torre2: { ruta: 'models/torre2/scene.gltf', plantilla: null, animaciones: []},
   torre3: { ruta: 'models/torre3/scene.gltf', plantilla: null, animaciones: []},
+
+  molino: { ruta: 'models/molino/scene.gltf', plantilla: null, animaciones: []},
+  molino2: { ruta: 'models/molino2/scene.gltf', plantilla: null, animaciones: []},
+  mamut: { ruta: 'models/mamut/scene.gltf', plantilla: null, animaciones: [], animQuieto: 'ColumbianMammoth_Idle', animAndar: 'CoumbianMammoth_WalkCycle'},
+  bosque: { ruta: 'models/bosque/scene.gltf', plantilla: null, animaciones: []},
+  castillo: { ruta: 'models/castillo/scene.gltf', plantilla: null, animaciones: []},
+  ciudad: { ruta: 'models/ciudad/scene.gltf', plantilla: null, animaciones: []},
+  monte1: { ruta: 'models/monte1/scene.gltf', plantilla: null, animaciones: []},
+  monte2: { ruta: 'models/monte2/scene.gltf', plantilla: null, animaciones: []},
+  monte3: { ruta: 'models/monte3/scene.gltf', plantilla: null, animaciones: []},
+  godzilla: { ruta: 'models/godzilla/scene.gltf', plantilla: null, animaciones: [], animQuieto: 'animation.godzilla.idle', animAndar: 'animation.godzilla.move'},
+  serafin: { ruta: 'models/serafin/scene.gltf', plantilla: null, animaciones: [], animQuieto: 'idle', animAndar: 'fly'},
+  halucinogena: { ruta: 'models/halucinogena/scene.gltf', plantilla: null, animaciones: [], animQuieto: 'animation.hallucigenia.move', animAndar: 'animation.hallucigenia.move'},
+  golem: { ruta: 'models/golem/scene.gltf', plantilla: null, animaciones: [], animQuieto: 'ArmatureAction', animAndar: 'ArmatureAction'},
+  esqueleto: { ruta: 'models/esqueleto/scene.gltf', plantilla: null, animaciones: [], animQuieto: 'Skeleton_Bones|Esqueleto_Parado', animAndar: 'Skeleton_Bones|Esquelto_Caminhar'},
 };
 var promesaModelos = null;     // se cumple cuando todos los modelos estan cargados
 var mixersObjetos = [];        // AnimationMixer de cada copia animada
@@ -877,7 +909,23 @@ const TIPOS = {
   calamardo:      { nombre: 'Calamardo',            huella: 0.35, crear: crearDesdeModelo('calamardo'),      modelo: 'calamardo', movil: { velocidad: 1.2, huye: true, rotacionFrente: 0, seDetiene: false } },      // alto y estrecho. Solo tiene animacion de andar: no se para
   casa_esponja:   { nombre: 'Casa de Bob Esponja',  huella: 0.5,  crear: crearDesdeModelo('casa_esponja'),   modelo: 'casa_esponja' },   // la piña: mas alta que ancha
   casa_patricio:  { nombre: 'Casa de Patricio',     huella: 0.85, crear: crearDesdeModelo('casa_patricio'),  modelo: 'casa_patricio' },  // la roca: baja y ancha
-  casa_calamardo: { nombre: 'Casa de Calamardo',    huella: 0.45, crear: crearDesdeModelo('casa_calamardo'), modelo: 'casa_calamardo' }  // la cabeza moai: alta
+  casa_calamardo: { nombre: 'Casa de Calamardo',    huella: 0.45, crear: crearDesdeModelo('casa_calamardo'), modelo: 'casa_calamardo' },  // la cabeza moai: alta
+
+  // MODELOS- objetos del campo (nivel 4)
+  molino:       { nombre: 'Molino',       huella: 0.4,  crear: crearDesdeModelo('molino'),       modelo: 'molino' },       // alto, con aspas
+  molino2:      { nombre: 'Molino',       huella: 0.4,  crear: crearDesdeModelo('molino2'),      modelo: 'molino2' },
+  mamut:        { nombre: 'Mamut',        huella: 0.5,  crear: crearDesdeModelo('mamut'),        modelo: 'mamut', movil: { velocidad: 1.2, huye: true, rotacionFrente: 0, seDetiene: false } },        // animal alargado
+  bosque:       { nombre: 'Bosque',       huella: 0.85, crear: crearDesdeModelo('bosque'),       modelo: 'bosque' },       // grupo de arboles: ancho
+  castillo:     { nombre: 'Castillo',     huella: 0.8,  crear: crearDesdeModelo('castillo'),     modelo: 'castillo' },     // ancho, con torres
+  ciudad:       { nombre: 'Ciudad',       huella: 0.9,  crear: crearDesdeModelo('ciudad'),       modelo: 'ciudad' },       // muy ancha y baja
+  monte1:       { nombre: 'Monte',        huella: 0.9,  crear: crearDesdeModelo('monte1'),       modelo: 'monte1' },       // base muy ancha
+  monte2:       { nombre: 'Montaña',      huella: 0.9,  crear: crearDesdeModelo('monte2'),       modelo: 'monte2' },
+  monte3:       { nombre: 'Gran montaña', huella: 0.9,  crear: crearDesdeModelo('monte3'),       modelo: 'monte3' },
+  godzilla:     { nombre: 'Godzilla',     huella: 0.35, crear: crearDesdeModelo('godzilla'),     modelo: 'godzilla', movil: { velocidad: 0.8, huye: true, rotacionFrente: Math.PI } },     // alto, de pie
+  serafin:      { nombre: 'Serafín',      huella: 0.5,  crear: crearDesdeModelo('serafin'),      modelo: 'serafin', movil: { velocidad: 1.2, huye: true, rotacionFrente: Math.PI } },      // con alas
+  halucinogena: { nombre: 'Alucinógena',  huella: 0.6,  crear: crearDesdeModelo('halucinogena'), modelo: 'halucinogena', movil: { velocidad: '0.2', huye: true, rotacionFrente: Math.PI, seDetiene: false } },
+  golem: { nombre: 'Golem',  huella: 0.6,  crear: crearDesdeModelo('golem'), modelo: 'golem', movil: { velocidad: 0-6, huye: true, rotacionFrente: 0, seDetiene: false } },
+  esqueleto: { nombre: 'Esqueleto',  huella: 0.6,  crear: crearDesdeModelo('esqueleto'), modelo: 'esqueleto', movil: { velocidad: 1.2, huye: true, rotacionFrente: 0 } }
 };
 
 // Cada constructor monta el objeto en "unidades de objeto": apoyado en y = 0 y con
