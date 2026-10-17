@@ -1,0 +1,11 @@
+Model Information:
+* title:	Low-Poly Rock
+* source:	https://sketchfab.com/3d-models/low-poly-rock-31a9c771e8dd44c982b37a347a189953
+* author:	dvnc.tech (https://sketchfab.com/dvnc.tech)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Low-Poly Rock" (https://sketchfab.com/3d-models/low-poly-rock-31a9c771e8dd44c982b37a347a189953) by dvnc.tech (https://sketchfab.com/dvnc.tech) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

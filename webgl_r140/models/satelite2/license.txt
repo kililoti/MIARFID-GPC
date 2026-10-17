@@ -1,0 +1,11 @@
+Model Information:
+* title:	Satellite - Low Poly
+* source:	https://sketchfab.com/3d-models/satellite-low-poly-34f9d408d8d9407cba77b747a4ce4c1b
+* author:	calebcram (https://sketchfab.com/calebcram)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Satellite - Low Poly" (https://sketchfab.com/3d-models/satellite-low-poly-34f9d408d8d9407cba77b747a4ce4c1b) by calebcram (https://sketchfab.com/calebcram) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

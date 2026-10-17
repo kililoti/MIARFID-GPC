@@ -1,0 +1,11 @@
+Model Information:
+* title:	Rocket 🚀
+* source:	https://sketchfab.com/3d-models/rocket-9b9b64b138f24e4a908238c0b471930e
+* author:	lizlancaster (https://sketchfab.com/lizlancaster)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Rocket 🚀" (https://sketchfab.com/3d-models/rocket-9b9b64b138f24e4a908238c0b471930e) by lizlancaster (https://sketchfab.com/lizlancaster) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

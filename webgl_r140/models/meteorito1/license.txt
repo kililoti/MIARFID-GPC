@@ -1,0 +1,11 @@
+Model Information:
+* title:	Stylized Rock2
+* source:	https://sketchfab.com/3d-models/stylized-rock2-cffbe51c02e549bf839556dfa3820dc1
+* author:	Bull studios (https://sketchfab.com/dzemalmclaren)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Stylized Rock2" (https://sketchfab.com/3d-models/stylized-rock2-cffbe51c02e549bf839556dfa3820dc1) by Bull studios (https://sketchfab.com/dzemalmclaren) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

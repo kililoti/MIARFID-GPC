@@ -1,0 +1,11 @@
+Model Information:
+* title:	Stone Debris
+* source:	https://sketchfab.com/3d-models/stone-debris-7aa1a1c3aebd40c982ac2e3cd201e7a8
+* author:	Bull studios (https://sketchfab.com/dzemalmclaren)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Stone Debris" (https://sketchfab.com/3d-models/stone-debris-7aa1a1c3aebd40c982ac2e3cd201e7a8) by Bull studios (https://sketchfab.com/dzemalmclaren) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
