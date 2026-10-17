@@ -1,0 +1,11 @@
+Model Information:
+* title:	Low Poly Building
+* source:	https://sketchfab.com/3d-models/low-poly-building-f0722265cf8d4a41ba78ab1587d18ac8
+* author:	A.S.D. (https://sketchfab.com/arvindsudarshan53)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Low Poly Building" (https://sketchfab.com/3d-models/low-poly-building-f0722265cf8d4a41ba78ab1587d18ac8) by A.S.D. (https://sketchfab.com/arvindsudarshan53) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
