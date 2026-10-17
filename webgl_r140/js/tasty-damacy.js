@@ -256,8 +256,8 @@ const centro_hud = new THREE.Vector3(0, 10, 0); // punto sobre el que se coloca 
 // SONIDO- configuracion y estado del audio. Va antes de init() porque crearAudio()
 // se ejecuta dentro de init() y necesita que estas variables ya existan.
 const RUTA_MUSICA = 'sounds/9-lonely-rolling-star.mp3';
-const VOLUMEN_MUSICA = 0.05;
-const VOLUMEN_EFECTOS = 0.2;
+const VOLUMEN_MUSICA = 0.1;
+const VOLUMEN_EFECTOS = 0.6;
 
 // Sonidos de comer con su peso: cuanto mayor el peso, mas probable.
 const SONIDOS_COMER = [
@@ -269,7 +269,7 @@ const SONIDOS_COMER = [
 
 // CHOQUE- sonido y sacudida de pantalla al chocar con algo que no se puede comer
 const RUTA_SONIDO_CHOQUE = 'sounds/katamari_no.wav';   // cambia la ruta por la de tu archivo
-const VOLUMEN_CHOQUE = 0.4;
+const VOLUMEN_CHOQUE = 0.3;
 const INTERVALO_CHOQUE = 0.6;  // segundos minimos entre dos efectos de choque
 const FUERZA_TEMBLOR = 0.02;   // amplitud de la sacudida, en tamaños de slime
 var canalChoque;               // THREE.Audio del sonido de choque
