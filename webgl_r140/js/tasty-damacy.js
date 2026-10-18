@@ -138,6 +138,10 @@ document.addEventListener('keyup', (event) => {
     case 'KeyH':
       alternarFlecha();
       break;
+    // BLOOM- activar / desactivar el efecto de brillo
+    case 'KeyB':
+      alternarBloom();
+      break;
     // DEBUG- saltar directamente a un nivel con las teclas numericas (1, 2, 3, 4...)
     case 'Digit1':
     case 'Digit2':
@@ -569,6 +573,17 @@ const NOMBRES_CAMARA = {
   seguimiento: 'Seguimiento'
 };
 
+// BLOOM- brillo de cada nivel (si el nivel no tiene "bloom" en ESCALAS, se usa
+// BLOOM_DIA). De dia, un brillo sutil: umbral alto para que solo destaquen los
+// reflejos; en el espacio, con fondo oscuro, mucho mas fuerte: el Sol resplandece.
+// Van antes de init() porque crearBloom() se ejecuta dentro de init().
+const BLOOM_DIA = { fuerza: 0.35, radio: 0.4, umbral: 0.9 };
+const BLOOM_ESPACIO = { fuerza: 0.35, radio: 0.6, umbral: 0.8 };
+var composer = null;
+var bloomPass = null;
+var bloomActivo = false;
+var bloomObjetivo = null;
+
 init();
 render();
 
@@ -611,6 +626,7 @@ function init()
   crearHUD();
   crearMenuInicio();
   crearPantallaPausa();
+  crearBloom();
 
   // PAUSA- si se cambia de pestaña o de ventana en mitad de la partida, se pausa sola
   document.addEventListener('visibilitychange', function () {
@@ -2206,6 +2222,7 @@ function crearMenuInicio()
         '<dt>Click izquierdo y derecho</dt><dd>Girar la cámara (modos cámara orbital y de seguimiento)</dd>' +
         '<dt>Rueda del ratón</dt><dd>Acercar o alejar la cámara</dd>' +
         '<dt><kbd>H</kbd></dt><dd>Mostrar u ocultar la flecha guía</dd>' +
+        '<dt><kbd>B</kbd></dt><dd>Activar o desactivar el efecto de brillo</dd>' +
         '<dt><kbd>M</kbd></dt><dd>Activar o silenciar el sonido</dd>' +
         '<dt><kbd>P</kbd></dt><dd>Pausar o despausar el juego</dd>' +
       '</dl>' +
@@ -2218,7 +2235,7 @@ function crearMenuInicio()
     '<div class="menu-tarjeta menu-creditos" style="display: none">' +
       '<h2>Créditos</h2>' +
       '<h3>Desarrollo</h3><ul><li>Francisco He Chi</li></ul>' +
-      '<h3>Modelos 3D</h3><ul><li>Slime: powers28 (Sketchfab, CC BY)</li><li>Añade aquí el resto de modelos y sus autores</li><li>Añade aquí el resto de modelos y sus autores</li><li>Añade aquí el resto de modelos y sus autores</li><li>Añade aquí el resto de modelos y sus autores</li><li>Añade aquí el resto de modelos y sus autores</li><li>Añade aquí el resto de modelos y sus autores</li><li>Añade aquí el resto de modelos y sus autores</li><li>Añade aquí el resto de modelos y sus autores</li><li>Añade aquí el resto de modelos y sus autores</li><li>Añade aquí el resto de modelos y sus autores</li></ul>' +
+      '<h3>Modelos 3D</h3><ul><li>Slime: powers28 (Sketchfab, CC BY)</li><li>Añade aquí el resto de modelos y sus autores</li></ul>' +
       '<h3>Música y sonidos</h3><ul><li>Añade aquí tus canciones y efectos</li></ul>' +
       '<h3>Texturas e imágenes</h3><ul><li>Añade aquí tus texturas y fondos</li></ul>' +
       '<h3>Librerías</h3><ul><li>Three.js r140</li><li>stats.js</li></ul>' +
@@ -2785,6 +2802,9 @@ function iniciarTransicion(nueva)
 
   // 6. CIELO- si el nivel nuevo usa otra imagen de cielo, se cambia
   actualizarCielo(nueva);
+
+  // 7. BLOOM- cada nivel puede tener su propio brillo (fuerte en el espacio)
+  aplicarBloomNivel(nueva);
 }
 
 // CIELO- busca que imagen de CIELOS corresponde a un nivel: la ultima entrada
@@ -2799,6 +2819,77 @@ function cieloParaNivel(indice)
 }
 
 // CIELO- pone como fondo de la escena la imagen del nivel (si no es la que ya hay)
+// ---------------------------------------------------------------------------
+// BLOOM- efecto de brillo (como en el proyecto Tron) con postprocesado:
+//   1. RenderPass: dibuja la escena en una imagen intermedia
+//   2. UnrealBloomPass: toma lo que supera el umbral de brillo, lo desenfoca
+//      varias veces y lo suma a la imagen: lo brillante "desprende" luz
+//   3. Correccion de color: la imagen intermedia esta en espacio lineal; al
+//      mostrarla hay que pasarla a sRGB (lo que hace outputEncoding cuando se
+//      dibuja directamente en pantalla), si no se veria mas oscura
+// ---------------------------------------------------------------------------
+// (BLOOM_DIA, BLOOM_ESPACIO, composer... estan declarados antes de init())
+
+function crearBloom()
+{
+  // Si falta algun script de efectos en el HTML, el juego sigue sin brillo
+  if (!THREE.EffectComposer || !THREE.RenderPass || !THREE.UnrealBloomPass || !THREE.ShaderPass) {
+    console.warn('BLOOM: faltan los scripts de efectos en el HTML; el juego sigue sin brillo');
+    return;
+  }
+
+  composer = new THREE.EffectComposer(renderer);
+  composer.addPass(new THREE.RenderPass(scene, camera));
+
+  bloomPass = new THREE.UnrealBloomPass(
+    new THREE.Vector2(window.innerWidth, window.innerHeight),
+    BLOOM_DIA.fuerza, BLOOM_DIA.radio, BLOOM_DIA.umbral
+  );
+  composer.addPass(bloomPass);
+
+  // Correccion de color lineal -> sRGB. Si tienes GammaCorrectionShader.js en el
+  // HTML se usa ese; si no, este equivalente (LinearTosRGB lo aporta Three.js)
+  const correccion = THREE.GammaCorrectionShader || {
+    uniforms: { tDiffuse: { value: null } },
+    vertexShader:
+      'varying vec2 vUv;\n' +
+      'void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+    fragmentShader:
+      'uniform sampler2D tDiffuse;\n' +
+      'varying vec2 vUv;\n' +
+      'void main() { gl_FragColor = LinearTosRGB(texture2D(tDiffuse, vUv)); }'
+  };
+  composer.addPass(new THREE.ShaderPass(correccion));
+
+  aplicarBloomNivel(escala_actual);
+}
+
+// Elige el brillo del nivel: el suyo si lo tiene ("bloom" en ESCALAS), el del
+// espacio si es espacial y, si no, el de dia. El cambio es gradual (actualizarBloom).
+function aplicarBloomNivel(indice)
+{
+  const E = ESCALAS[indice];
+  bloomObjetivo = E.bloom || (E.espacio ? BLOOM_ESPACIO : BLOOM_DIA);
+}
+
+function actualizarBloom(delta)
+{
+  if (!bloomPass || !bloomObjetivo) return;
+  bloomPass.strength = amortiguar(bloomPass.strength, bloomObjetivo.fuerza, 1.5, delta);
+  bloomPass.radius = amortiguar(bloomPass.radius, bloomObjetivo.radio, 1.5, delta);
+  bloomPass.threshold = amortiguar(bloomPass.threshold, bloomObjetivo.umbral, 1.5, delta);
+}
+
+function alternarBloom()
+{
+  if (!composer) {
+    mostrarAviso('Efecto de brillo no disponible', 'info', 1200);
+    return;
+  }
+  bloomActivo = !bloomActivo;
+  mostrarAviso(bloomActivo ? 'Brillo activado' : 'Brillo desactivado', 'info', 1000);
+}
+
 function actualizarCielo(indice)
 {
   const cielo = cieloParaNivel(indice);
@@ -3118,6 +3209,7 @@ function configurarStencilHUD(activo, escenaObjetivo)
 function updateAspectRatio()
 {
   renderer.setSize(window.innerWidth, window.innerHeight);
+  if (composer) composer.setSize(window.innerWidth, window.innerHeight);   // BLOOM
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
 }
@@ -3194,6 +3286,7 @@ function update()
     if (juegoIniciado && !juegoTerminado) tiempoJugado += delta;   // MENU / FINAL- solo cuenta jugando
     actualizarHUD();
     actualizarApagon(delta);                       // FINAL- sin Sol, las luces se apagan
+    actualizarBloom(delta);                        // BLOOM- cambio suave de intensidad entre niveles
 
     // VISOR- gira el modelo y lo cambia (como mucho cada INTERVALO_VISOR segundos)
     actualizarVisor(delta);
@@ -3435,7 +3528,10 @@ function render()
 
   // CHOQUE- sacudida de la camara (solo en la vista principal, no en el minimapa)
   aplicarTemblor(camera, temblor > 0);
-  renderer.render( scene, camera );
+  // BLOOM- la vista principal pasa por el composer (escena + brillo + correccion
+  // de color). El minimapa y el visor se siguen dibujando despues, sin brillo.
+  if (bloomActivo && composer) composer.render();
+  else renderer.render( scene, camera );
   aplicarTemblor(camera, false);
 
   // HUD circular en la esquina superior izquierda.
