@@ -397,8 +397,15 @@ const centro_hud = new THREE.Vector3(0, 10, 0); // punto sobre el que se coloca 
 
 // SONIDO- configuracion y estado del audio. Va antes de init() porque crearAudio()
 // se ejecuta dentro de init() y necesita que estas variables ya existan.
-const RUTA_MUSICA = 'sounds/9-lonely-rolling-star.mp3';
-const VOLUMEN_MUSICA = 0.15;
+// MUSICA- lista de canciones con su peso: cuanto mayor el peso, mas probable.
+// Al empezar se elige una al azar y se repite en bucle durante toda la partida.
+// Añade aqui tus canciones.
+const CANCIONES = [
+  { ruta: 'sounds/lonely_rolling_star.mp3', peso: 1 },
+  { ruta: 'sounds/lets_fly_to_rio.mp3', peso: 1 },
+];
+const VOLUMEN_MUSICA = 0.2;
+var cancionActual = null;      // entrada de CANCIONES que esta sonando
 const VOLUMEN_EFECTOS = 0.5;
 
 // Sonidos de comer con su peso: cuanto mayor el peso, mas probable.
@@ -413,7 +420,7 @@ const SONIDOS_COMER = [
 // Sonidos de choque con su peso: cuanto mayor el peso, mas probable.
 // Añade aqui tus otros sonidos de choque con el peso que quieras.
 // FINAL- sonido de victoria al comerse el Sol (cambia la ruta por la de tu archivo)
-const RUTA_SONIDO_VICTORIA = 'sounds/victoria.wav';
+const RUTA_SONIDO_VICTORIA = 'sounds/katamari_victoria.wav';
 const VOLUMEN_VICTORIA = 0.6;
 var canalVictoria;             // THREE.Audio del sonido de victoria
 
@@ -1355,17 +1362,10 @@ function crearAudio()
 
   const cargador = new THREE.AudioLoader();
 
-  // Musica de fondo en bucle
+  // MUSICA- se elige una cancion al empezar y suena en bucle toda la partida
   musica = new THREE.Audio(oyente);
-  cargador.load(RUTA_MUSICA, function (buffer) {
-    musica.setBuffer(buffer);
-    musica.setLoop(true);
-    musica.setVolume(VOLUMEN_MUSICA);
-    // Si el usuario ya ha interactuado, empieza ya; si no, empezara al pulsar algo
-    if (oyente.context.state === 'running') musica.play();
-  }, undefined, function () {
-    console.error('No se pudo cargar la musica:', RUTA_MUSICA);
-  });
+  musica.setVolume(VOLUMEN_MUSICA);
+  elegirCancion();
 
   // Sonidos de comer: cargamos cada buffer una vez y lo reutilizamos
   SONIDOS_COMER.forEach(function (sonido) {
@@ -1410,6 +1410,23 @@ function crearAudio()
   };
   document.addEventListener('keydown', activarAudio);
   document.addEventListener('pointerdown', activarAudio);
+}
+
+// MUSICA- elige una cancion al azar segun su peso y la reproduce en bucle.
+// Solo se descarga la cancion elegida: las demas no hacen falta en esta partida.
+function elegirCancion()
+{
+  cancionActual = elegirConPeso(CANCIONES);
+
+  new THREE.AudioLoader().load(cancionActual.ruta, function (buffer) {
+    musica.setBuffer(buffer);
+    musica.setLoop(true);            // se repite durante toda la partida
+    // Si el usuario ya ha interactuado, empieza ya; si no, empezara al pulsar algo
+    if (oyente.context.state === 'running') musica.play();
+    console.log('Música:', cancionActual.ruta);
+  }, undefined, function () {
+    console.error('No se pudo cargar la musica:', cancionActual.ruta);
+  });
 }
 
 // Eleccion aleatoria con pesos: se tira un numero entre 0 y la suma de los pesos
