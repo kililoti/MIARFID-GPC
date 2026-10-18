@@ -77,7 +77,15 @@ const controls = {
 };
 
 document.addEventListener('keydown', (event) => {
+  if (!juegoIniciado) return;    // MENU- hasta pulsar "Jugar", el slime no se mueve
   if (juegoTerminado) return;    // FINAL- con el juego terminado, el slime ya no se mueve
+
+  // PAUSA- la P pausa y reanuda; en pausa no funciona ninguna otra tecla
+  if (event.code === 'KeyP') {
+    if (!event.repeat) alternarPausa();
+    return;
+  }
+  if (juegoPausado) return;
   switch (event.code) {
     case 'ArrowUp':
     case 'KeyW':
@@ -95,16 +103,12 @@ document.addEventListener('keydown', (event) => {
     case 'KeyD':
       controls.moveRight = true;
       break;
-    case 'KeyQ':
-      controls.rotateCameraLeft = true;
-      break;
-    case 'KeyE':
-      controls.rotateCameraRight = true;
-      break;
   }
 });
 
 document.addEventListener('keyup', (event) => {
+  if (!juegoIniciado) return;    // MENU- en el menu no funcionan las teclas del juego
+  if (juegoPausado) return;      // PAUSA- tampoco en pausa
   switch (event.code) {
     case 'ArrowUp':
     case 'KeyW':
@@ -122,12 +126,6 @@ document.addEventListener('keyup', (event) => {
     case 'KeyD':
       controls.moveRight = false;
       break;
-    case 'KeyQ':
-      controls.rotateCameraLeft = false;
-      break;
-    case 'KeyE':
-      controls.rotateCameraRight = false;
-      break;
     // DEBUG- cambio de camara.
     case 'KeyC':
       cambiarCamara();
@@ -137,7 +135,7 @@ document.addEventListener('keyup', (event) => {
       alternarSilencio();
       break;
     // FLECHA- activar / desactivar la flecha guia
-    case 'KeyN':
+    case 'KeyH':
       alternarFlecha();
       break;
     // DEBUG- saltar directamente a un nivel con las teclas numericas (1, 2, 3, 4...)
@@ -540,6 +538,13 @@ var puntos = 0;
 
 // FINAL- el juego termina al comerse el Sol
 var juegoTerminado = false;
+
+// MENU- la partida empieza al pulsar "Jugar" en el menu de inicio
+var juegoIniciado = false;
+
+// PAUSA- con la P se detiene todo: movimiento, objetos, animaciones y cronometro
+var juegoPausado = false;
+var pantallaPausa;
 var apagon = 0;                // de 0 a 1: al comerse el Sol, las luces se apagan poco a poco
 const ESPERA_PANTALLA_FINAL = 2.5;   // segundos entre el bocado final y la pantalla de victoria
 var tiempoJugado = 0;          // segundos jugando de verdad (no cuenta la carga ni la pestaña oculta)
@@ -604,6 +609,16 @@ function init()
   crearControlesCamaraSeguimiento();
   crearAudio();
   crearHUD();
+  crearMenuInicio();
+  crearPantallaPausa();
+
+  // PAUSA- si se cambia de pestaña o de ventana en mitad de la partida, se pausa sola
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden && !juegoPausado) alternarPausa();
+  });
+  window.addEventListener('blur', function () {
+    if (!juegoPausado) alternarPausa();
+  });
   crearResalte();
   crearFlecha();
   crearVisor();
@@ -737,7 +752,8 @@ function loadObjGLTF()
             });
 
             // HUD- presentamos el nivel con un aviso central
-            mostrarAviso('Nivel 1: ' + ESCALAS[0].nombre, '', 2500);
+            // (si el jugador sigue en el menu, el aviso se mostrara al pulsar "Jugar")
+            if (juegoIniciado) mostrarAviso('Nivel 1: ' + ESCALAS[0].nombre, '', 2500);
 
             // A partir de ahora manda la camara en tercera persona
             cameraControls.enabled = false;
@@ -1550,6 +1566,16 @@ function crearHUD()
     .hud-barra > div { height: 100%; width: 0; border-radius: 5px; background: linear-gradient(90deg, #7fe3d3, #b6ff7a); transition: width 0.2s; }
     .hud-tamano { font-size: 13px; opacity: 0.8; font-variant-numeric: tabular-nums; }
 
+    /* Firma del autor: siempre visible en la esquina inferior izquierda */
+    .hud-autor {
+      position: fixed; left: 12px; bottom: 10px; z-index: 70;
+      font-family: 'Segoe UI', 'Trebuchet MS', sans-serif;
+      font-size: 13px; color: #ffffff; opacity: 0.7;
+      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
+      pointer-events: none;            /* no bloquea el raton (camara de seguimiento) */
+      user-select: none;
+    }
+
     /* Lista de bocados: mensajes que aparecen y se desvanecen bajo el panel derecho */
     .hud-bocados {
       position: fixed; top: 150px; right: 12px; z-index: 20;
@@ -1626,6 +1652,12 @@ function crearHUD()
   hud.camara.className = 'hud-panel hud-camara';
   document.body.appendChild(hud.camara);
   mostrarModoCamara(false);
+
+  // Firma del autor, visible durante toda la partida (tambien en el menu y al final)
+  const autor = document.createElement('div');
+  autor.className = 'hud-autor';
+  autor.textContent = 'Hecho por Francisco He Chi (kililoti)';     // pon aqui tu nombre
+  document.body.appendChild(autor);
 }
 
 // Escribe un valor en el HUD solo si ha cambiado: tocar el DOM en cada
@@ -2103,6 +2135,189 @@ function comer(objeto)
 }
 
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// MENU- pantalla de inicio (nombre, explicacion, controles y botones) y creditos.
+// Se crea desde el codigo, como el HUD, asi que no hay que tocar el HTML.
+// ---------------------------------------------------------------------------
+function crearMenuInicio()
+{
+  const estilo = document.createElement('style');
+  estilo.textContent = `
+    /* Mientras se ve el menu, el HUD se oculta */
+    body.en-menu .hud-panel, body.en-menu .hud-bocados, body.en-menu .hud-aviso { display: none; }
+
+    .menu-fondo {
+      position: fixed; inset: 0; z-index: 60;
+      display: flex; align-items: center; justify-content: center; padding: 16px;
+      background: radial-gradient(ellipse at center, rgba(20, 25, 45, 0.35), rgba(20, 25, 45, 0.85));
+      font-family: 'Segoe UI', 'Trebuchet MS', sans-serif; color: #ffffff;
+      transition: opacity 0.5s;
+    }
+    .menu-fondo.oculto { opacity: 0; pointer-events: none; }
+    .menu-tarjeta {
+      width: min(600px, 100%); max-height: 100%; overflow-y: auto;
+      padding: 30px 38px; border-radius: 20px; text-align: center;
+      background: rgba(25, 30, 45, 0.9); box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    }
+    .menu-titulo {
+      font-size: clamp(44px, 8vw, 72px); font-weight: 800; line-height: 1; margin-bottom: 14px;
+      color: #8dffb5; letter-spacing: -0.02em;
+      text-shadow: 0 5px 0 #2f8f6a, 0 12px 30px rgba(0, 0, 0, 0.4);
+    }
+    .menu-texto { opacity: 0.85; line-height: 1.5; margin-bottom: 20px; }
+    .menu-controles {
+      display: grid; grid-template-columns: auto 1fr; gap: 8px 16px;
+      text-align: left; max-width: 440px; margin: 0 auto 26px; font-size: 15px; align-items: center;
+    }
+    .menu-controles dt { text-align: right; white-space: nowrap; }
+    .menu-controles dd { opacity: 0.8; }
+    .menu-tarjeta kbd {
+      display: inline-block; min-width: 24px; padding: 1px 7px; border-radius: 6px;
+      background: rgba(255, 255, 255, 0.14); border-bottom: 3px solid rgba(255, 255, 255, 0.25);
+      font-family: inherit; font-size: 13px; text-align: center;
+    }
+    .menu-botones { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+    .menu-boton {
+      font-family: inherit; font-size: 20px; font-weight: 700; padding: 10px 34px;
+      border: none; border-radius: 999px; cursor: pointer; transition: transform 0.1s;
+    }
+    .menu-boton:hover { transform: translateY(-2px); }
+    .menu-boton.principal { background: #8dffb5; color: #1f2a36; }
+    .menu-boton.secundario { background: rgba(255, 255, 255, 0.14); color: #ffffff; }
+    .menu-creditos h2 { font-size: 36px; margin-bottom: 18px; color: #8dffb5; }
+    .menu-creditos h3 { font-size: 17px; margin: 16px 0 6px; }
+    .menu-creditos ul { list-style: none; opacity: 0.8; line-height: 1.6; margin-bottom: 6px; }
+  `;
+  document.head.appendChild(estilo);
+  document.body.classList.add('en-menu');
+
+  const fondo = document.createElement('div');
+  fondo.className = 'menu-fondo';
+  fondo.innerHTML =
+    // --- Pantalla principal ---
+    '<div class="menu-tarjeta menu-principal">' +
+      '<div class="menu-titulo">Tasty Katamari</div>' +
+      '<p class="menu-texto">Eres un slime con mucha hambre. Cómete todo lo que sea más pequeño que tú para crecer. ' +
+        'Si algo te hace rebotar, significa que aún eres demasiado pequeño. Cada vez que alcanzas el tamaño necesario, ' +
+        'el mundo se hace más grande y descubres un nivel nuevo. ¡A comer!</p>' +
+      '<dl class="menu-controles">' +
+        '<dt><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd></dt><dd>Moverte (también con las flechas)</dd>' +
+        '<dt><kbd>C</kbd></dt><dd>Cambiar de cámara</dd>' +
+        '<dt>Click izquierdo y derecho</dt><dd>Girar la cámara (modos cámara orbital y de seguimiento)</dd>' +
+        '<dt>Rueda del ratón</dt><dd>Acercar o alejar la cámara</dd>' +
+        '<dt><kbd>H</kbd></dt><dd>Mostrar u ocultar la flecha guía</dd>' +
+        '<dt><kbd>M</kbd></dt><dd>Activar o silenciar el sonido</dd>' +
+        '<dt><kbd>P</kbd></dt><dd>Pausar o despausar el juego</dd>' +
+      '</dl>' +
+      '<div class="menu-botones">' +
+        '<button class="menu-boton principal boton-jugar">Jugar</button>' +
+        '<button class="menu-boton secundario boton-creditos">Créditos</button>' +
+      '</div>' +
+    '</div>' +
+    // --- Creditos (ocultos hasta pulsar el boton) ---
+    '<div class="menu-tarjeta menu-creditos" style="display: none">' +
+      '<h2>Créditos</h2>' +
+      '<h3>Desarrollo</h3><ul><li>Francisco He Chi</li></ul>' +
+      '<h3>Modelos 3D</h3><ul><li>Slime: powers28 (Sketchfab, CC BY)</li><li>Añade aquí el resto de modelos y sus autores</li><li>Añade aquí el resto de modelos y sus autores</li><li>Añade aquí el resto de modelos y sus autores</li><li>Añade aquí el resto de modelos y sus autores</li><li>Añade aquí el resto de modelos y sus autores</li><li>Añade aquí el resto de modelos y sus autores</li><li>Añade aquí el resto de modelos y sus autores</li><li>Añade aquí el resto de modelos y sus autores</li><li>Añade aquí el resto de modelos y sus autores</li><li>Añade aquí el resto de modelos y sus autores</li></ul>' +
+      '<h3>Música y sonidos</h3><ul><li>Añade aquí tus canciones y efectos</li></ul>' +
+      '<h3>Texturas e imágenes</h3><ul><li>Añade aquí tus texturas y fondos</li></ul>' +
+      '<h3>Librerías</h3><ul><li>Three.js r140</li><li>stats.js</li></ul>' +
+      '<div class="menu-botones" style="margin-top: 22px">' +
+        '<button class="menu-boton secundario boton-volver">Volver</button>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(fondo);
+
+  const principal = fondo.querySelector('.menu-principal');
+  const creditos = fondo.querySelector('.menu-creditos');
+
+  fondo.querySelector('.boton-jugar').addEventListener('click', function () {
+    empezarPartida(fondo);
+  });
+  fondo.querySelector('.boton-creditos').addEventListener('click', function () {
+    principal.style.display = 'none';
+    creditos.style.display = 'block';
+  });
+  fondo.querySelector('.boton-volver').addEventListener('click', function () {
+    creditos.style.display = 'none';
+    principal.style.display = 'block';
+  });
+}
+
+// ---------------------------------------------------------------------------
+// PAUSA- pantalla de pausa y cambio entre pausa y juego
+// ---------------------------------------------------------------------------
+function crearPantallaPausa()
+{
+  const estilo = document.createElement('style');
+  estilo.textContent = `
+    .pantalla-pausa {
+      position: fixed; inset: 0; z-index: 55;
+      display: none; align-items: center; justify-content: center;
+      background: rgba(10, 12, 25, 0.55);
+      font-family: 'Segoe UI', 'Trebuchet MS', sans-serif; color: #ffffff;
+    }
+    .pantalla-pausa.visible { display: flex; }
+    .pausa-tarjeta {
+      padding: 26px 40px; border-radius: 18px; text-align: center;
+      background: rgba(25, 30, 45, 0.9);
+    }
+    .pausa-tarjeta h2 { font-size: 40px; color: #8dffb5; margin-bottom: 6px; }
+    .pausa-tarjeta p { opacity: 0.8; margin-bottom: 20px; }
+    .pausa-tarjeta kbd {
+      display: inline-block; min-width: 24px; padding: 1px 7px; border-radius: 6px;
+      background: rgba(255, 255, 255, 0.14); border-bottom: 3px solid rgba(255, 255, 255, 0.25);
+      font-family: inherit; font-size: 13px;
+    }
+    .pausa-boton {
+      font-family: inherit; font-size: 20px; font-weight: 700; padding: 10px 34px;
+      border: none; border-radius: 999px; background: #8dffb5; color: #1f2a36; cursor: pointer;
+    }
+  `;
+  document.head.appendChild(estilo);
+
+  pantallaPausa = document.createElement('div');
+  pantallaPausa.className = 'pantalla-pausa';
+  pantallaPausa.innerHTML =
+    '<div class="pausa-tarjeta">' +
+      '<h2>Pausa</h2>' +
+      '<p>Pulsa <kbd>P</kbd> para continuar</p>' +
+      '<button class="pausa-boton">Continuar</button>' +
+    '</div>';
+  document.body.appendChild(pantallaPausa);
+  pantallaPausa.querySelector('.pausa-boton').addEventListener('click', alternarPausa);
+}
+
+function alternarPausa()
+{
+  // Solo se puede pausar durante la partida (no en el menu ni tras ganar)
+  if (!juegoIniciado || juegoTerminado) return;
+
+  juegoPausado = !juegoPausado;
+  pantallaPausa.classList.toggle('visible', juegoPausado);
+
+  if (juegoPausado) {
+    // Soltamos todas las teclas: si no, al volver el slime seguiria moviendose
+    controls.moveForward = controls.moveBackward = false;
+    controls.moveLeft = controls.moveRight = false;
+    controls.rotateCameraLeft = controls.rotateCameraRight = false;
+    if (musica && musica.isPlaying) musica.pause();      // la musica se para donde iba...
+  } else {
+    clock.getDelta();     // descartamos el tiempo que ha pasado en pausa
+    if (musica && musica.buffer && !musica.isPlaying) musica.play();   // ...y sigue desde ahi
+    // (si el sonido estaba silenciado con M, sigue silenciado: M baja el volumen, no para la musica)
+  }
+}
+
+function empezarPartida(fondo)
+{
+  juegoIniciado = true;
+  document.body.classList.remove('en-menu');
+  fondo.classList.add('oculto');                       // se desvanece...
+  setTimeout(function () { fondo.remove(); }, 600);    // ...y se elimina
+  mostrarAviso('Nivel 1: ' + ESCALAS[0].nombre, '', 2500);
+}
+
 // FINAL- fin de la partida: el slime se detiene, el tiempo se para, las luces
 // se apagan (te has comido el Sol) y aparece la pantalla de victoria
 // ---------------------------------------------------------------------------
@@ -2845,7 +3060,10 @@ function crearMinimapa()
   const borde = new THREE.Mesh(
     new THREE.RingGeometry(0.92, 0.99, 64),
     new THREE.MeshBasicMaterial({
-      color: 0x00ffff,
+      // Mismo verde que el HUD. Lo pasamos a lineal (como los colores del CSS, que
+      // estan en sRGB) y sin tone mapping, para que se vea exactamente igual
+      color: new THREE.Color(0x8dffb5).convertSRGBToLinear(),
+      toneMapped: false,
       depthTest: false,
       depthWrite: false
     })
@@ -2917,6 +3135,9 @@ function update()
         return;
     }
 
+    // PAUSA- no se actualiza nada: la escena se sigue dibujando, pero congelada
+    if (juegoPausado) return;
+
     var mirarAtras = false;
 
     if (modo_camara === 'seguimiento') {
@@ -2970,7 +3191,7 @@ function update()
     actualizarTransicion(delta);
 
     // HUD- contamos el tiempo de juego y actualizamos la interfaz
-    if (!juegoTerminado) tiempoJugado += delta;   // FINAL- el cronometro se para al terminar
+    if (juegoIniciado && !juegoTerminado) tiempoJugado += delta;   // MENU / FINAL- solo cuenta jugando
     actualizarHUD();
     actualizarApagon(delta);                       // FINAL- sin Sol, las luces se apagan
 
@@ -3155,9 +3376,6 @@ function amortiguar(actual, objetivo, rapidez, delta)
 
 function updateCameraSeguimiento(delta)
 {
-  // Q / E giran la camara con el teclado
-  if (controls.rotateCameraLeft) cam_seguimiento.yaw += 1.8 * delta;
-  if (controls.rotateCameraRight) cam_seguimiento.yaw -= 1.8 * delta;
 
   // La distancia y el punto de mira siguen a su valor ideal con suavizado
   var distObjetivo = DISTANCIA_SEGUIMIENTO * tamano_slime * cam_seguimiento.zoom * factorRevelacion();
@@ -3250,7 +3468,7 @@ function render()
   scene.background = cieloGuardado;
   configurarStencilHUD(false);
 
-  // Un aro cian hace legible el limite del minimapa.
+  // Un aro verde hace legible el limite del minimapa.
   renderer.clearDepth();
   renderer.render(hudBorderScene, cameraStencil);
 
