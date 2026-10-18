@@ -10,7 +10,7 @@ var accionSlime = null; // la animacion del slime (AnimationAction), para cambia
 
 // VELOCIDAD ANIMACION- el slime se anima mas deprisa cuando se mueve
 const VELOCIDAD_ANIM_QUIETO = 1;        // 1 = velocidad normal del clip
-const VELOCIDAD_ANIM_MOVIENDOSE = 2;    // 2 = el doble de rapido
+const VELOCIDAD_ANIM_MOVIENDOSE = 3;    // 2 = el doble de rapido
 
 // 3- movimiento y camara en tercera persona (misma estructura que el proyecto Tron)
 var slime = null;                              // grupo que contiene el modelo y se mueve por la escena
@@ -3081,7 +3081,7 @@ function crearLuces()
 function configurarSombras()
 {
   const camaraSombra = luzSol.shadow.camera;
-  const extension = tamano_slime * 4;          // zona con sombra: 8 tamaños de slime de lado
+  const extension = tamano_slime * 12;          // zona con sombra: 8 tamaños de slime de lado
   camaraSombra.left = -extension;
   camaraSombra.right = extension;
   camaraSombra.top = extension;
