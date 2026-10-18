@@ -3,24 +3,24 @@
     {
       "bufferView": 2,
       "componentType": 5126,
-      "count": 806,
+      "count": 1919,
       "max": [
-        2.5965614318847656,
-        7.460603713989258,
-        4.924653053283691
+        1.0642929077148438,
+        1.0,
+        22.159814834594727
       ],
       "min": [
-        -2.4812355041503906,
-        6.038169860839844,
-        4.585964679718018
+        -1.0642929077148438,
+        -1.109229326248169,
+        0.07911205291748047
       ],
       "type": "VEC3"
     },
     {
       "bufferView": 2,
-      "byteOffset": 9672,
+      "byteOffset": 23028,
       "componentType": 5126,
-      "count": 806,
+      "count": 1919,
       "max": [
         1.0,
         1.0,
@@ -36,109 +36,109 @@
     {
       "bufferView": 1,
       "componentType": 5126,
-      "count": 806,
+      "count": 1919,
       "max": [
-        0.921205997467041,
-        0.998008131980896
+        0.4431094825267792,
+        0.8684270977973938
       ],
       "min": [
-        0.001838734489865601,
-        0.00199203216470778
+        0.16608263552188873,
+        0.702962338924408
       ],
       "type": "VEC2"
     },
     {
       "bufferView": 0,
       "componentType": 5125,
-      "count": 2016,
+      "count": 4764,
       "type": "SCALAR"
     },
     {
       "bufferView": 2,
-      "byteOffset": 19344,
+      "byteOffset": 46056,
       "componentType": 5126,
-      "count": 2815,
+      "count": 120,
       "max": [
-        6.2683515548706055,
-        7.6248250007629395,
-        7.300576686859131
+        1.0,
+        1.0,
+        4.9358062744140625
       ],
       "min": [
-        -5.515745162963867,
-        0.017510175704956055,
-        -4.651803970336914
+        -1.0,
+        -1.002703070640564,
+        -2.1617093086242676
       ],
       "type": "VEC3"
     },
     {
       "bufferView": 2,
-      "byteOffset": 53124,
+      "byteOffset": 47496,
       "componentType": 5126,
-      "count": 2815,
+      "count": 120,
       "max": [
         1.0,
         1.0,
-        1.0
+        0.6709949970245361
       ],
       "min": [
         -1.0,
         -1.0,
-        -1.0
+        -0.37936070561408997
       ],
       "type": "VEC3"
     },
     {
       "bufferView": 1,
-      "byteOffset": 6448,
+      "byteOffset": 15352,
       "componentType": 5126,
-      "count": 2815,
+      "count": 120,
       "max": [
-        0.9973244071006775,
-        0.9802654981613159
+        0.587109386920929,
+        0.740875244140625
       ],
       "min": [
-        -0.00012775266077369452,
-        0.0
+        0.3928416967391968,
+        0.6908569931983948
       ],
       "type": "VEC2"
     },
     {
       "bufferView": 0,
-      "byteOffset": 8064,
+      "byteOffset": 19056,
       "componentType": 5125,
-      "count": 7890,
+      "count": 276,
       "type": "SCALAR"
     }
   ],
   "asset": {
     "extras": {
-      "author": "Zeeshan Khan (https://sketchfab.com/zeekhan733)",
+      "author": "A.S.D. (https://sketchfab.com/arvindsudarshan53)",
       "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
-      "source": "https://sketchfab.com/3d-models/low-poly-store-building-a26a5528823945a99386a34d92313f6c",
-      "title": "Low Poly Store Building"
+      "source": "https://sketchfab.com/3d-models/low-poly-building-f0722265cf8d4a41ba78ab1587d18ac8",
+      "title": "Low Poly Building"
     },
-    "generator": "Sketchfab-15.19.0",
+    "generator": "Sketchfab-12.68.0",
     "version": "2.0"
   },
   "bufferViews": [
     {
       "buffer": 0,
-      "byteLength": 39624,
+      "byteLength": 20160,
       "name": "floatBufferViews",
       "target": 34963
     },
     {
       "buffer": 0,
-      "byteLength": 28968,
-      "byteOffset": 39624,
+      "byteLength": 16312,
+      "byteOffset": 20160,
       "byteStride": 8,
       "name": "floatBufferViews",
       "target": 34962
     },
     {
       "buffer": 0,
-      "byteLength": 86904,
-      "byteOffset": 68592,
+      "byteLength": 48936,
+      "byteOffset": 36472,
       "byteStride": 12,
       "name": "floatBufferViews",
       "target": 34962
@@ -146,52 +146,42 @@
   ],
   "buffers": [
     {
-      "byteLength": 155496,
+      "byteLength": 85408,
       "uri": "scene.bin"
     }
   ],
-  "extensionsUsed": [
-    "KHR_materials_specular"
-  ],
   "images": [
     {
-      "uri": "textures/lambert2_baseColor.png"
+      "uri": "textures/Material_baseColor.png"
     }
   ],
   "materials": [
     {
       "doubleSided": true,
-      "name": "aiStandardSurface2",
-      "pbrMetallicRoughness": {
-        "metallicFactor": 0.0,
-        "roughnessFactor": 0.6
-      }
-    },
-    {
-      "doubleSided": true,
-      "extensions": {
-        "KHR_materials_specular": {
-          "specularColorFactor": [
-            1.0,
-            1.0,
-            1.0
-          ],
-          "specularFactor": 1.0
-        }
-      },
-      "name": "lambert2",
+      "name": "Material",
       "pbrMetallicRoughness": {
         "baseColorTexture": {
           "index": 0
         },
-        "metallicFactor": 0.4077019462651983,
-        "roughnessFactor": 0.6
+        "metallicFactor": 0.0,
+        "roughnessFactor": 0.8040408205773457
+      }
+    },
+    {
+      "doubleSided": true,
+      "name": "Material.002",
+      "pbrMetallicRoughness": {
+        "baseColorTexture": {
+          "index": 0
+        },
+        "metallicFactor": 0.0,
+        "roughnessFactor": 0.8040408205773457
       }
     }
   ],
   "meshes": [
     {
-      "name": "typeMesh2_aiStandardSurface2_0",
+      "name": "Cube.002_Material_0",
       "primitives": [
         {
           "attributes": {
@@ -206,7 +196,7 @@
       ]
     },
     {
-      "name": "typeMesh2_lambert2_0",
+      "name": "Cube.003_Material.002_0",
       "primitives": [
         {
           "attributes": {
@@ -227,17 +217,17 @@
         1
       ],
       "matrix": [
-        51.44590759277344,
+        1.0,
         0.0,
         0.0,
         0.0,
         0.0,
-        1.1423286226447046e-14,
-        -51.44590759277344,
+        2.220446049250313e-16,
+        -1.0,
         0.0,
         0.0,
-        51.44590759277344,
-        1.1423286226447046e-14,
+        1.0,
+        2.220446049250313e-16,
         0.0,
         0.0,
         0.0,
@@ -251,16 +241,16 @@
         2
       ],
       "matrix": [
-        0.009999999776482582,
+        1.0,
         0.0,
         0.0,
         0.0,
         0.0,
         0.0,
-        0.009999999776482582,
+        1.0,
         0.0,
         0.0,
-        -0.009999999776482582,
+        -1.0,
         0.0,
         0.0,
         0.0,
@@ -268,28 +258,70 @@
         0.0,
         1.0
       ],
-      "name": "a2846efd29bf4c059e17b0d93be483fc.fbx"
+      "name": "LowPolyBuilding.fbx"
     },
     {
       "children": [
-        3
+        3,
+        5
       ],
       "name": "RootNode"
     },
     {
       "children": [
-        4,
-        5
+        4
       ],
-      "name": "typeMesh2"
+      "matrix": [
+        3.8941437718875704e-07,
+        -2.220446049250313e-16,
+        -1.9999999999999623,
+        0.0,
+        -2.42566394805899,
+        4.7229420780132447e-07,
+        -4.7229420793597587e-07,
+        0.0,
+        5.500341692077905e-08,
+        0.28249299526214067,
+        1.0663427739602231e-14,
+        0.0,
+        -0.892124593257904,
+        0.0,
+        3.6955583095550537,
+        1.0
+      ],
+      "name": "Cube.002"
     },
     {
       "mesh": 0,
-      "name": "typeMesh2_aiStandardSurface2_0"
+      "name": "Cube.002_Material_0"
+    },
+    {
+      "children": [
+        6
+      ],
+      "matrix": [
+        1.9470718859437852e-07,
+        -1.1102230246251565e-16,
+        -0.9999999999999811,
+        0.0,
+        -0.3981342315673677,
+        7.751959691166838e-08,
+        -7.751959693376927e-08,
+        0.0,
+        1.188210069752506e-08,
+        0.06102548539638404,
+        2.303564565183765e-15,
+        0.0,
+        1.8712403774261475,
+        1.4859024286270142,
+        3.663377285003662,
+        1.0
+      ],
+      "name": "Cube.003"
     },
     {
       "mesh": 1,
-      "name": "typeMesh2_lambert2_0"
+      "name": "Cube.003_Material.002_0"
     }
   ],
   "samplers": [

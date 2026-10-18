@@ -3,24 +3,24 @@
     {
       "bufferView": 2,
       "componentType": 5126,
-      "count": 7387,
+      "count": 806,
       "max": [
-        2.852423906326294,
-        6.720592975616455,
-        2.739192008972168
+        2.5965614318847656,
+        7.460603713989258,
+        4.924653053283691
       ],
       "min": [
-        -2.8828320503234863,
-        -0.0,
-        -2.739192008972168
+        -2.4812355041503906,
+        6.038169860839844,
+        4.585964679718018
       ],
       "type": "VEC3"
     },
     {
       "bufferView": 2,
-      "byteOffset": 88644,
+      "byteOffset": 9672,
       "componentType": 5126,
-      "count": 7387,
+      "count": 806,
       "max": [
         1.0,
         1.0,
@@ -36,45 +36,45 @@
     {
       "bufferView": 1,
       "componentType": 5126,
-      "count": 7387,
+      "count": 806,
       "max": [
-        0.27960100769996643,
-        0.5307599902153015
+        0.921205997467041,
+        0.998008131980896
       ],
       "min": [
-        0.03073200024664402,
-        0.02865000069141388
+        0.001838734489865601,
+        0.00199203216470778
       ],
       "type": "VEC2"
     },
     {
       "bufferView": 0,
       "componentType": 5125,
-      "count": 14604,
+      "count": 2016,
       "type": "SCALAR"
     },
     {
       "bufferView": 2,
-      "byteOffset": 177288,
+      "byteOffset": 19344,
       "componentType": 5126,
-      "count": 1746,
+      "count": 2815,
       "max": [
-        2.852423906326294,
-        2.739191770553589,
-        6.725211143493652
+        6.2683515548706055,
+        7.6248250007629395,
+        7.300576686859131
       ],
       "min": [
-        -2.882197618484497,
-        -2.739191770553589,
-        0.0
+        -5.515745162963867,
+        0.017510175704956055,
+        -4.651803970336914
       ],
       "type": "VEC3"
     },
     {
       "bufferView": 2,
-      "byteOffset": 198240,
+      "byteOffset": 53124,
       "componentType": 5126,
-      "count": 1746,
+      "count": 2815,
       "max": [
         1.0,
         1.0,
@@ -89,56 +89,56 @@
     },
     {
       "bufferView": 1,
-      "byteOffset": 59096,
+      "byteOffset": 6448,
       "componentType": 5126,
-      "count": 1746,
+      "count": 2815,
       "max": [
-        1.1341923475265503,
-        1.0
+        0.9973244071006775,
+        0.9802654981613159
       ],
       "min": [
-        -0.13139396905899048,
+        -0.00012775266077369452,
         0.0
       ],
       "type": "VEC2"
     },
     {
       "bufferView": 0,
-      "byteOffset": 58416,
+      "byteOffset": 8064,
       "componentType": 5125,
-      "count": 2580,
+      "count": 7890,
       "type": "SCALAR"
     }
   ],
   "asset": {
     "extras": {
-      "author": "assetfactory (https://sketchfab.com/assetfactory)",
-      "license": "SKETCHFAB Standard (https://sketchfab.com/licenses)",
-      "source": "https://sketchfab.com/3d-models/low-poly-apartment-building-3-b4a0c3ba97d243c8b734406615fc05de",
-      "title": "Low poly apartment building 3"
+      "author": "Zeeshan Khan (https://sketchfab.com/zeekhan733)",
+      "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+      "source": "https://sketchfab.com/3d-models/low-poly-store-building-a26a5528823945a99386a34d92313f6c",
+      "title": "Low Poly Store Building"
     },
-    "generator": "Sketchfab-16.33.0",
+    "generator": "Sketchfab-15.19.0",
     "version": "2.0"
   },
   "bufferViews": [
     {
       "buffer": 0,
-      "byteLength": 68736,
+      "byteLength": 39624,
       "name": "floatBufferViews",
       "target": 34963
     },
     {
       "buffer": 0,
-      "byteLength": 73064,
-      "byteOffset": 68736,
+      "byteLength": 28968,
+      "byteOffset": 39624,
       "byteStride": 8,
       "name": "floatBufferViews",
       "target": 34962
     },
     {
       "buffer": 0,
-      "byteLength": 219192,
-      "byteOffset": 141800,
+      "byteLength": 86904,
+      "byteOffset": 68592,
       "byteStride": 12,
       "name": "floatBufferViews",
       "target": 34962
@@ -146,46 +146,52 @@
   ],
   "buffers": [
     {
-      "byteLength": 360992,
+      "byteLength": 155496,
       "uri": "scene.bin"
     }
   ],
+  "extensionsUsed": [
+    "KHR_materials_specular"
+  ],
   "images": [
     {
-      "uri": "textures/Pack3_baseColor.png"
+      "uri": "textures/lambert2_baseColor.png"
     }
   ],
   "materials": [
     {
       "doubleSided": true,
-      "name": "Pack3",
+      "name": "aiStandardSurface2",
+      "pbrMetallicRoughness": {
+        "metallicFactor": 0.0,
+        "roughnessFactor": 0.6
+      }
+    },
+    {
+      "doubleSided": true,
+      "extensions": {
+        "KHR_materials_specular": {
+          "specularColorFactor": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "specularFactor": 1.0
+        }
+      },
+      "name": "lambert2",
       "pbrMetallicRoughness": {
         "baseColorTexture": {
           "index": 0
         },
-        "metallicFactor": 0.0,
-        "roughnessFactor": 0.7763932022500211
-      }
-    },
-    {
-      "alphaMode": "BLEND",
-      "doubleSided": true,
-      "name": "Collider",
-      "pbrMetallicRoughness": {
-        "baseColorFactor": [
-          0.8,
-          0.8,
-          0.8,
-          0.0
-        ],
-        "metallicFactor": 0.0,
-        "roughnessFactor": 0.0
+        "metallicFactor": 0.4077019462651983,
+        "roughnessFactor": 0.6
       }
     }
   ],
   "meshes": [
     {
-      "name": "PublicBuilding_8_Pack3_0",
+      "name": "typeMesh2_aiStandardSurface2_0",
       "primitives": [
         {
           "attributes": {
@@ -200,7 +206,7 @@
       ]
     },
     {
-      "name": "Collider_Collider_0",
+      "name": "typeMesh2_lambert2_0",
       "primitives": [
         {
           "attributes": {
@@ -221,17 +227,17 @@
         1
       ],
       "matrix": [
-        1.0,
+        51.44590759277344,
         0.0,
         0.0,
         0.0,
         0.0,
-        2.220446049250313e-16,
-        -1.0,
+        1.1423286226447046e-14,
+        -51.44590759277344,
         0.0,
         0.0,
-        1.0,
-        2.220446049250313e-16,
+        51.44590759277344,
+        1.1423286226447046e-14,
         0.0,
         0.0,
         0.0,
@@ -262,70 +268,28 @@
         0.0,
         1.0
       ],
-      "name": "PublicBuilding_8C.fbx"
+      "name": "a2846efd29bf4c059e17b0d93be483fc.fbx"
     },
     {
       "children": [
-        3,
-        5
+        3
       ],
       "name": "RootNode"
     },
     {
       "children": [
-        4
+        4,
+        5
       ],
-      "matrix": [
-        100.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        99.99999999999866,
-        1.6292067073209114e-05,
-        0.0,
-        0.0,
-        -1.6292067073209114e-05,
-        99.99999999999866,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        1.0
-      ],
-      "name": "PublicBuilding_8"
+      "name": "typeMesh2"
     },
     {
       "mesh": 0,
-      "name": "PublicBuilding_8_Pack3_0"
-    },
-    {
-      "children": [
-        6
-      ],
-      "matrix": [
-        100.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        -1.629206793918314e-05,
-        -99.99999999999868,
-        0.0,
-        0.0,
-        99.99999999999868,
-        -1.629206793918314e-05,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        1.0
-      ],
-      "name": "Collider"
+      "name": "typeMesh2_aiStandardSurface2_0"
     },
     {
       "mesh": 1,
-      "name": "Collider_Collider_0"
+      "name": "typeMesh2_lambert2_0"
     }
   ],
   "samplers": [
