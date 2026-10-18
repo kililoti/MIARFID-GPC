@@ -300,8 +300,7 @@ const ESCALAS = [
     ]
   },
   {
-    // TRANSICION- quinto nivel: rodea al campo, que queda como una pequeña parte de el.
-    // De momento sin objetos.
+    // TRANSICION- quinto nivel: el espacio (sin suelo).
     nombre: 'El espacio',
     // ESPACIO- sin suelo: el slime flota en el plano y = 0. Al llegar desaparecen
     // los suelos de todos los niveles anteriores. radioSuelo sigue marcando hasta
@@ -312,8 +311,8 @@ const ESCALAS = [
     borrarObjetosAnteriores: true,
     radioSuelo: 128000,        // 16 veces el del nivel 4 (8000): el espacio es inmenso
     altoBorde: 0,
-    umbral: 58800,             // el slime llega con 4800 y debe crecer unas 8 veces
-    // Tamaño necesario para comer cada objeto = su tamaño / 0,425 (el nivel va de 4800 a 38400).
+    umbral: 48800,             // el slime llega con 4800 y debe crecer unas 12 veces
+    // Tamaño necesario para comer cada objeto = su tamaño / 0,425 (el nivel va de 4800 a 58800).
     // Los grandes van primero para que encuentren hueco al colocarse.
     catalogo: [
       ['tierra', 1, 15000, 15000],         // necesita 35294: el gran final del nivel
@@ -329,6 +328,18 @@ const ESCALAS = [
       ['satelite', 25, 1900, 2500],        // necesita 4470 - 5882
       ['satelite2', 25, 1900, 2500],
       ['astronauta', 30, 1300, 1700]       // necesita 3059 - 4000: lo primero que se come al llegar
+    ]
+  },
+  {
+    // TRANSICION- sexto nivel: el sistema solar. Tambien es espacial (sin suelo).
+    nombre: 'El sistema solar',
+    espacio: true,
+    radioSuelo: 480000,        // casi 4 veces el del nivel 5 (128000)
+    altoBorde: 0,
+    umbral: 235200,            // el slime llega con 58800 y debe crecer 4 veces
+    // Tamaño necesario para comer cada objeto = su tamaño / 0,425 (el nivel va de 58800 a 235200).
+    // Los grandes van primero para que encuentren hueco al colocarse.
+    catalogo: [
     ]
   }
 ];
