@@ -174,10 +174,10 @@ const ESCALAS = [
     colorSuelo: 0x5d8331,
     colorBorde: 0x5b3a22,
     repetirTextura: 6,         // veces que se repetira tu textura sobre el disco
-    texturaSuelo: 'images/tasty_damacy/cesped.jpg',
+    texturaSuelo: 'images/tasty_damacy/nivel1.jpg',
     umbral: 5,                 // tamaño (en tamaños de slime) necesario para pasar al siguiente nivel
     // FONDO- cilindro que rodea el suelo con una imagen panoramica por dentro
-    fondo: 'images/tasty_damacy/fondo_cesped2.jpg',   // panoramica que se repite en horizontal
+    fondo: 'images/tasty_damacy/fondo_nivel1.jpg',   // panoramica que se repite en horizontal
     altoFondo: 0.8,              // altura del cilindro respecto al radio del suelo
     colorCielo: 0xcfe8ff,      // el cilindro esta abierto por arriba: este color se ve encima
     // Objetos del nivel: [tipo, cantidad, tamañoMin, tamañoMax]
@@ -245,7 +245,7 @@ const ESCALAS = [
     // baldosa de la textura (en tamaños de slime). Asi el dibujo tiene un tamaño
     // proporcional al slime de este nivel, y no se ve diminuto ni repetitivo.
     tamanoBaldosa: 120,        // 2 x 1000 / 120 = unas 17 repeticiones sobre todo el disco
-    texturaSuelo: 'images/tasty_damacy/nivel33.jpg',
+    texturaSuelo: 'images/tasty_damacy/nivel3.jpg',
     umbral: 300,
     fondo: 'images/tasty_damacy/fondo_nivel3.jpg',
     altoFondo: 0.8,
@@ -257,21 +257,21 @@ const ESCALAS = [
       ['torre2', 3, 110, 110],           // necesita 132 - 146
       ['torre1', 4, 100, 100],           // necesita 118 - 132
       ['fuente', 4, 46, 50],           // necesita 108 - 118: como las mansiones
-      ['casa5', 4, 44, 50],            // necesita 104 - 118
-      ['casa4', 6, 40, 45],            // necesita 94 - 106
-      ['casa3', 8, 36, 40],           // necesita 85 - 94
-      ['casa2', 8, 33, 37],           // necesita 78 - 87
-      ['casa1', 10, 30, 34],           // necesita 71 - 80
+      ['casa4', 4, 44, 50],            // necesita 104 - 118
+      ['casa3', 6, 40, 45],            // necesita 94 - 106
+      ['casa2', 8, 36, 40],           // necesita 85 - 94
+      ['casa1', 8, 33, 37],           // necesita 78 - 87
+      ['tienda', 10, 30, 34],           // necesita 71 - 80
       ['arbol3', 15, 27, 32],          // necesita 64 - 75
       ['arbol2', 18, 22, 27],          // necesita 52 - 64
       ['arbol1', 20, 18, 22],          // necesita 42 - 52
       ['farola2', 25, 19, 22],         // necesita 30,6 - 37,6 (algo mas grande que la farola)
-      ['farola', 50, 17.5, 20],          // necesita 25,9 - 32,9
+      ['farola', 30, 17.5, 20],          // necesita 25,9 - 32,9
       ['coche2', 30, 9, 11],           // necesita 18,8 - 25,9 (igual que el coche)
-      ['coche', 50, 8, 11],            // necesita 18,8 - 25,9
-      ['hombre', 40, 8.0, 9.0],        // necesita 14,1 - 16,5: la gente de la ciudad, comida desde el principio
-      ['mujer', 40, 7.5, 8.5],         // necesita 12,9 - 15,3
-      ['perro', 30, 4.2, 6.5]          // necesita 7,5 - 10,6
+      ['coche', 30, 8, 11],            // necesita 18,8 - 25,9
+      ['hombre', 30, 8.0, 9.0],        // necesita 14,1 - 16,5: la gente de la ciudad, comida desde el principio
+      ['mujer', 30, 7.5, 8.5],         // necesita 12,9 - 15,3
+      ['perro', 20, 4.2, 6.5]          // necesita 7,5 - 10,6
     ]
   },
     {
@@ -502,11 +502,11 @@ const MODELOS_OBJETOS = {
   arbol1: { ruta: 'models/arbol1/scene.gltf', plantilla: null, animaciones: []},
   arbol2: { ruta: 'models/arbol2/scene.gltf', plantilla: null, animaciones: []},
   arbol3: { ruta: 'models/arbol3/scene.gltf', plantilla: null, animaciones: []},
+  tienda: { ruta: 'models/tienda/scene.gltf', plantilla: null, animaciones: []},
   casa1: { ruta: 'models/casa1/scene.gltf', plantilla: null, animaciones: []},
   casa2: { ruta: 'models/casa2/scene.gltf', plantilla: null, animaciones: []},
   casa3: { ruta: 'models/casa3/scene.gltf', plantilla: null, animaciones: []},
   casa4: { ruta: 'models/casa4/scene.gltf', plantilla: null, animaciones: []},
-  casa5: { ruta: 'models/casa5/scene.gltf', plantilla: null, animaciones: []},
   fuente: { ruta: 'models/fuente/scene.gltf', plantilla: null, animaciones: []},
   torre1: { ruta: 'models/torre1/scene.gltf', plantilla: null, animaciones: []},
   torre2: { ruta: 'models/torre2/scene.gltf', plantilla: null, animaciones: []},
@@ -1042,11 +1042,11 @@ const TIPOS = {
   arbol1:    { nombre: 'Árbol',       huella: 0.4,  crear: crearDesdeModelo('arbol1'), modelo: 'arbol1' },   // alto: la huella es la copa
   arbol2:    { nombre: 'Árbol',          huella: 0.4,  crear: crearDesdeModelo('arbol2'), modelo: 'arbol2' },
   arbol3:    { nombre: 'Árbol',  huella: 0.4,  crear: crearDesdeModelo('arbol3'), modelo: 'arbol3' },
-  casa1:     { nombre: 'Tienda',         huella: 0.75, crear: crearDesdeModelo('casa1'),  modelo: 'casa1' },    // casi tan anchas como altas
-  casa2:     { nombre: 'Casa',           huella: 0.75, crear: crearDesdeModelo('casa2'),  modelo: 'casa2' },
-  casa3:     { nombre: 'Casa',         huella: 0.75, crear: crearDesdeModelo('casa3'),  modelo: 'casa3' },
-  casa4:     { nombre: 'Casa',    huella: 0.75, crear: crearDesdeModelo('casa4'),  modelo: 'casa4' },
-  casa5:     { nombre: 'Casa',        huella: 0.75, crear: crearDesdeModelo('casa5'),  modelo: 'casa5' },
+  tienda:     { nombre: 'Tienda',         huella: 0.75, crear: crearDesdeModelo('tienda'),  modelo: 'tienda' },    // casi tan anchas como altas
+  casa1:     { nombre: 'Casa',           huella: 0.75, crear: crearDesdeModelo('casa1'),  modelo: 'casa1' },
+  casa2:     { nombre: 'Casa',         huella: 0.75, crear: crearDesdeModelo('casa2'),  modelo: 'casa2' },
+  casa3:     { nombre: 'Casa',    huella: 0.75, crear: crearDesdeModelo('casa3'),  modelo: 'casa3' },
+  casa4:     { nombre: 'Casa',        huella: 0.75, crear: crearDesdeModelo('casa4'),  modelo: 'casa4' },
   torre1:    { nombre: 'Torre',          huella: 0.3,  crear: crearDesdeModelo('torre1'), modelo: 'torre1' },   // altas y estrechas
   torre2:    { nombre: 'Torre alta',     huella: 0.3,  crear: crearDesdeModelo('torre2'), modelo: 'torre2' },
   torre3:    { nombre: 'Rascacielos',    huella: 0.3,  crear: crearDesdeModelo('torre3'), modelo: 'torre3' },
@@ -2225,7 +2225,9 @@ function crearMenuInicio()
     .menu-boton.secundario { background: rgba(255, 255, 255, 0.14); color: #ffffff; }
     .menu-creditos h2 { font-size: 36px; margin-bottom: 18px; color: #8dffb5; }
     .menu-creditos h3 { font-size: 17px; margin: 16px 0 6px; }
-    .menu-creditos ul { list-style: none; opacity: 0.8; line-height: 1.6; margin-bottom: 6px; }
+    /* padding: 0 quita la sangria izquierda que el navegador pone a las listas
+       por defecto (unos 40px): sin ella, el texto queda centrado de verdad */
+    .menu-creditos ul { list-style: none; padding: 0; text-align: center; opacity: 0.8; line-height: 1.6; margin-bottom: 6px; }
   `;
   document.head.appendChild(estilo);
   document.body.classList.add('en-menu');
@@ -2258,10 +2260,96 @@ function crearMenuInicio()
     '<div class="menu-tarjeta menu-creditos" style="display: none">' +
       '<h2>Créditos</h2>' +
       '<h3>Desarrollo</h3><ul><li>Francisco He Chi</li></ul>' +
-      '<h3>Modelos 3D</h3><ul><li>Slime: powers28 (Sketchfab, CC BY)</li><li>Añade aquí el resto de modelos y sus autores</li></ul>' +
-      '<h3>Música y sonidos</h3><ul><li>Añade aquí tus canciones y efectos</li></ul>' +
-      '<h3>Texturas e imágenes</h3><ul><li>Añade aquí tus texturas y fondos</li></ul>' +
-      '<h3>Librerías</h3><ul><li>Three.js r140</li><li>stats.js</li></ul>' +
+      '<h3>Modelos 3D</h3><ul>' +
+        '<li>Slime: Slime, powers28 (Sketchfab, CC BY)</li>' +
+        '<li>Hormiga: Ant_lowpoly, celso1.rochar (Sketchfab, CC BY)</li>' +
+        '<li>Piedrecita: Rock, azzajess (Sketchfab, CC BY)</li>' +
+        '<li>Hierba: Small_grass, Arigura (Sketchfab, CC BY)</li>' +
+        '<li>Flor: Dandelion Low-Poly, Cianon (Sketchfab, CC BY)</li>' +
+        '<li>Seta Roja: Mushroom Low- Poly, makinggamesdotcom (Sketchfab, CC BY)</li>' +
+        '<li>Seta Azul: Low-Poly Mushroom 2, Saskia (Sketchfab, CC BY)</li>' +
+        '<li>Lata: Soda Can crushed trash Low-poly, rzaletskyy (Sketchfab, CC BY)</li>' +
+        '<li>Botella: Water bottle [Low Poly], Islide (Sketchfab, CC BY)</li>' +
+        '<li>Maceta: Flower, luccacatalan (Sketchfab, CC BY)</li>' +
+        '<li>Arbusto: Low Poly Bushes, Martin3DWork (Sketchfab, CC BY)</li>' +
+        '<li>Bob Esponja: SpongeBob GameStation - SpongeBob, SMF Features Developed From Cheryl Hill (Sketchfab, CC BY)</li>' +
+        '<li>Patricio: Patrick BFBB Animation Pack, SMF Features Developed From Cheryl Hill (Sketchfab, CC BY)</li>' +
+        '<li>Calamardo: Squidward Tentacles, Super Tablé (Sketchfab, CC BY)</li>' +
+        '<li>Casa de Bob Esponja: TSCP - SpongeBob House, SMF Features Developed From Cheryl Hill (Sketchfab, CC BY)</li>' +
+        '<li>Casa de Patricio: TSCP - Patrick House, SMF Features Developed From Cheryl Hill (Sketchfab, CC BY)</li>' +
+        '<li>Casa de Calamardo: TSCP - Squidward House, SMF Features Developed From Cheryl Hill (Sketchfab, CC BY)</li>' +
+        '<li>Perro: Low poly Black dog, 𝔑𝔲𝔩𝔩𝔞 (Sketchfab, CC BY)</li>' +
+        '<li>Mujer: Low-poly Woman, Razvan Savescu (Sketchfab, CC BY)</li>' +
+        '<li>Hombre: Low-poly Man, Razvan Savescu (Sketchfab, CC BY)</li>' +
+        '<li>Banco: Low-Poly Wooden Bench, nick.3dartist (Sketchfab, CC BY)</li>' +
+        '<li>Excalibur: Excalibur, Luiza Moreira (Sketchfab, CC BY)</li>' +
+        '<li>Farola: Lamppost, Lamorak (Sketchfab, CC BY)</li>' +
+        '<li>Farola Moderna: Street Light, Algirdas Lalys (Sketchfab, CC BY)</li>' +
+        '<li>Coche Amarillo: car low poly, andregualb (Sketchfab, CC BY)</li>' +
+        '<li>Coche Morado: Low poly car, necifes (Sketchfab, CC BY)</li>' +
+        '<li>Árbol 1: Lowpoly Tree, Anwar Ali (Sketchfab, CC BY)</li>' +
+        '<li>Árbol 2: Lowpoly Tree, adam127 (Sketchfab, CC BY)</li>' +
+        '<li>Árbol 3: Lowpoly Tree Game Asset, 3Dimentional (Sketchfab, CC BY)</li>' +
+        '<li>Tienda: Low Poly Store Building, Zeeshan Khan (Sketchfab, CC BY)</li>' +
+        '<li>Casa 1: Low Poly Building, A.S.D. (Sketchfab, CC BY)</li>' +
+        '<li>Casa 2: Low Poly Building, Ahmed Galeb (Sketchfab, CC BY)</li>' +
+        '<li>Casa 3: Low Poly Building, trystyrobot (Sketchfab, CC BY)</li>' +
+        '<li>Casa 4: Low poly apartment building 3, assetfactory (Sketchfab, CC BY)</li>' +
+        '<li>Fuente: Low-poly outdoor water fountain, pino (Sketchfab, CC BY)</li>' +
+        '<li>Torre: Low Poly Skyscraper - Game-Ready Modular, AudimX Studio (Sketchfab, CC BY)</li>' +
+        '<li>Torre Alta: SKYSCRAPER, mehmetserdartekin (Sketchfab, CC BY)</li>' +
+        '<li>Rascacielos: Low Poly Skyscraper - Cartoon City Building, AudimX Studio (Sketchfab, CC BY)</li>' +
+        '<li>Molino 1: Windmill ( Animated ), Adrian Hage (Sketchfab, CC BY)</li>' +
+        '<li>Molino 2: windmill low poly, dlcampos1612 (Sketchfab, CC BY)</li>' +
+        '<li>Mamut: Low poly Columbian mammoth (Mammuthus columbi), Natural History Museum of Los Angeles County (Sketchfab, CC BY)</li>' +
+        '<li>Bosque: Forest Tile, amiutass (Sketchfab, CC BY)</li>' +
+        '<li>Montaña 1: Low Poly mountain, lifekors (Sketchfab, CC BY)</li>' +
+        '<li>Montaña 2: Low Poly mountain, lifekors (Sketchfab, CC BY)</li>' +
+        '<li>Montaña 3: Low Poly Mountain Free, Poly Craftsman (Sketchfab, CC BY)</li>' +
+        '<li>Castillo: Low Poly Castle, Yanez Designs (Sketchfab, CC BY)</li>' +
+        '<li>Ciudad: City low-poly, long_toi (Sketchfab, CC BY)</li>' +
+        '<li>Godzilla: Minecraft Godzilla Free With Animations, Wafflesaurus (Sketchfab, CC BY)</li>' +
+        '<li>Hallucigenia: Hallucigenia from Attack On Titan, Ivon852 (Sketchfab, CC BY)</li>' +
+        '<li>Serafín: Seraphim, CsDani50 (Sketchfab, CC BY)</li>' +
+        '<li>Golem: Iron golem, PolyEden (Sketchfab, CC BY)</li>' +
+        '<li>Satélite 1: Low poly Satellite, Green fish (Sketchfab, CC BY)</li>' +
+        '<li>Satélite 2: Satellite - Low Poly, calebcram (Sketchfab, CC BY)</li>' +
+        '<li>Astronauta: Low-poly Falling Astronaut - 3December, Šimon Ustal (Sketchfab, CC BY)</li>' +
+        '<li>UFO: UFO, Graphfun (Sketchfab, CC BY)</li>' +
+        '<li>Robot: Low-poly-ms-gundam-rx-78-2, haidarhakim (Sketchfab, CC BY)</li>' +
+        '<li>Cohete: Rocket 🚀, lizlancaster (Sketchfab, CC BY)</li>' +
+        '<li>Asteroide 1: Stylized lowpoly rock, Bull studios (Sketchfab, CC BY)</li>' +
+        '<li>Asteroide 2: Stylized Rock2, Bull studios (Sketchfab, CC BY)</li>' +
+        '<li>Asteroide 3: Low Poly Rock, xError1337 (Sketchfab, CC BY)</li>' +
+        '<li>Asteroide 4: Low-Poly Rock, dvnc.tech (Sketchfab, CC BY)</li>' +
+        '<li>Cometa: Low Poly FireBall / Boule de feu en Low Poly, Dzénetan Massart (Sketchfab, CC BY)</li>' +
+      '</ul>' +
+      '<h3>Música y sonidos</h3><ul>' +
+        '<li>Lonely Rolling Star: Katamari Damacy REROLL</li>' +
+        '<li>Lets Fly to Rio: Dynamedion</li>' +
+        '<li>Sonidos recoger cosas: Katamari Damacy REROLL</li>' +
+        '<li>Sonido mordisco: Nom Noise, TheDragonsSpark (freesound.org, CC BY)</li>' +
+        '<li>Sonido Tragar: Nom_D_02.wav, PaulMorek (freesound.org, CC BY)</li>' +
+        '<li>Sonido nom: nom !, chestnutjam (freesound.org, CC BY)</li>' +
+        '<li>Sonidos choques: Katamari Damacy REROLL</li>' +
+        '<li>Sonido ouch: Short Ouch, qubodup (freesound.org, CC BY)</li>' +
+        '<li>Sonido victoria: Katamari Damacy REROLL</li>' +
+      '</ul>' +
+      '<h3>Texturas e imágenes</h3><ul><li>Suelos y fondos de niveles: magnific.com</li><li>Espacios y planetas: solarsystemscope.com</li></ul>' +
+      '<h3>Librerías</h3><ul>' +
+        '<li>Three.js r140</li>' +
+        '<li>OrbitControls.js</li>' +
+        '<li>GLTFLoader.js</li>' +
+        '<li>dat.gui.min.js</li>' +
+        '<li>SkeletonUtils.js</li>' +
+        '<li>CopyShader.js</li>' +
+        '<li>LuminosityHighPassShader.js</li>' +
+        '<li>EffectComposer.js</li>' +
+        '<li>RenderPass.js</li>' +
+        '<li>ShaderPass.js</li>' +
+        '<li>UnrealBloomPass.js</li>' +
+        '<li>stats.js</li>' +
+      '</ul>' +
       '<div class="menu-botones" style="margin-top: 22px">' +
         '<button class="menu-boton secundario boton-volver">Volver</button>' +
       '</div>' +
