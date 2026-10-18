@@ -259,7 +259,7 @@ const ESCALAS = [
       ['arbol1', 20, 18, 22],          // necesita 42 - 52
       ['farola2', 25, 19, 22],         // necesita 30,6 - 37,6 (algo mas grande que la farola)
       ['farola', 50, 17.5, 20],          // necesita 25,9 - 32,9
-      ['coche2', 30, 8, 11],           // necesita 18,8 - 25,9 (igual que el coche)
+      ['coche2', 30, 9, 11],           // necesita 18,8 - 25,9 (igual que el coche)
       ['coche', 50, 8, 11],            // necesita 18,8 - 25,9
       ['hombre', 40, 8.0, 9.0],        // necesita 14,1 - 16,5: la gente de la ciudad, comida desde el principio
       ['mujer', 40, 7.5, 8.5],         // necesita 12,9 - 15,3
@@ -286,7 +286,7 @@ const ESCALAS = [
     catalogo: [
       ['godzilla', 1, 1400, 1400],       // necesita 2235 (criaturas: una de cada, iguales: el gran final)
       ['serafin', 1, 950, 950],
-      ['halucinogena', 1, 1200, 1200],
+      ['hallucigenia', 1, 1200, 1200],
       ['golem', 1, 950, 950],
       ['monte3', 10, 650, 800],        // necesita 1529 - 1882 (montes: muchos y de tamaños muy variados)
       ['monte2', 14, 450, 650],        // necesita 1059 - 1529
@@ -508,7 +508,7 @@ const MODELOS_OBJETOS = {
   monte3: { ruta: 'models/monte3/scene.gltf', plantilla: null, animaciones: []},
   godzilla: { ruta: 'models/godzilla/scene.gltf', plantilla: null, animaciones: [], animQuieto: 'animation.godzilla.idle', animAndar: 'animation.godzilla.move'},
   serafin: { ruta: 'models/serafin/scene.gltf', plantilla: null, animaciones: [], animQuieto: 'idle', animAndar: 'fly'},
-  halucinogena: { ruta: 'models/halucinogena/scene.gltf', plantilla: null, animaciones: [], animQuieto: 'animation.hallucigenia.move', animAndar: 'animation.hallucigenia.move'},
+  hallucigenia: { ruta: 'models/hallucigenia/scene.gltf', plantilla: null, animaciones: [], animQuieto: 'animation.hallucigenia.move', animAndar: 'animation.hallucigenia.move'},
   golem: { ruta: 'models/golem/scene.gltf', plantilla: null, animaciones: [], animQuieto: 'ArmatureAction', animAndar: 'ArmatureAction'},
 
   astronauta: { ruta: 'models/astronauta/scene.gltf', plantilla: null, animaciones: []},
@@ -989,14 +989,14 @@ const TIPOS = {
   // MODELOS- objetos de la ciudad (nivel 3)
   coche:     { nombre: 'Coche',          huella: 0.5,  crear: crearDesdeModelo('coche'),  modelo: 'coche', movil: { velocidad: 1.2, huye: true, rotacionFrente: 0 } },    // largo, la mitad de ancho
   coche2:    { nombre: 'Coche',          huella: 0.5,  crear: crearDesdeModelo('coche2'), modelo: 'coche2', movil: { velocidad: 1.2, huye: true, rotacionFrente: 0 } },
-  arbol1:    { nombre: 'Arbolito',       huella: 0.4,  crear: crearDesdeModelo('arbol1'), modelo: 'arbol1' },   // alto: la huella es la copa
+  arbol1:    { nombre: 'Árbol',       huella: 0.4,  crear: crearDesdeModelo('arbol1'), modelo: 'arbol1' },   // alto: la huella es la copa
   arbol2:    { nombre: 'Árbol',          huella: 0.4,  crear: crearDesdeModelo('arbol2'), modelo: 'arbol2' },
-  arbol3:    { nombre: 'Árbol gigante',  huella: 0.4,  crear: crearDesdeModelo('arbol3'), modelo: 'arbol3' },
-  casa1:     { nombre: 'Caseta',         huella: 0.75, crear: crearDesdeModelo('casa1'),  modelo: 'casa1' },    // casi tan anchas como altas
+  arbol3:    { nombre: 'Árbol',  huella: 0.4,  crear: crearDesdeModelo('arbol3'), modelo: 'arbol3' },
+  casa1:     { nombre: 'Tienda',         huella: 0.75, crear: crearDesdeModelo('casa1'),  modelo: 'casa1' },    // casi tan anchas como altas
   casa2:     { nombre: 'Casa',           huella: 0.75, crear: crearDesdeModelo('casa2'),  modelo: 'casa2' },
-  casa3:     { nombre: 'Chalet',         huella: 0.75, crear: crearDesdeModelo('casa3'),  modelo: 'casa3' },
-  casa4:     { nombre: 'Casa grande',    huella: 0.75, crear: crearDesdeModelo('casa4'),  modelo: 'casa4' },
-  casa5:     { nombre: 'Mansión',        huella: 0.75, crear: crearDesdeModelo('casa5'),  modelo: 'casa5' },
+  casa3:     { nombre: 'Casa',         huella: 0.75, crear: crearDesdeModelo('casa3'),  modelo: 'casa3' },
+  casa4:     { nombre: 'Casa',    huella: 0.75, crear: crearDesdeModelo('casa4'),  modelo: 'casa4' },
+  casa5:     { nombre: 'Casa',        huella: 0.75, crear: crearDesdeModelo('casa5'),  modelo: 'casa5' },
   torre1:    { nombre: 'Torre',          huella: 0.3,  crear: crearDesdeModelo('torre1'), modelo: 'torre1' },   // altas y estrechas
   torre2:    { nombre: 'Torre alta',     huella: 0.3,  crear: crearDesdeModelo('torre2'), modelo: 'torre2' },
   torre3:    { nombre: 'Rascacielos',    huella: 0.3,  crear: crearDesdeModelo('torre3'), modelo: 'torre3' },
@@ -1017,12 +1017,12 @@ const TIPOS = {
   bosque:       { nombre: 'Bosque',       huella: 0.85, crear: crearDesdeModelo('bosque'),       modelo: 'bosque' },       // grupo de arboles: ancho
   castillo:     { nombre: 'Castillo',     huella: 0.8,  crear: crearDesdeModelo('castillo'),     modelo: 'castillo' },     // ancho, con torres
   ciudad:       { nombre: 'Ciudad',       huella: 0.9,  crear: crearDesdeModelo('ciudad'),       modelo: 'ciudad' },       // muy ancha y baja
-  monte1:       { nombre: 'Monte',        huella: 0.9,  crear: crearDesdeModelo('monte1'),       modelo: 'monte1' },       // base muy ancha
+  monte1:       { nombre: 'Montaña',        huella: 0.9,  crear: crearDesdeModelo('monte1'),       modelo: 'monte1' },       // base muy ancha
   monte2:       { nombre: 'Montaña',      huella: 0.9,  crear: crearDesdeModelo('monte2'),       modelo: 'monte2' },
-  monte3:       { nombre: 'Gran montaña', huella: 0.9,  crear: crearDesdeModelo('monte3'),       modelo: 'monte3' },
+  monte3:       { nombre: 'Montaña', huella: 0.9,  crear: crearDesdeModelo('monte3'),       modelo: 'monte3' },
   godzilla:     { nombre: 'Godzilla',     huella: 0.35, crear: crearDesdeModelo('godzilla'),     modelo: 'godzilla', movil: { velocidad: 0.8, huye: true, rotacionFrente: Math.PI } },     // alto, de pie
   serafin:      { nombre: 'Serafín',      huella: 0.5,  crear: crearDesdeModelo('serafin'),      modelo: 'serafin', movil: { velocidad: 1.2, huye: true, rotacionFrente: Math.PI } },      // con alas
-  halucinogena: { nombre: 'Alucinógena',  huella: 0.6,  crear: crearDesdeModelo('halucinogena'), modelo: 'halucinogena', movil: { velocidad: '0.2', huye: true, rotacionFrente: Math.PI, seDetiene: false } },
+  hallucigenia: { nombre: 'Hallucigenia',  huella: 0.6,  crear: crearDesdeModelo('hallucigenia'), modelo: 'hallucigenia', movil: { velocidad: '0.2', huye: true, rotacionFrente: Math.PI, seDetiene: false } },
   golem: { nombre: 'Golem',  huella: 0.6,  crear: crearDesdeModelo('golem'), modelo: 'golem', movil: { velocidad: 0.6, huye: true, rotacionFrente: 0, seDetiene: false } },
   
   // MODELOS- objetos del espacio (nivel 5)
@@ -1035,18 +1035,18 @@ const TIPOS = {
   ovni:       { nombre: 'OVNI',        huella: 0.9,  crear: crearDesdeModelo('ovni'),       modelo: 'ovni', movil: { velocidad: 0.6, huye: false, rotacionFrente: 0, seDetiene: false } },        // platillo: ancho y plano (siempre horizontal)
   cohete:     { nombre: 'Cohete',      huella: 0.25, crear: crearDesdeModelo('cohete'),     modelo: 'cohete',     rotacionAleatoria: true, movil: { velocidad: 0.6, huye: false, rotacionFrente: 0, seDetiene: false } },  // alto y estrecho
   robot:      { nombre: 'Robot',       huella: 0.35, crear: crearDesdeModelo('robot'),      modelo: 'robot',      rotacionAleatoria: true, movil: { velocidad: 0.6, huye: false, rotacionFrente: 0, seDetiene: false } },  // humanoide
-  asteroide1: { nombre: 'asteroide',   huella: 0.85, crear: crearDesdeModelo('asteroide1'), modelo: 'asteroide1', rotacionAleatoria: true, tumbo: 0.3, movil: { velocidad: 0.6, huye: false, rotacionFrente: 0, seDetiene: false } },  // rocas casi redondas
-  asteroide2: { nombre: 'asteroide',   huella: 0.85, crear: crearDesdeModelo('asteroide2'), modelo: 'asteroide2', rotacionAleatoria: true, tumbo: 0.3, movil: { velocidad: 0.6, huye: false, rotacionFrente: 0, seDetiene: false } },
-  asteroide3: { nombre: 'asteroide',   huella: 0.85, crear: crearDesdeModelo('asteroide3'), modelo: 'asteroide3', rotacionAleatoria: true, tumbo: 0.3, movil: { velocidad: 0.6, huye: false, rotacionFrente: 0, seDetiene: false } },
-  asteroide4: { nombre: 'asteroide',   huella: 0.85, crear: crearDesdeModelo('asteroide4'), modelo: 'asteroide4', rotacionAleatoria: true, tumbo: 0.3, movil: { velocidad: 0.6, huye: false, rotacionFrente: 0, seDetiene: false } },
+  asteroide1: { nombre: 'Asteroide',   huella: 0.85, crear: crearDesdeModelo('asteroide1'), modelo: 'asteroide1', rotacionAleatoria: true, tumbo: 0.3, movil: { velocidad: 0.6, huye: false, rotacionFrente: 0, seDetiene: false } },  // rocas casi redondas
+  asteroide2: { nombre: 'Asteroide',   huella: 0.85, crear: crearDesdeModelo('asteroide2'), modelo: 'asteroide2', rotacionAleatoria: true, tumbo: 0.3, movil: { velocidad: 0.6, huye: false, rotacionFrente: 0, seDetiene: false } },
+  asteroide3: { nombre: 'Asteroide',   huella: 0.85, crear: crearDesdeModelo('asteroide3'), modelo: 'asteroide3', rotacionAleatoria: true, tumbo: 0.3, movil: { velocidad: 0.6, huye: false, rotacionFrente: 0, seDetiene: false } },
+  asteroide4: { nombre: 'Asteroide',   huella: 0.85, crear: crearDesdeModelo('asteroide4'), modelo: 'asteroide4', rotacionAleatoria: true, tumbo: 0.3, movil: { velocidad: 0.6, huye: false, rotacionFrente: 0, seDetiene: false } },
 
   // ESFERAS- la Tierra y la Luna: esferas con textura que giran despacio sobre si mismas
   //   gira: radianes por segundo
-  tierra: { nombre: 'La Tierra', huella: 1, crear: crearEsferaTexturizada('tierra'), gira: 0.1 },
-  luna:   { nombre: 'La Luna',   huella: 1, crear: crearEsferaTexturizada('luna'),   gira: 0.05 },
+  tierra: { nombre: 'Tierra', huella: 1, crear: crearEsferaTexturizada('tierra'), gira: 0.1 },
+  luna:   { nombre: 'Luna',   huella: 1, crear: crearEsferaTexturizada('luna'),   gira: 0.05 },
 
   // SISTEMA SOLAR- (nivel 6) esferas con textura; la Tierra es la de arriba
-  sol:      { nombre: 'El Sol',   huella: 1, crear: crearEsferaTexturizada('sol'),      gira: 0.02, final: true },  // FINAL- comerselo termina el juego
+  sol:      { nombre: 'Sol',   huella: 1, crear: crearEsferaTexturizada('sol'),      gira: 0.02, final: true },  // FINAL- comerselo termina el juego
   mercurio: { nombre: 'Mercurio', huella: 1, crear: crearEsferaTexturizada('mercurio'), gira: 0.05 },
   venus:    { nombre: 'Venus',    huella: 1, crear: crearEsferaTexturizada('venus'),    gira: 0.03 },
   marte:    { nombre: 'Marte',    huella: 1, crear: crearEsferaTexturizada('marte'),    gira: 0.1 },
