@@ -77,6 +77,7 @@ const controls = {
 };
 
 document.addEventListener('keydown', (event) => {
+  if (juegoTerminado) return;    // FINAL- con el juego terminado, el slime ya no se mueve
   switch (event.code) {
     case 'ArrowUp':
     case 'KeyW':
@@ -159,7 +160,7 @@ document.addEventListener('keyup', (event) => {
 // De momento solo existe el primer nivel; los siguientes se añadiran a este array.
 const ESCALAS = [
   {
-    nombre: 'El rincón del jardín',
+    nombre: 'La hierba',
     radioSuelo: 14,            // radio del disco de suelo (en tamaños de slime)
     altoBorde: 0.8,            // grosor del borde de tierra
     colorSuelo: 0x5d8331,
@@ -212,7 +213,7 @@ const ESCALAS = [
       ['hombre', 10, 6.0, 7.0],        // necesita 14,1 - 16,5
       ['mujer', 10, 5.5, 6.5],         // necesita 12,9 - 15,3 (mujer <= hombre)
       ['perro', 10, 3.2, 4.5],         // necesita 7,5 - 10,6
-      ['arbusto', 20, 3.5, 5.0],       // necesita 8,2 - 11,8
+      ['arbusto', 30, 3.5, 8.0],       // necesita 8,2 - 11,8
       ['casa_calamardo', 1, 3.5, 3.5], // necesita 8,2 (casas: una de cada, tamaño de maceta, las tres iguales)
       ['casa_esponja', 1, 3.5, 3.5],   // necesita 8,2
       ['casa_patricio', 1, 3.5, 3.5],  // necesita 8,2
@@ -220,8 +221,8 @@ const ESCALAS = [
       ['calamardo', 1, 2.0, 2.0],      // necesita 4,7 (personajes: uno de cada, tamaño de botella, los tres iguales)
       ['patricio', 1, 2.0, 2.0],       // necesita 4,7
       ['esponja', 1, 2.0, 2.0],        // necesita 4,7
-      ['botella', 30, 1.7, 2.2],       // necesita 4,0 - 5,2
-      ['lata', 40, 1.0, 1.5]           // necesita 2,4 - 3,5: lo primero que se come al llegar
+      ['botella', 25, 1.7, 2.2],       // necesita 4,0 - 5,2
+      ['lata', 25, 1.0, 1.5]           // necesita 2,4 - 3,5: lo primero que se come al llegar
     ]
   },
   {
@@ -256,19 +257,19 @@ const ESCALAS = [
       ['arbol3', 15, 27, 32],          // necesita 64 - 75
       ['arbol2', 18, 22, 27],          // necesita 52 - 64
       ['arbol1', 20, 18, 22],          // necesita 42 - 52
-      ['farola2', 25, 13, 16],         // necesita 30,6 - 37,6 (algo mas grande que la farola)
-      ['farola', 50, 11, 14],          // necesita 25,9 - 32,9
+      ['farola2', 25, 19, 22],         // necesita 30,6 - 37,6 (algo mas grande que la farola)
+      ['farola', 50, 17.5, 20],          // necesita 25,9 - 32,9
       ['coche2', 30, 8, 11],           // necesita 18,8 - 25,9 (igual que el coche)
       ['coche', 50, 8, 11],            // necesita 18,8 - 25,9
-      ['hombre', 40, 6.0, 7.0],        // necesita 14,1 - 16,5: la gente de la ciudad, comida desde el principio
-      ['mujer', 40, 5.5, 6.5],         // necesita 12,9 - 15,3
-      ['perro', 30, 3.2, 4.5]          // necesita 7,5 - 10,6
+      ['hombre', 40, 8.0, 9.0],        // necesita 14,1 - 16,5: la gente de la ciudad, comida desde el principio
+      ['mujer', 40, 7.5, 8.5],         // necesita 12,9 - 15,3
+      ['perro', 30, 4.2, 6.5]          // necesita 7,5 - 10,6
     ]
   },
     {
     // TRANSICION- cuarto nivel: rodea a la ciudad, que queda como una pequeña parte de el.
     // De momento sin objetos.
-    nombre: 'El campo',
+    nombre: 'La naturaleza',
     radioSuelo: 8000,          // unas 8 veces el del nivel 3 (1000), como entre los anteriores
     altoBorde: 400,
     colorSuelo: 0x5e8f3a,
@@ -356,10 +357,11 @@ const ESCALAS = [
       ['venus',    1, 14000, 14000, { orbita: 0.20 }],    // necesita 42353
       ['marte',    1, 12000, 12000, { orbita: 0.33 }],    // necesita 30588
       ['mercurio', 1, 10000, 10000, { orbita: 0.14 }],    // necesita 23529: el primer planeta que se come                  // necesita 58824 - 105882 (grupos de meteoritos)
-      ['meteorito1', 300, 1000, 6000],                     // necesita 18824 - 70588
-      ['meteorito2', 300, 1000, 6000],
-      ['meteorito3', 300, 1000, 6000],
-      ['meteorito4', 300, 1000, 6000]
+      ['cometa', 80, 8000, 10000],
+      ['meteorito1', 275, 1000, 6000],                     // necesita 18824 - 70588
+      ['meteorito2', 275, 1000, 6000],
+      ['meteorito3', 275, 1000, 6000],
+      ['meteorito4', 275, 1000, 6000]
     ]
   }
 ];
@@ -396,8 +398,8 @@ const centro_hud = new THREE.Vector3(0, 10, 0); // punto sobre el que se coloca 
 // SONIDO- configuracion y estado del audio. Va antes de init() porque crearAudio()
 // se ejecuta dentro de init() y necesita que estas variables ya existan.
 const RUTA_MUSICA = 'sounds/9-lonely-rolling-star.mp3';
-const VOLUMEN_MUSICA = 0.1;
-const VOLUMEN_EFECTOS = 0.6;
+const VOLUMEN_MUSICA = 0.15;
+const VOLUMEN_EFECTOS = 0.5;
 
 // Sonidos de comer con su peso: cuanto mayor el peso, mas probable.
 const SONIDOS_COMER = [
@@ -410,6 +412,11 @@ const SONIDOS_COMER = [
 // CHOQUE- sonido y sacudida de pantalla al chocar con algo que no se puede comer
 // Sonidos de choque con su peso: cuanto mayor el peso, mas probable.
 // Añade aqui tus otros sonidos de choque con el peso que quieras.
+// FINAL- sonido de victoria al comerse el Sol (cambia la ruta por la de tu archivo)
+const RUTA_SONIDO_VICTORIA = 'sounds/victoria.wav';
+const VOLUMEN_VICTORIA = 0.6;
+var canalVictoria;             // THREE.Audio del sonido de victoria
+
 const SONIDOS_CHOQUE = [
   { ruta: 'sounds/katamari_no.wav', peso: 10 },
   { ruta: 'sounds/katamari_no2.wav', peso: 8 },
@@ -514,7 +521,7 @@ const MODELOS_OBJETOS = {
   meteorito2: { ruta: 'models/meteorito2/scene.gltf', plantilla: null, animaciones: []},
   meteorito3: { ruta: 'models/meteorito3/scene.gltf', plantilla: null, animaciones: []},
   meteorito4: { ruta: 'models/meteorito4/scene.gltf', plantilla: null, animaciones: []},
-  meteoritos: { ruta: 'models/meteoritos/scene.gltf', plantilla: null, animaciones: []},
+  cometa: { ruta: 'models/cometa/scene.gltf', plantilla: null, animaciones: []},
 };
 var promesaModelos = null;     // se cumple cuando todos los modelos estan cargados
 var mixersObjetos = [];        // AnimationMixer de cada copia animada
@@ -523,6 +530,11 @@ const clock = new THREE.Clock();
 
 // HUD- estado que muestra la interfaz
 var puntos = 0;
+
+// FINAL- el juego termina al comerse el Sol
+var juegoTerminado = false;
+var apagon = 0;                // de 0 a 1: al comerse el Sol, las luces se apagan poco a poco
+const ESPERA_PANTALLA_FINAL = 2.5;   // segundos entre el bocado final y la pantalla de victoria
 var tiempoJugado = 0;          // segundos jugando de verdad (no cuenta la carga ni la pestaña oculta)
 var hud = {};                  // referencias a los elementos HTML del HUD
 var cacheHUD = {};             // ultimo valor escrito en cada elemento (para no reescribir si no cambia)
@@ -1034,7 +1046,7 @@ const TIPOS = {
   luna:   { nombre: 'La Luna',   huella: 1, crear: crearEsferaTexturizada('luna'),   gira: 0.05 },
 
   // SISTEMA SOLAR- (nivel 6) esferas con textura; la Tierra es la de arriba
-  sol:      { nombre: 'El Sol',   huella: 1, crear: crearEsferaTexturizada('sol'),      gira: 0.02 },
+  sol:      { nombre: 'El Sol',   huella: 1, crear: crearEsferaTexturizada('sol'),      gira: 0.02, final: true },  // FINAL- comerselo termina el juego
   mercurio: { nombre: 'Mercurio', huella: 1, crear: crearEsferaTexturizada('mercurio'), gira: 0.05 },
   venus:    { nombre: 'Venus',    huella: 1, crear: crearEsferaTexturizada('venus'),    gira: 0.03 },
   marte:    { nombre: 'Marte',    huella: 1, crear: crearEsferaTexturizada('marte'),    gira: 0.1 },
@@ -1044,7 +1056,7 @@ const TIPOS = {
   neptuno:  { nombre: 'Neptuno',  huella: 1, crear: crearEsferaTexturizada('neptuno'),  gira: 0.12 },
 
   // Grupo de meteoritos (un modelo con varias rocas)
-  meteoritos: { nombre: 'Meteoritos', huella: 0.8, crear: crearDesdeModelo('meteoritos'), modelo: 'meteoritos', rotacionAleatoria: true, tumbo: 0.15 }
+  cometa: { nombre: 'Cometa', huella: 0.8, crear: crearDesdeModelo('cometa'), modelo: 'cometa', rotacionAleatoria: true, movil: { velocidad: 0.6, huye: false, rotacionFrente: 0, seDetiene: false } }
 };
 
 // Cada constructor monta el objeto en "unidades de objeto": apoyado en y = 0 y con
@@ -1368,6 +1380,15 @@ function crearAudio()
   for (let i = 0; i < 4; i++) crearCanalComer();
 
   // CHOQUE- sonido de choque: un solo canal basta (nunca suenan dos a la vez)
+  // FINAL- sonido de victoria
+  canalVictoria = new THREE.Audio(oyente);
+  canalVictoria.setVolume(VOLUMEN_VICTORIA);
+  cargador.load(RUTA_SONIDO_VICTORIA, function (buffer) {
+    canalVictoria.setBuffer(buffer);
+  }, undefined, function () {
+    console.error('No se pudo cargar el sonido de victoria:', RUTA_SONIDO_VICTORIA);
+  });
+
   canalChoque = new THREE.Audio(oyente);
   canalChoque.setVolume(VOLUMEN_CHOQUE);
   // Cargamos cada sonido una vez y guardamos su buffer en su entrada de la lista
@@ -1607,6 +1628,32 @@ function formatoTiempo(segundos)
   return minutos + ':' + (resto < 10 ? '0' : '') + resto;
 }
 
+// FINAL- objeto final del nivel actual que aun no se ha comido (el Sol), o null
+var objetivoNombreFinal = 'el Sol';
+function buscarObjetoFinal()
+{
+  for (let i = 0; i < objetos.length; i++) {
+    const o = objetos[i];
+    if (o.def.final && o.escala === escala_actual && o.estado === 'activo') {
+      objetivoNombreFinal = enMinuscula(o.def.nombre);
+      return o;
+    }
+  }
+  return null;
+}
+
+// "El Sol" -> "el Sol": solo la primera letra en minuscula, para usarlo dentro de una frase
+function enMinuscula(texto)
+{
+  return texto.charAt(0).toLowerCase() + texto.slice(1);
+}
+
+// Numero grande con separador de miles (58.800)
+function formatoNumero(n)
+{
+  return Math.round(n).toLocaleString('es-ES');
+}
+
 function actualizarHUD()
 {
   const E = ESCALAS[escala_actual];
@@ -1616,13 +1663,27 @@ function actualizarHUD()
   // barra que de 2 a 3, que es como se siente al jugar (crecimiento "por area")
   // Cada nivel empieza donde termino el anterior (en el nivel 1, en tamaño 1)
   const inicioNivel = escala_actual > 0 ? ESCALAS[escala_actual - 1].umbral : 1;
-  const progreso = THREE.MathUtils.clamp(Math.log(tamanoRelativo / inicioNivel) /
-                                         Math.log(E.umbral / inicioNivel), 0, 1);
+
+  // FINAL- si en el nivel hay un objeto final (el Sol), el objetivo no es el
+  // umbral sino comerselo: la barra llega al 100 % cuando ya puedes comertelo
+  const objetivoFinal = buscarObjetoFinal();
+  let meta = E.umbral;
+  let textoObjetivo = ' - Objetivo ' + E.umbral.toFixed(2).replace('.', ',');
+  if (juegoTerminado) {
+    textoObjetivo = ' - ¡Te has comido ' + objetivoNombreFinal + '!';
+  } else if (objetivoFinal) {
+    meta = tamanoParaComer(objetivoFinal);
+    textoObjetivo = esComestible(objetivoFinal)
+      ? ' - ¡Ya puedes comerte ' + enMinuscula(objetivoFinal.def.nombre) + '!'
+      : ' - Cómete ' + enMinuscula(objetivoFinal.def.nombre) + ' (necesitas ' + formatoNumero(meta) + ')';
+  }
+
+  const progreso = juegoTerminado ? 1 : THREE.MathUtils.clamp(Math.log(tamanoRelativo / inicioNivel) /
+                                                              Math.log(meta / inicioNivel), 0, 1);
 
   fijarHUD('nivel', 'Nivel ' + (escala_actual + 1) + ': ' + E.nombre, function (v) { hud.nivel.textContent = v; });
   fijarHUD('barra', (progreso * 100).toFixed(1) + '%', function (v) { hud.barra.style.width = v; });
-  fijarHUD('tamano', 'Tamaño ' + tamanoRelativo.toFixed(2).replace('.', ',') +
-                     ' · objetivo ' + E.umbral.toFixed(2).replace('.', ','),
+  fijarHUD('tamano', 'Tamaño ' + tamanoRelativo.toFixed(2).replace('.', ',') + textoObjetivo,
            function (v) { hud.tamano.textContent = v; });
   fijarHUD('puntos', puntos.toLocaleString('es-ES'), function (v) { hud.puntos.textContent = v; });
   fijarHUD('tiempo', formatoTiempo(tiempoJugado), function (v) { hud.tiempo.textContent = v; });
@@ -1693,7 +1754,7 @@ function crearVisor()
   document.head.appendChild(estilo);
   etiquetaVisor = document.createElement('div');
   etiquetaVisor.className = 'hud-panel hud-visor-nombre';
-  etiquetaVisor.textContent = 'Nada todavía';      // hasta el primer bocado el circulo esta vacio
+  etiquetaVisor.textContent = 'Nada';      // hasta el primer bocado el circulo esta vacio
   document.body.appendChild(etiquetaVisor);
 }
 
@@ -2019,6 +2080,96 @@ function comer(objeto)
   comidos++;
   console.log('Comido:', objeto.def.nombre, '- total:', comidos,
               '- tamaño:', (tamano_objetivo / tamano_base).toFixed(2) + 'x');
+
+  // FINAL- los tipos con "final: true" (el Sol) terminan la partida
+  if (objeto.def.final) terminarJuego();
+}
+
+// ---------------------------------------------------------------------------
+// FINAL- fin de la partida: el slime se detiene, el tiempo se para, las luces
+// se apagan (te has comido el Sol) y aparece la pantalla de victoria
+// ---------------------------------------------------------------------------
+function terminarJuego()
+{
+  if (juegoTerminado) return;
+  juegoTerminado = true;
+
+  // El slime deja de moverse
+  controls.moveForward = controls.moveBackward = false;
+  controls.moveLeft = controls.moveRight = false;
+
+  mostrarAviso('¡Te has comido el Sol!', '', 2500);
+  setTimeout(mostrarPantallaFinal, ESPERA_PANTALLA_FINAL * 1000);
+
+  // Sonido de victoria (la musica de fondo sigue sonando igual)
+  if (canalVictoria && canalVictoria.buffer) canalVictoria.play();
+}
+
+// Apaga las luces poco a poco (en unos 2,5 s): sin Sol, el sistema solar se queda a oscuras
+function actualizarApagon(delta)
+{
+  if (!juegoTerminado || apagon >= 1) return;
+  apagon = Math.min(1, apagon + delta * 0.4);
+  luzSol.intensity = 0.8 * (1 - apagon);
+  luzAmbiente.intensity = 0.4 * (1 - 0.7 * apagon);   // algo de luz ambiental para seguir viendo al slime
+}
+
+function mostrarPantallaFinal()
+{
+  const estilo = document.createElement('style');
+  estilo.textContent = `
+    .pantalla-final {
+      position: fixed; inset: 0; z-index: 50;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(10, 10, 25, 0.6);
+      font-family: 'Segoe UI', 'Trebuchet MS', sans-serif; color: #ffffff;
+      animation: final-entrar 0.6s ease-out;
+    }
+    @keyframes final-entrar { from { opacity: 0; } }
+    .final-tarjeta {
+      width: min(520px, 90vw); padding: 30px 36px; text-align: center;
+      border-radius: 18px; background: rgba(25, 30, 45, 0.9);
+    }
+    .final-tarjeta h1 { font-size: 40px; margin-bottom: 8px; color: #ffd23f; }
+    .final-tarjeta p { opacity: 0.8; margin-bottom: 20px; line-height: 1.4; }
+    .final-datos { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 24px; }
+    .final-datos div { padding: 10px; border-radius: 12px; background: rgba(255, 255, 255, 0.08); }
+    .final-datos strong { display: block; font-size: 24px; font-variant-numeric: tabular-nums; }
+    .final-datos span { font-size: 13px; opacity: 0.75; }
+    .final-boton {
+      font-family: inherit; font-size: 20px; font-weight: 700; padding: 10px 34px;
+      border: none; border-radius: 999px; background: #8dffb5; color: #1f2a36; cursor: pointer;
+    }
+    .final-boton:hover { filter: brightness(1.1); }
+  `;
+  document.head.appendChild(estilo);
+
+  const pantalla = document.createElement('div');
+  pantalla.className = 'pantalla-final';
+  pantalla.innerHTML =
+    '<div class="final-tarjeta">' +
+      '<h1>¡Te has comido el Sol!</h1>' +
+      '<p>¡Muchas gracias por jugar!</p>' +
+      '<div class="final-datos">' +
+        '<div><strong class="dato-tiempo"></strong><span>Tiempo</span></div>' +
+        '<div><strong class="dato-puntos"></strong><span>Puntos</span></div>' +
+        '<div><strong class="dato-bocados"></strong><span>Bocados</span></div>' +
+        '<div><strong class="dato-tamano"></strong><span>Tamaño final</span></div>' +
+      '</div>' +
+      '<button class="final-boton">Jugar otra vez</button>' +
+    '</div>';
+  document.body.appendChild(pantalla);
+
+  pantalla.querySelector('.dato-tiempo').textContent = formatoTiempo(tiempoJugado);
+  pantalla.querySelector('.dato-puntos').textContent = puntos.toLocaleString('es-ES');
+  pantalla.querySelector('.dato-bocados').textContent = comidos.toLocaleString('es-ES');
+  pantalla.querySelector('.dato-tamano').textContent = Math.round(tamano_slime / tamano_base).toLocaleString('es-ES');
+
+  // Volver a jugar: recargar la pagina es la forma mas sencilla y segura de
+  // empezar de cero (se vuelven a crear la escena, los objetos y el estado)
+  pantalla.querySelector('.final-boton').addEventListener('click', function () {
+    window.location.reload();
+  });
 }
 
 // CRECIMIENTO- el tamaño actual se acerca suavemente al objetivo y todo lo que
@@ -2802,8 +2953,9 @@ function update()
     actualizarTransicion(delta);
 
     // HUD- contamos el tiempo de juego y actualizamos la interfaz
-    tiempoJugado += delta;
+    if (!juegoTerminado) tiempoJugado += delta;   // FINAL- el cronometro se para al terminar
     actualizarHUD();
+    actualizarApagon(delta);                       // FINAL- sin Sol, las luces se apagan
 
     // VISOR- gira el modelo y lo cambia (como mucho cada INTERVALO_VISOR segundos)
     actualizarVisor(delta);

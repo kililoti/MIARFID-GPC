@@ -1,0 +1,11 @@
+Model Information:
+* title:	Low Poly FireBall / Boule de feu en Low Poly
+* source:	https://sketchfab.com/3d-models/low-poly-fireball-boule-de-feu-en-low-poly-b722efe7ec084dafbe41427714dc5711
+* author:	Dzénetan Massart (https://sketchfab.com/DzenetanMassart)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Low Poly FireBall / Boule de feu en Low Poly" (https://sketchfab.com/3d-models/low-poly-fireball-boule-de-feu-en-low-poly-b722efe7ec084dafbe41427714dc5711) by Dzénetan Massart (https://sketchfab.com/DzenetanMassart) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
