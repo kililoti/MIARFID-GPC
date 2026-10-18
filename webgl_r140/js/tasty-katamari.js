@@ -2707,7 +2707,7 @@ function crearFondoCilindro(indice)
   const E = ESCALAS[indice];
   if (!E.fondo) return null;
 
-  const radio = E.radioSuelo * tamano_base * 1.02;     // un pelin fuera del borde del suelo
+  const radio = E.radioSuelo * tamano_base * 1.00;     // un pelin fuera del borde del suelo
   const alto = E.radioSuelo * tamano_base * E.altoFondo;
   const base = -E.altoBorde * tamano_base;              // empieza bajo el borde: sin huecos
   const altoTotal = alto - base;
