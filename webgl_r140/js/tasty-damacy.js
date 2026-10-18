@@ -228,7 +228,7 @@ const ESCALAS = [
     // TRANSICION- tercer nivel: rodea al parque, que queda como una pequeña parte de el.
     // De momento sin objetos.
     nombre: 'La ciudad',
-    radioSuelo: 1000,          // unas 8 veces el del nivel 2 (120), como del 1 al 2
+    radioSuelo: 1200,          // unas 8 veces el del nivel 2 (120), como del 1 al 2
     altoBorde: 50,
     colorSuelo: 0x9a9a95,
     colorBorde: 0x5c5850,
@@ -244,18 +244,18 @@ const ESCALAS = [
     // Tamaño necesario para comer cada objeto = su tamaño / 0,425 (el nivel va de 20 a 150).
     // Al llegar quedan los objetos grandes del parque (bancos, personas, la farola...).
     catalogo: [
-      ['torre3', 3, 120, 120],           // necesita 146 - 165: el reto final (algunas no caben en el nivel)
-      ['torre2', 4, 110, 110],           // necesita 132 - 146
-      ['torre1', 5, 100, 100],           // necesita 118 - 132
-      ['fuente', 5, 46, 50],           // necesita 108 - 118: como las mansiones
-      ['casa5', 6, 44, 50],            // necesita 104 - 118
-      ['casa4', 8, 40, 45],            // necesita 94 - 106
-      ['casa3', 10, 36, 40],           // necesita 85 - 94
-      ['casa2', 10, 33, 37],           // necesita 78 - 87
-      ['casa1', 12, 30, 34],           // necesita 71 - 80
+      ['torre3', 2, 120, 120],           // necesita 146 - 165: el reto final (algunas no caben en el nivel)
+      ['torre2', 3, 110, 110],           // necesita 132 - 146
+      ['torre1', 4, 100, 100],           // necesita 118 - 132
+      ['fuente', 4, 46, 50],           // necesita 108 - 118: como las mansiones
+      ['casa5', 4, 44, 50],            // necesita 104 - 118
+      ['casa4', 6, 40, 45],            // necesita 94 - 106
+      ['casa3', 8, 36, 40],           // necesita 85 - 94
+      ['casa2', 8, 33, 37],           // necesita 78 - 87
+      ['casa1', 10, 30, 34],           // necesita 71 - 80
       ['arbol3', 15, 27, 32],          // necesita 64 - 75
       ['arbol2', 18, 22, 27],          // necesita 52 - 64
-      ['arbol1', 200, 18, 22],          // necesita 42 - 52
+      ['arbol1', 20, 18, 22],          // necesita 42 - 52
       ['farola2', 25, 13, 16],         // necesita 30,6 - 37,6 (algo mas grande que la farola)
       ['farola', 50, 11, 14],          // necesita 25,9 - 32,9
       ['coche2', 30, 8, 11],           // necesita 18,8 - 25,9 (igual que el coche)
@@ -287,7 +287,6 @@ const ESCALAS = [
       ['serafin', 1, 950, 950],
       ['halucinogena', 1, 1200, 1200],
       ['golem', 1, 950, 950],
-      ['esqueleto', 1, 950, 950],
       ['monte3', 10, 650, 800],        // necesita 1529 - 1882 (montes: muchos y de tamaños muy variados)
       ['monte2', 14, 450, 650],        // necesita 1059 - 1529
       ['monte1', 18, 300, 500],        // necesita 706 - 1176
@@ -311,12 +310,12 @@ const ESCALAS = [
     borrarObjetosAnteriores: true,
     radioSuelo: 128000,        // 16 veces el del nivel 4 (8000): el espacio es inmenso
     altoBorde: 0,
-    umbral: 48800,             // el slime llega con 4800 y debe crecer unas 12 veces
+    umbral: 55000,             // el slime llega con 4800 y debe crecer unas 12 veces
     // Tamaño necesario para comer cada objeto = su tamaño / 0,425 (el nivel va de 4800 a 58800).
     // Los grandes van primero para que encuentren hueco al colocarse.
     catalogo: [
-      ['tierra', 1, 15000, 15000],         // necesita 35294: el gran final del nivel
-      ['luna', 1, 9000, 9000],             // necesita 21176
+      ['tierra', 1, 28000, 28000],         // necesita 35294: el gran final del nivel
+      ['luna', 1, 14000, 14000],             // necesita 21176
       // Meteoritos: rango muy amplio, desde algo menos que un astronauta hasta casi un tercio de la luna
       ['meteorito1', 30, 1000, 5000],      // necesita 2353 - 11765
       ['meteorito2', 30, 1000, 5000],
@@ -334,12 +333,33 @@ const ESCALAS = [
     // TRANSICION- sexto nivel: el sistema solar. Tambien es espacial (sin suelo).
     nombre: 'El sistema solar',
     espacio: true,
-    radioSuelo: 480000,        // casi 4 veces el del nivel 5 (128000)
+    sistemaSolar: true,        // la luz viene del Sol (el objeto con { centro: true })
+    borrarObjetosAnteriores: true,
+    // SISTEMA SOLAR- el radio sube de 480000 a 1000000: las orbitas de los 8 planetas
+    // necesitan sitio para no cruzarse entre si (Saturno con su anillo ocupa mucho)
+    radioSuelo: 1000000,
     altoBorde: 0,
     umbral: 235200,            // el slime llega con 58800 y debe crecer 4 veces
     // Tamaño necesario para comer cada objeto = su tamaño / 0,425 (el nivel va de 58800 a 235200).
     // Los grandes van primero para que encuentren hueco al colocarse.
+    // Quinto valor (opcional) de cada entrada:
+    //   { centro: true }  -> se coloca en el centro del nivel (el Sol)
+    //   { orbita: 0.27 }  -> gira alrededor del centro; radio de la orbita como
+    //                        fraccion de radioSuelo (asi se adapta si cambias el radio)
     catalogo: [
+      ['sol',      1, 50000, 50000, { centro: true }],    // necesita 211765: el gran final
+      ['jupiter',  1, 30000, 30000, { orbita: 0.45 }],    // necesita 94118
+      ['saturno',  1, 26000, 26000, { orbita: 0.60 }],    // necesita 80000
+      ['urano',    1, 22000, 22000, { orbita: 0.74 }],    // necesita 61176
+      ['neptuno',  1, 20000, 20000, { orbita: 0.87 }],    // necesita 58824
+      ['tierra',   1, 16000, 16000, { orbita: 0.27 }],    // necesita 44706
+      ['venus',    1, 14000, 14000, { orbita: 0.20 }],    // necesita 42353
+      ['marte',    1, 12000, 12000, { orbita: 0.33 }],    // necesita 30588
+      ['mercurio', 1, 10000, 10000, { orbita: 0.14 }],    // necesita 23529: el primer planeta que se come                  // necesita 58824 - 105882 (grupos de meteoritos)
+      ['meteorito1', 300, 1000, 6000],                     // necesita 18824 - 70588
+      ['meteorito2', 300, 1000, 6000],
+      ['meteorito3', 300, 1000, 6000],
+      ['meteorito4', 300, 1000, 6000]
     ]
   }
 ];
@@ -483,8 +503,7 @@ const MODELOS_OBJETOS = {
   serafin: { ruta: 'models/serafin/scene.gltf', plantilla: null, animaciones: [], animQuieto: 'idle', animAndar: 'fly'},
   halucinogena: { ruta: 'models/halucinogena/scene.gltf', plantilla: null, animaciones: [], animQuieto: 'animation.hallucigenia.move', animAndar: 'animation.hallucigenia.move'},
   golem: { ruta: 'models/golem/scene.gltf', plantilla: null, animaciones: [], animQuieto: 'ArmatureAction', animAndar: 'ArmatureAction'},
-  esqueleto: { ruta: 'models/esqueleto/scene.gltf', plantilla: null, animaciones: [], animQuieto: 'Skeleton_Bones|Esqueleto_Parado', animAndar: 'Skeleton_Bones|Esquelto_Caminhar'},
-  
+
   astronauta: { ruta: 'models/astronauta/scene.gltf', plantilla: null, animaciones: []},
   satelite: { ruta: 'models/satelite/scene.gltf', plantilla: null, animaciones: []},
   satelite2: { ruta: 'models/satelite2/scene.gltf', plantilla: null, animaciones: []},
@@ -495,6 +514,7 @@ const MODELOS_OBJETOS = {
   meteorito2: { ruta: 'models/meteorito2/scene.gltf', plantilla: null, animaciones: []},
   meteorito3: { ruta: 'models/meteorito3/scene.gltf', plantilla: null, animaciones: []},
   meteorito4: { ruta: 'models/meteorito4/scene.gltf', plantilla: null, animaciones: []},
+  meteoritos: { ruta: 'models/meteoritos/scene.gltf', plantilla: null, animaciones: []},
 };
 var promesaModelos = null;     // se cumple cuando todos los modelos estan cargados
 var mixersObjetos = [];        // AnimationMixer de cada copia animada
@@ -992,8 +1012,7 @@ const TIPOS = {
   serafin:      { nombre: 'Serafín',      huella: 0.5,  crear: crearDesdeModelo('serafin'),      modelo: 'serafin', movil: { velocidad: 1.2, huye: true, rotacionFrente: Math.PI } },      // con alas
   halucinogena: { nombre: 'Alucinógena',  huella: 0.6,  crear: crearDesdeModelo('halucinogena'), modelo: 'halucinogena', movil: { velocidad: '0.2', huye: true, rotacionFrente: Math.PI, seDetiene: false } },
   golem: { nombre: 'Golem',  huella: 0.6,  crear: crearDesdeModelo('golem'), modelo: 'golem', movil: { velocidad: 0.6, huye: true, rotacionFrente: 0, seDetiene: false } },
-  esqueleto: { nombre: 'Esqueleto',  huella: 0.6,  crear: crearDesdeModelo('esqueleto'), modelo: 'esqueleto', movil: { velocidad: 1.2, huye: true, rotacionFrente: 0 } },
-
+  
   // MODELOS- objetos del espacio (nivel 5)
   //   rotacionAleatoria: true -> cada copia aparece girada al azar en los tres ejes,
   //   como si flotara sin gravedad
@@ -1012,7 +1031,20 @@ const TIPOS = {
   // ESFERAS- la Tierra y la Luna: esferas con textura que giran despacio sobre si mismas
   //   gira: radianes por segundo
   tierra: { nombre: 'La Tierra', huella: 1, crear: crearEsferaTexturizada('tierra'), gira: 0.1 },
-  luna:   { nombre: 'La Luna',   huella: 1, crear: crearEsferaTexturizada('luna'),   gira: 0.05 }
+  luna:   { nombre: 'La Luna',   huella: 1, crear: crearEsferaTexturizada('luna'),   gira: 0.05 },
+
+  // SISTEMA SOLAR- (nivel 6) esferas con textura; la Tierra es la de arriba
+  sol:      { nombre: 'El Sol',   huella: 1, crear: crearEsferaTexturizada('sol'),      gira: 0.02 },
+  mercurio: { nombre: 'Mercurio', huella: 1, crear: crearEsferaTexturizada('mercurio'), gira: 0.05 },
+  venus:    { nombre: 'Venus',    huella: 1, crear: crearEsferaTexturizada('venus'),    gira: 0.03 },
+  marte:    { nombre: 'Marte',    huella: 1, crear: crearEsferaTexturizada('marte'),    gira: 0.1 },
+  jupiter:  { nombre: 'Júpiter',  huella: 1, crear: crearEsferaTexturizada('jupiter'),  gira: 0.2 },
+  saturno:  { nombre: 'Saturno',  huella: 1, crear: crearSaturno,                       gira: 0.18 },  // la huella es la del planeta, sin el anillo
+  urano:    { nombre: 'Urano',    huella: 1, crear: crearEsferaTexturizada('urano'),    gira: 0.12 },
+  neptuno:  { nombre: 'Neptuno',  huella: 1, crear: crearEsferaTexturizada('neptuno'),  gira: 0.12 },
+
+  // Grupo de meteoritos (un modelo con varias rocas)
+  meteoritos: { nombre: 'Meteoritos', huella: 0.8, crear: crearDesdeModelo('meteoritos'), modelo: 'meteoritos', rotacionAleatoria: true, tumbo: 0.15 }
 };
 
 // Cada constructor monta el objeto en "unidades de objeto": apoyado en y = 0 y con
@@ -1024,7 +1056,18 @@ const TIPOS = {
 // ---------------------------------------------------------------------------
 const TEXTURAS_ESFERAS = {
   tierra: 'images/tasty_damacy/tierra.jpg',   // cambia las rutas por las de tus imagenes
-  luna:   'images/tasty_damacy/luna.jpg'
+  luna:   'images/tasty_damacy/luna.jpg',
+  // SISTEMA SOLAR- mapas equirectangulares (2:1) de cada astro
+  sol:      'images/tasty_damacy/sol.jpg',
+  mercurio: 'images/tasty_damacy/mercurio.jpg',
+  venus:    'images/tasty_damacy/venus.jpg',
+  marte:    'images/tasty_damacy/marte.jpg',
+  jupiter:  'images/tasty_damacy/jupiter.jpg',
+  saturno:  'images/tasty_damacy/saturno.jpg',
+  urano:    'images/tasty_damacy/urano.jpg',
+  neptuno:  'images/tasty_damacy/neptuno.jpg',
+  // Anillo: una tira horizontal (de dentro a fuera del anillo), en PNG con transparencia
+  anilloSaturno: 'images/tasty_damacy/anillo_saturno.png'
 };
 var materialesEsferas = {};    // un material por esfera, creado la primera vez que se usa
 
@@ -1039,7 +1082,11 @@ function crearEsferaTexturizada(nombre)
         console.error('No se pudo cargar la textura de', nombre + ':', TEXTURAS_ESFERAS[nombre]);
       });
       textura.encoding = THREE.sRGBEncoding;
-      materialesEsferas[nombre] = new THREE.MeshStandardMaterial({ map: textura, roughness: 0.8, metalness: 0 });
+      // SISTEMA SOLAR- el Sol emite luz: MeshBasicMaterial no se ve afectado por las
+      // luces ni las sombras, asi que se ve siempre brillante
+      materialesEsferas[nombre] = (nombre === 'sol')
+        ? new THREE.MeshBasicMaterial({ map: textura, toneMapped: false })
+        : new THREE.MeshStandardMaterial({ map: textura, roughness: 0.8, metalness: 0 });
     }
 
     // En "unidades de objeto": radio 1 y apoyada en y = 0 (centro en y = 1)
@@ -1071,6 +1118,91 @@ function rotarAleatoriamente(grupo)
   grupo.add(pivote);
 }
 
+// SISTEMA SOLAR- Saturno: la esfera mas su anillo
+function crearSaturno(grupo)
+{
+  crearEsferaTexturizada('saturno')(grupo);
+
+  if (!materialesEsferas.anilloSaturno) {
+    const textura = new THREE.TextureLoader().load(TEXTURAS_ESFERAS.anilloSaturno, undefined, undefined, function () {
+      console.error('No se pudo cargar la textura del anillo:', TEXTURAS_ESFERAS.anilloSaturno);
+    });
+    textura.encoding = THREE.sRGBEncoding;
+    materialesEsferas.anilloSaturno = new THREE.MeshStandardMaterial({
+      map: textura, transparent: true, side: THREE.DoubleSide, depthWrite: false, roughness: 1
+    });
+  }
+
+  // Anillo de radio 1,25 a 2,2 (el planeta mide 1). RingGeometry reparte sus UV
+  // como si fuera un plano; las texturas de anillos son una tira que va de dentro
+  // a fuera, asi que recalculamos las UV: u = distancia al centro (0 dentro, 1 fuera)
+  const interior = 1.25, exterior = 2.2;
+  const geometria = new THREE.RingGeometry(interior, exterior, 128, 1);
+  const pos = geometria.attributes.position, uv = geometria.attributes.uv;
+  for (let i = 0; i < pos.count; i++) {
+    const r = Math.hypot(pos.getX(i), pos.getY(i));
+    uv.setXY(i, (r - interior) / (exterior - interior), 0.5);
+  }
+
+  const anillo = new THREE.Mesh(geometria, materialesEsferas.anilloSaturno);
+  anillo.rotation.x = -Math.PI / 2;          // RingGeometry se crea en vertical: lo tumbamos
+
+  const inclinacion = new THREE.Group();     // el anillo de Saturno esta inclinado
+  inclinacion.position.y = 1;                // a la altura del centro del planeta
+  inclinacion.rotation.z = 0.45;
+  inclinacion.add(anillo);
+  grupo.add(inclinacion);
+}
+
+// SISTEMA SOLAR- los objetos con orbita giran alrededor del centro del nivel (el Sol).
+// Periodo segun la 3a ley de Kepler simplificada: cuanto mas lejos, mucho mas lento
+// (periodo proporcional a radio^1,5). Mercurio da una vuelta en PERIODO_MERCURIO s.
+const PERIODO_MERCURIO = 60;
+function iniciarOrbita(objeto, fraccion, radioSuelo)
+{
+  const radio = fraccion * radioSuelo;
+  const periodo = PERIODO_MERCURIO * Math.pow(fraccion / 0.14, 1.5);
+  objeto.orbita = {
+    radio: radio,
+    angulo: rand(0, Math.PI * 2),            // cada planeta empieza en un punto distinto
+    velocidad: (Math.PI * 2) / periodo       // radianes por segundo
+  };
+  colocarEnOrbita(objeto);
+}
+
+function colocarEnOrbita(objeto)
+{
+  const o = objeto.orbita;
+  objeto.grupo.position.x = Math.sin(o.angulo) * o.radio;
+  objeto.grupo.position.z = Math.cos(o.angulo) * o.radio;
+}
+
+// SISTEMA SOLAR- si el slime llega dentro del Sol, lo sacamos fuera de el
+function apartarSlimeDe(x, z, radio)
+{
+  const dx = pos_slime.x - x, dz = pos_slime.z - z;
+  let d = Math.hypot(dx, dz);
+  const minimo = radio + tamano_slime * 1.5;
+  if (d >= minimo) return;
+  if (d < 0.000001) { pos_slime.x = x + minimo; pos_slime.z = z; return; }
+  pos_slime.x = x + (dx / d) * minimo;
+  pos_slime.z = z + (dz / d) * minimo;
+}
+
+// SISTEMA SOLAR- en el sistema solar la luz del sol viene del Sol: la direccion
+// de la luz direccional apunta desde el slime hacia el (con algo de altura)
+function actualizarDireccionSol()
+{
+  const sol = objetos.find(function (o) { return o.tipo === 'sol' && o.estado === 'activo'; });
+  if (!sol) return;
+  const dx = sol.grupo.position.x - pos_slime.x;
+  const dz = sol.grupo.position.z - pos_slime.z;
+  if (Math.hypot(dx, dz) < 0.000001) return;
+  direccion_sol.set(dx, 0, dz).normalize();
+  direccion_sol.y = 0.3;
+  direccion_sol.normalize();
+}
+
 // ESFERAS- los objetos con "gira" rotan despacio sobre su eje
 function actualizarGiros(delta)
 {
@@ -1080,6 +1212,12 @@ function actualizarGiros(delta)
 
     // ESPACIO- giro continuo alrededor de un eje cualquiera
     if (objeto.tumbo) objeto.tumbo.pivote.rotateOnAxis(objeto.tumbo.eje, objeto.tumbo.velocidad * delta);
+
+    // SISTEMA SOLAR- los planetas avanzan por su orbita
+    if (objeto.orbita) {
+      objeto.orbita.angulo += objeto.orbita.velocidad * delta;
+      colocarEnOrbita(objeto);
+    }
 
     if (!objeto.def.gira) continue;
     const esfera = objeto.grupo.getObjectByName('esfera');
@@ -1106,6 +1244,7 @@ function generarObjetos(indice)
 
   (E.catalogo || []).forEach(function (entrada) {
     const tipo = entrada[0], cantidad = entrada[1], min = entrada[2], max = entrada[3];
+    const opciones = entrada[4] || {};     // SISTEMA SOLAR- colocacion especial (centro, orbita)
     const def = TIPOS[tipo];
 
     // MODELOS- si el tipo usa un modelo que no se pudo cargar, lo saltamos
@@ -1114,7 +1253,17 @@ function generarObjetos(indice)
     for (let k = 0; k < cantidad; k++) {
       const tam = rand(min, max) * tamano_base;
       const radio = tam * def.huella;
-      const pos = buscarPosicion(radioSuelo, radio);
+
+      // SISTEMA SOLAR- el centro y las orbitas no buscan hueco al azar
+      let pos;
+      if (opciones.centro) {
+        pos = { x: 0, z: 0 };
+        apartarSlimeDe(0, 0, radio);
+      } else if (opciones.orbita) {
+        pos = { x: 0, z: 0 };            // iniciarOrbita() lo coloca despues
+      } else {
+        pos = buscarPosicion(radioSuelo, radio);
+      }
       if (!pos) continue;   // no hay hueco libre: lo saltamos
 
       const grupo = new THREE.Group();
@@ -1149,6 +1298,7 @@ function generarObjetos(indice)
           velocidad: def.tumbo * rand(0.6, 1.4)
         };
       }
+      if (opciones.orbita) iniciarOrbita(nuevo, opciones.orbita, radioSuelo);
       objetos.push(nuevo);
       creados++;
     }
@@ -2442,6 +2592,9 @@ function configurarSombras()
 // cambia de angulo), pero desplazado con el para que su sombra no salga del mapa.
 function actualizarLuz()
 {
+  // SISTEMA SOLAR- la luz viene del Sol
+  if (ESCALAS[escala_actual].sistemaSolar) actualizarDireccionSol();
+
   luzSol.target.position.copy(slime.position);
   luzSol.position.copy(slime.position).addScaledVector(direccion_sol, tamano_slime * 20);
 }
@@ -2627,7 +2780,7 @@ function update()
 
     // VIDA- los objetos con vida pasean y huyen
     actualizarSeresVivos(delta);
-    actualizarGiros(delta);          // ESFERAS- la Tierra y la Luna giran sobre si mismas
+    actualizarGiros(delta);          // ESFERAS y SISTEMA SOLAR- giros sobre si mismos y orbitas
 
     // COLISIONES- comer lo que es mas pequeño y chocar con lo que es mas grande
     comprobarColisiones();
