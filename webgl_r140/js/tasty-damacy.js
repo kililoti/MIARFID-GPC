@@ -19,6 +19,12 @@ var tamano_base = 1;                           // tamaño ORIGINAL del modelo: e
 var tamano_objetivo = 1;                       // tamaño hacia el que crece (tamano_slime lo alcanza poco a poco)
 var cuerpo_slime = null;                       // grupo intermedio que se escala al crecer
 
+// AURA- luz puntual que acompaña al slime e ilumina suavemente lo que tiene cerca
+const AURA_COLOR = 0x9fffe0;                   // tono verdoso, a juego con el slime y el HUD
+const AURA_INTENSIDAD = 0.6;
+const AURA_ALCANCE = 5;                        // en tamaños de slime: hasta donde llega su luz
+var luzAura = null;
+
 // ANIMACION COMER- el slime se aplasta y rebota como una gelatina al comer
 var estiramiento = 0;                          // deformacion actual (+ aplastado, - estirado)
 var velocidadEstiramiento = 0;                 // con que rapidez cambia esa deformacion
@@ -360,10 +366,10 @@ const ESCALAS = [
       ['marte',    1, 12000, 12000, { orbita: 0.33 }],    // necesita 30588
       ['mercurio', 1, 10000, 10000, { orbita: 0.14 }],    // necesita 23529: el primer planeta que se come                  // necesita 58824 - 105882 (grupos de asteroides)
       ['cometa', 80, 8000, 10000],
-      ['asteroide1', 275, 1000, 6000],                     // necesita 18824 - 70588
-      ['asteroide2', 275, 1000, 6000],
-      ['asteroide3', 275, 1000, 6000],
-      ['asteroide4', 275, 1000, 6000]
+      ['asteroide1', 200, 2000, 6000],                     // necesita 18824 - 70588
+      ['asteroide2', 200, 2000, 6000],
+      ['asteroide3', 200, 2000, 6000],
+      ['asteroide4', 200, 2000, 6000]
     ]
   }
 ];
@@ -689,6 +695,11 @@ function loadObjGLTF()
             slime.add(cuerpo_slime);
             cuerpo_slime.add(object);
             scene.add(slime);
+
+            // AURA- la luz va en el grupo "slime" (no en cuerpo_slime): asi se
+            // mueve con el pero no se deforma con la animacion de comer
+            luzAura = new THREE.PointLight(AURA_COLOR, AURA_INTENSIDAD, 1, 1);
+            slime.add(luzAura);
 
             // SOMBRAS- el slime proyecta sombra sobre el suelo
             object.traverse(function (hijo) {
@@ -1085,7 +1096,9 @@ const TIPOS = {
   luna:   { nombre: 'Luna',   huella: 1, crear: crearEsferaTexturizada('luna'),   gira: 0.05 },
 
   // SISTEMA SOLAR- (nivel 6) esferas con textura; la Tierra es la de arriba
-  sol:      { nombre: 'Sol',   huella: 1, crear: crearEsferaTexturizada('sol'),      gira: 0.02, final: true },  // FINAL- comerselo termina el juego
+  // LUZ SOL- "luz": el objeto lleva una luz puntual en su centro (ver generarObjetos)
+  sol:      { nombre: 'Sol',   huella: 1, crear: crearEsferaTexturizada('sol'),      gira: 0.02, final: true,  // FINAL- comerselo termina el juego
+              luz: { color: 0xfff2d0, intensidad: 1.8 } },
   mercurio: { nombre: 'Mercurio', huella: 1, crear: crearEsferaTexturizada('mercurio'), gira: 0.05 },
   venus:    { nombre: 'Venus',    huella: 1, crear: crearEsferaTexturizada('venus'),    gira: 0.03 },
   marte:    { nombre: 'Marte',    huella: 1, crear: crearEsferaTexturizada('marte'),    gira: 0.1 },
@@ -1095,7 +1108,7 @@ const TIPOS = {
   neptuno:  { nombre: 'Neptuno',  huella: 1, crear: crearEsferaTexturizada('neptuno'),  gira: 0.12 },
 
   // Grupo de asteroides (un modelo con varias rocas)
-  cometa: { nombre: 'Cometa', huella: 0.8, crear: crearDesdeModelo('cometa'), modelo: 'cometa', rotacionAleatoria: true, movil: { velocidad: 0.6, huye: false, rotacionFrente: 0, seDetiene: false } }
+  cometa: { nombre: 'Cometa', huella: 0.8, crear: crearDesdeModelo('cometa'), modelo: 'cometa', rotacionAleatoria: true, movil: { velocidad: 1, huye: false, rotacionFrente: Math.PI, seDetiene: false } }
 };
 
 // Cada constructor monta el objeto en "unidades de objeto": apoyado en y = 0 y con
@@ -1320,6 +1333,16 @@ function generarObjetos(indice)
       const grupo = new THREE.Group();
       grupo.name = tipo;
       def.crear(grupo);
+
+      // LUZ SOL- los tipos con "luz" emiten luz de verdad desde su centro: ilumina
+      // a cada planeta por la cara que mira hacia el, este donde este.
+      // distance 0 = alcance infinito, sin perder fuerza con la distancia.
+      // (Solo aqui, no en el constructor: asi la copia del visor no lleva luz.)
+      if (def.luz) {
+        const luzObjeto = new THREE.PointLight(def.luz.color, def.luz.intensidad, 0, 1);
+        luzObjeto.position.y = 1;        // centro de la esfera (en unidades de objeto)
+        grupo.add(luzObjeto);
+      }
       if (def.rotacionAleatoria) rotarAleatoriamente(grupo);   // ESPACIO- giro en los 3 ejes
       grupo.position.set(pos.x, 0, pos.z);
       grupo.rotation.y = rand(0, Math.PI * 2);
@@ -2437,6 +2460,13 @@ function actualizarCrecimiento(delta)
   // (y menor) se ensancha (x, z mayores), como si conservara su volumen.
   var escala = tamano_slime / tamano_base;
   cuerpo_slime.scale.set(escala * (1 + e * 0.6), escala * (1 - e), escala * (1 + e * 0.6));
+
+  // AURA- su alcance y su altura crecen con el slime (distance esta en unidades
+  // del mundo y no se escala sola: el grupo "slime" no tiene escala)
+  if (luzAura) {
+    luzAura.distance = tamano_slime * AURA_ALCANCE;
+    luzAura.position.set(0, tamano_slime * 0.8, 0);   // algo por encima del centro del slime
+  }
 
   // Planos de recorte de la camara principal proporcionales al tamaño
   camera.near = tamano_slime * 0.05;
