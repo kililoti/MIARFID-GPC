@@ -317,11 +317,11 @@ const ESCALAS = [
     catalogo: [
       ['tierra', 1, 28000, 28000],         // necesita 35294: el gran final del nivel
       ['luna', 1, 14000, 14000],             // necesita 21176
-      // Meteoritos: rango muy amplio, desde algo menos que un astronauta hasta casi un tercio de la luna
-      ['meteorito1', 30, 1000, 5000],      // necesita 2353 - 11765
-      ['meteorito2', 30, 1000, 5000],
-      ['meteorito3', 30, 1000, 5000],
-      ['meteorito4', 30, 1000, 5000],
+      // asteroides: rango muy amplio, desde algo menos que un astronauta hasta casi un tercio de la luna
+      ['asteroide1', 30, 1000, 5000],      // necesita 2353 - 11765
+      ['asteroide2', 30, 1000, 5000],
+      ['asteroide3', 30, 1000, 5000],
+      ['asteroide4', 30, 1000, 5000],
       ['ovni', 20, 2800, 3600],            // necesita 6588 - 8470
       ['cohete', 20, 2800, 3600],
       ['robot', 20, 2800, 3600],
@@ -356,12 +356,12 @@ const ESCALAS = [
       ['tierra',   1, 16000, 16000, { orbita: 0.27 }],    // necesita 44706
       ['venus',    1, 14000, 14000, { orbita: 0.20 }],    // necesita 42353
       ['marte',    1, 12000, 12000, { orbita: 0.33 }],    // necesita 30588
-      ['mercurio', 1, 10000, 10000, { orbita: 0.14 }],    // necesita 23529: el primer planeta que se come                  // necesita 58824 - 105882 (grupos de meteoritos)
+      ['mercurio', 1, 10000, 10000, { orbita: 0.14 }],    // necesita 23529: el primer planeta que se come                  // necesita 58824 - 105882 (grupos de asteroides)
       ['cometa', 80, 8000, 10000],
-      ['meteorito1', 275, 1000, 6000],                     // necesita 18824 - 70588
-      ['meteorito2', 275, 1000, 6000],
-      ['meteorito3', 275, 1000, 6000],
-      ['meteorito4', 275, 1000, 6000]
+      ['asteroide1', 275, 1000, 6000],                     // necesita 18824 - 70588
+      ['asteroide2', 275, 1000, 6000],
+      ['asteroide3', 275, 1000, 6000],
+      ['asteroide4', 275, 1000, 6000]
     ]
   }
 ];
@@ -517,10 +517,10 @@ const MODELOS_OBJETOS = {
   ovni: { ruta: 'models/ovni/scene.gltf', plantilla: null, animaciones: []},
   cohete: { ruta: 'models/cohete/scene.gltf', plantilla: null, animaciones: []},
   robot: { ruta: 'models/robot/scene.gltf', plantilla: null, animaciones: []},
-  meteorito1: { ruta: 'models/meteorito1/scene.gltf', plantilla: null, animaciones: []},
-  meteorito2: { ruta: 'models/meteorito2/scene.gltf', plantilla: null, animaciones: []},
-  meteorito3: { ruta: 'models/meteorito3/scene.gltf', plantilla: null, animaciones: []},
-  meteorito4: { ruta: 'models/meteorito4/scene.gltf', plantilla: null, animaciones: []},
+  asteroide1: { ruta: 'models/asteroide1/scene.gltf', plantilla: null, animaciones: []},
+  asteroide2: { ruta: 'models/asteroide2/scene.gltf', plantilla: null, animaciones: []},
+  asteroide3: { ruta: 'models/asteroide3/scene.gltf', plantilla: null, animaciones: []},
+  asteroide4: { ruta: 'models/asteroide4/scene.gltf', plantilla: null, animaciones: []},
   cometa: { ruta: 'models/cometa/scene.gltf', plantilla: null, animaciones: []},
 };
 var promesaModelos = null;     // se cumple cuando todos los modelos estan cargados
@@ -1035,10 +1035,10 @@ const TIPOS = {
   ovni:       { nombre: 'OVNI',        huella: 0.9,  crear: crearDesdeModelo('ovni'),       modelo: 'ovni', movil: { velocidad: 0.6, huye: false, rotacionFrente: 0, seDetiene: false } },        // platillo: ancho y plano (siempre horizontal)
   cohete:     { nombre: 'Cohete',      huella: 0.25, crear: crearDesdeModelo('cohete'),     modelo: 'cohete',     rotacionAleatoria: true, movil: { velocidad: 0.6, huye: false, rotacionFrente: 0, seDetiene: false } },  // alto y estrecho
   robot:      { nombre: 'Robot',       huella: 0.35, crear: crearDesdeModelo('robot'),      modelo: 'robot',      rotacionAleatoria: true, movil: { velocidad: 0.6, huye: false, rotacionFrente: 0, seDetiene: false } },  // humanoide
-  meteorito1: { nombre: 'Meteorito',   huella: 0.85, crear: crearDesdeModelo('meteorito1'), modelo: 'meteorito1', rotacionAleatoria: true, tumbo: 0.3, movil: { velocidad: 0.6, huye: false, rotacionFrente: 0, seDetiene: false } },  // rocas casi redondas
-  meteorito2: { nombre: 'Meteorito',   huella: 0.85, crear: crearDesdeModelo('meteorito2'), modelo: 'meteorito2', rotacionAleatoria: true, tumbo: 0.3, movil: { velocidad: 0.6, huye: false, rotacionFrente: 0, seDetiene: false } },
-  meteorito3: { nombre: 'Meteorito',   huella: 0.85, crear: crearDesdeModelo('meteorito3'), modelo: 'meteorito3', rotacionAleatoria: true, tumbo: 0.3, movil: { velocidad: 0.6, huye: false, rotacionFrente: 0, seDetiene: false } },
-  meteorito4: { nombre: 'Meteorito',   huella: 0.85, crear: crearDesdeModelo('meteorito4'), modelo: 'meteorito4', rotacionAleatoria: true, tumbo: 0.3, movil: { velocidad: 0.6, huye: false, rotacionFrente: 0, seDetiene: false } },
+  asteroide1: { nombre: 'asteroide',   huella: 0.85, crear: crearDesdeModelo('asteroide1'), modelo: 'asteroide1', rotacionAleatoria: true, tumbo: 0.3, movil: { velocidad: 0.6, huye: false, rotacionFrente: 0, seDetiene: false } },  // rocas casi redondas
+  asteroide2: { nombre: 'asteroide',   huella: 0.85, crear: crearDesdeModelo('asteroide2'), modelo: 'asteroide2', rotacionAleatoria: true, tumbo: 0.3, movil: { velocidad: 0.6, huye: false, rotacionFrente: 0, seDetiene: false } },
+  asteroide3: { nombre: 'asteroide',   huella: 0.85, crear: crearDesdeModelo('asteroide3'), modelo: 'asteroide3', rotacionAleatoria: true, tumbo: 0.3, movil: { velocidad: 0.6, huye: false, rotacionFrente: 0, seDetiene: false } },
+  asteroide4: { nombre: 'asteroide',   huella: 0.85, crear: crearDesdeModelo('asteroide4'), modelo: 'asteroide4', rotacionAleatoria: true, tumbo: 0.3, movil: { velocidad: 0.6, huye: false, rotacionFrente: 0, seDetiene: false } },
 
   // ESFERAS- la Tierra y la Luna: esferas con textura que giran despacio sobre si mismas
   //   gira: radianes por segundo
@@ -1055,7 +1055,7 @@ const TIPOS = {
   urano:    { nombre: 'Urano',    huella: 1, crear: crearEsferaTexturizada('urano'),    gira: 0.12 },
   neptuno:  { nombre: 'Neptuno',  huella: 1, crear: crearEsferaTexturizada('neptuno'),  gira: 0.12 },
 
-  // Grupo de meteoritos (un modelo con varias rocas)
+  // Grupo de asteroides (un modelo con varias rocas)
   cometa: { nombre: 'Cometa', huella: 0.8, crear: crearDesdeModelo('cometa'), modelo: 'cometa', rotacionAleatoria: true, movil: { velocidad: 0.6, huye: false, rotacionFrente: 0, seDetiene: false } }
 };
 
