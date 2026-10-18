@@ -5,37 +5,37 @@ var renderer, scene, camera;
 var cameraControls;
 var stats;
 var angulo = -0.01;
-var mixer = null;      // reproduce las animaciones del modelo
+var mixer = null; // reproduce las animaciones del modelo
 var accionSlime = null; // la animacion del slime (AnimationAction), para cambiar su velocidad
 
 // VELOCIDAD ANIMACION- el slime se anima mas deprisa cuando se mueve
-const VELOCIDAD_ANIM_QUIETO = 1;        // 1 = velocidad normal del clip
-const VELOCIDAD_ANIM_MOVIENDOSE = 3;    // 2 = el doble de rapido
+const VELOCIDAD_ANIM_QUIETO = 1; // 1 = velocidad normal del clip
+const VELOCIDAD_ANIM_MOVIENDOSE = 3; // 2 = el doble de rapido
 
 // 3- movimiento y camara en tercera persona (misma estructura que el proyecto Tron)
-var slime = null;                              // grupo que contiene el modelo y se mueve por la escena
-var tamano_slime = 1;                          // tamaño ACTUAL del slime: camara, velocidad, sombras... son proporcionales
-var tamano_base = 1;                           // tamaño ORIGINAL del modelo: el escenario y los objetos se miden con el
-var tamano_objetivo = 1;                       // tamaño hacia el que crece (tamano_slime lo alcanza poco a poco)
-var cuerpo_slime = null;                       // grupo intermedio que se escala al crecer
+var slime = null; // grupo que contiene el modelo y se mueve por la escena
+var tamano_slime = 1; // tamaño ACTUAL del slime: camara, velocidad, sombras... son proporcionales
+var tamano_base = 1; // tamaño ORIGINAL del modelo: el escenario y los objetos se miden con el
+var tamano_objetivo = 1; // tamaño hacia el que crece (tamano_slime lo alcanza poco a poco)
+var cuerpo_slime = null; // grupo intermedio que se escala al crecer
 
 // AURA- luz puntual que acompaña al slime e ilumina suavemente lo que tiene cerca
-const AURA_COLOR = 0x9fffe0;                   // tono verdoso, a juego con el slime y el HUD
+const AURA_COLOR = 0x9fffe0; // tono verdoso, a juego con el slime y el HUD
 const AURA_INTENSIDAD = 0.6;
-const AURA_ALCANCE = 5;                        // en tamaños de slime: hasta donde llega su luz
+const AURA_ALCANCE = 5; // en tamaños de slime: hasta donde llega su luz
 var luzAura = null;
 
 // ANIMACION COMER- el slime se aplasta y rebota como una gelatina al comer
-var estiramiento = 0;                          // deformacion actual (+ aplastado, - estirado)
-var velocidadEstiramiento = 0;                 // con que rapidez cambia esa deformacion
-var ultimoEmpujon = -1;                        // instante (s) del ultimo empujon al muelle
-const INTERVALO_EMPUJON = 0.25;                // tiempo minimo entre empujones: deja rebotar al muelle
-var rotacion_frente = 0;                       // si el slime camina "de espaldas", pon Math.PI
-var rotacion_visual = -0.01;                   // hacia donde mira el modelo (puede diferir de angulo)
+var estiramiento = 0; // deformacion actual (+ aplastado, - estirado)
+var velocidadEstiramiento = 0; // con que rapidez cambia esa deformacion
+var ultimoEmpujon = -1; // instante (s) del ultimo empujon al muelle
+const INTERVALO_EMPUJON = 0.25; // tiempo minimo entre empujones: deja rebotar al muelle
+var rotacion_frente = 0; // si el slime camina "de espaldas", pon Math.PI
+var rotacion_visual = -0.01; // hacia donde mira el modelo (puede diferir de angulo)
 const pos_slime = new THREE.Vector3();
-const velocity = new THREE.Vector3(0, 0, 1);   // direccion hacia la que mira el slime
+const velocity = new THREE.Vector3(0, 0, 1); // direccion hacia la que mira el slime
 
-var distancia_camara = 2.5;                    // en tamaños de slime
+var distancia_camara = 2.5; // en tamaños de slime
 var altura_camara = 1.2;
 var desfase_lookat_y = 0.4;
 
@@ -51,24 +51,23 @@ const mirada_actual_camara = new THREE.Vector3();
 const aceleracion_camara = new THREE.Vector3();
 let camara_spring_iniciada = false;
 
-// CAMARAS- la tecla C recorre estos modos en orden:
-//   'tercera'     -> camara en tercera persona con resorte (estilo Tron)
-//   'orbital'     -> camara orbital libre con el raton (OrbitControls, para depurar)
-//   'seguimiento' -> camara de seguimiento: orbita alrededor del slime con el raton
-//                    y el movimiento pasa a ser relativo a la camara
+// Cámaras (Cambiar con tecla c)
+//   'tercera' = cámara en tercera persona con resorte de Tron
+//   'orbital' = cámara orbital libre con el raton
+//   'seguimiento' = orbita alrededor del slime con el raton
 const MODOS_CAMARA = ['tercera', 'orbital', 'seguimiento'];
 var modo_camara = 'tercera';
 
 // Estado de la camara de seguimiento
 const cam_seguimiento = {
-  yaw: 0,                 // giro horizontal alrededor del slime
-  pitch: 0.5,             // inclinacion (radianes)
-  zoom: 1,                // la rueda del raton lo cambia entre 0.6 y 1.8
-  dist: 1,                // distancia actual (se suaviza hacia la objetivo)
-  objetivo: new THREE.Vector3(),   // punto al que mira (sigue al slime con suavizado)
-  arrastre: null          // posicion del raton mientras se arrastra
+  yaw: 0, // giro horizontal alrededor del slime
+  pitch: 0.5, // inclinacion
+  zoom: 1,
+  dist: 1,
+  objetivo: new THREE.Vector3(), // punto al que mira (sigue al slime con suavizado)
+  arrastre: null // posicion del raton mientras se arrastra
 };
-const DISTANCIA_SEGUIMIENTO = 3.5;       // en tamaños de slime
+const DISTANCIA_SEGUIMIENTO = 3.5;
 const _offsetSeguimiento = new THREE.Vector3();
 
 const controls = {
@@ -76,17 +75,17 @@ const controls = {
   moveBackward: false,
   moveLeft: false,
   moveRight: false,
-  rotateCameraLeft: false,     // Q / E: girar la camara de seguimiento con el teclado
+  rotateCameraLeft: false,
   rotateCameraRight: false,
-  speed: 1.8,          // tamaños de slime por segundo
-  turnSpeed: 2.5       // radianes por segundo
+  speed: 1.8, // tamaños de slime por segundo
+  turnSpeed: 2.5 // radianes por segundo
 };
 
 document.addEventListener('keydown', (event) => {
-  if (!juegoIniciado) return;    // MENU- hasta pulsar "Jugar", el slime no se mueve
-  if (juegoTerminado) return;    // FINAL- con el juego terminado, el slime ya no se mueve
+  if (!juegoIniciado) return; // Hasta pulsar "Jugar", el slime no se mueve
+  if (juegoTerminado) return; // El juego terminado, el slime ya no se mueve
 
-  // PAUSA- la P pausa y reanuda; en pausa no funciona ninguna otra tecla
+  // La P pausa y despausa
   if (event.code === 'KeyP') {
     if (!event.repeat) alternarPausa();
     return;
@@ -113,8 +112,8 @@ document.addEventListener('keydown', (event) => {
 });
 
 document.addEventListener('keyup', (event) => {
-  if (!juegoIniciado) return;    // MENU- en el menu no funcionan las teclas del juego
-  if (juegoPausado) return;      // PAUSA- tampoco en pausa
+  if (!juegoIniciado) return;
+  if (juegoPausado) return;
   switch (event.code) {
     case 'ArrowUp':
     case 'KeyW':
@@ -132,23 +131,22 @@ document.addEventListener('keyup', (event) => {
     case 'KeyD':
       controls.moveRight = false;
       break;
-    // DEBUG- cambio de camara.
     case 'KeyC':
       cambiarCamara();
       break;
-    // SONIDO- silenciar / activar todo el audio
+    // La M silencia/activa todo el audio
     case 'KeyM':
       alternarSilencio();
       break;
-    // FLECHA- activar / desactivar la flecha guia
+    // La H activa/desactiva la flecha guia
     case 'KeyH':
       alternarFlecha();
       break;
-    // BLOOM- activar / desactivar el efecto de brillo
+    // La B activa/desactiva el efecto de Bloom
     case 'KeyB':
       alternarBloom();
       break;
-    // DEBUG- saltar directamente a un nivel con las teclas numericas (1, 2, 3, 4...)
+    // Saltar directamente a un nivel
     case 'Digit1':
     case 'Digit2':
     case 'Digit3':
@@ -163,25 +161,24 @@ document.addEventListener('keyup', (event) => {
   }
 });
 
-// ESCENARIOS- cada escala del mundo se describe con datos. Las medidas van en
-// "tamaños de slime", asi el escenario se adapta a la escala del modelo cargado.
-// De momento solo existe el primer nivel; los siguientes se añadiran a este array.
+// Escenarios: Las medidas van en tamaños de slime
 const ESCALAS = [
   {
     nombre: 'La hierba',
-    radioSuelo: 14,            // radio del disco de suelo (en tamaños de slime)
-    altoBorde: 0.8,            // grosor del borde de tierra
+    radioSuelo: 14,
+    altoBorde: 0.8, // grosor del borde de tierra
     colorSuelo: 0x5d8331,
     colorBorde: 0x5b3a22,
-    repetirTextura: 6,         // veces que se repetira tu textura sobre el disco
+    repetirTextura: 6, // veces que se repite la textura sobre el suelo
     texturaSuelo: 'images/tasty_damacy/nivel1.jpg',
-    umbral: 5,                 // tamaño (en tamaños de slime) necesario para pasar al siguiente nivel
-    // FONDO- cilindro que rodea el suelo con una imagen panoramica por dentro
-    fondo: 'images/tasty_damacy/fondo_nivel1.jpg',   // panoramica que se repite en horizontal
-    altoFondo: 0.8,              // altura del cilindro respecto al radio del suelo
-    colorCielo: 0xcfe8ff,      // el cilindro esta abierto por arriba: este color se ve encima
+    umbral: 5, // tamaño necesario para pasar al siguiente nivel
+    // Fondo del cilindro que rodea el suelo con una imagen panoramica por dentro
+    fondo: 'images/tasty_damacy/fondo_nivel1.jpg',
+    altoFondo: 0.8, // altura del cilindro respecto al radio del suelo
+    colorCielo: 0xcfe8ff, // el cilindro esta abierto por arriba, este color se ve encima
     // Objetos del nivel: [tipo, cantidad, tamañoMin, tamañoMax]
-    // El tamaño es la mitad de su dimension mayor, en tamaños de slime
+    // Tamaño necesario para comer cada objeto = su tamaño / 0,425.
+    // Los grandes van primero para que encuentren hueco al colocarse.
     catalogo: [
       ['maceta', 1, 4, 4],
       ['semilla', 30, 0.12, 0.18],
@@ -196,177 +193,149 @@ const ESCALAS = [
     ]
   },
   {
-    // TRANSICION- segundo nivel: rodea al primero, que queda como una pequeña
-    // parte de el. De momento sin objetos.
     nombre: 'El parque',
-    radioSuelo: 120,           // mucho mayor que el del nivel 1 (14)
+    radioSuelo: 120,
     altoBorde: 6,
     colorSuelo: 0x4c8a36,
     colorBorde: 0x4a2f1b,
     repetirTextura: 48,
-    texturaSuelo: 'images/tasty_damacy/nivel2.jpg',   // cambiala por la del nivel 2
+    texturaSuelo: 'images/tasty_damacy/nivel2.jpg',
     umbral: 40,
-    fondo: 'images/tasty_damacy/fondo_nivel2.jpg',  // descomentar cuando tengas su panoramica
+    fondo: 'images/tasty_damacy/fondo_nivel2.jpg',
     altoFondo: 0.8,
     colorCielo: 0xcfe8ff,
-    // Tamaño necesario para comer cada objeto = su tamaño / 0,425 (el nivel va de 2,5 a 20).
-    // Los grandes van primero para que encuentren hueco al colocarse.
     catalogo: [
-      ['arbol3', 1, 22, 22],           // necesita 51,8 (arboles: uno de cada, muy grandes, no comestibles en este nivel)
-      ['arbol2', 1, 20, 20],           // necesita 47,1
-      ['arbol1', 1, 18, 18],           // necesita 42,4
-      ['farola', 3, 17.5, 17.5],       // necesita 41,2: no se pueden comer en este nivel (llega a 40), solo se ven grandes
-      ['banco', 8, 7.8, 8.5],          // necesita 18,4 - 20
-      ['excalibur', 1, 7.5, 7.5],      // necesita 17,6 (solo hay una)
-      ['hombre', 10, 6.0, 7.0],        // necesita 14,1 - 16,5
-      ['mujer', 10, 5.5, 6.5],         // necesita 12,9 - 15,3 (mujer <= hombre)
-      ['perro', 10, 3.2, 4.5],         // necesita 7,5 - 10,6
-      ['arbusto', 30, 3.5, 8.0],       // necesita 8,2 - 11,8
-      ['casa_calamardo', 1, 3.5, 3.5], // necesita 8,2 (casas: una de cada, tamaño de maceta, las tres iguales)
-      ['casa_esponja', 1, 3.5, 3.5],   // necesita 8,2
-      ['casa_patricio', 1, 3.5, 3.5],  // necesita 8,2
-      ['maceta', 18, 2.5, 4.0],        // necesita 5,9 - 9,4
-      ['calamardo', 1, 2.0, 2.0],      // necesita 4,7 (personajes: uno de cada, tamaño de botella, los tres iguales)
-      ['patricio', 1, 2.0, 2.0],       // necesita 4,7
-      ['esponja', 1, 2.0, 2.0],        // necesita 4,7
-      ['botella', 25, 1.7, 2.2],       // necesita 4,0 - 5,2
-      ['lata', 25, 1.0, 1.5]           // necesita 2,4 - 3,5: lo primero que se come al llegar
+      ['arbol3', 1, 22, 22],
+      ['arbol2', 1, 20, 20],
+      ['arbol1', 1, 18, 18],
+      ['farola', 3, 17.5, 17.5],
+      ['banco', 8, 7.8, 8.5],
+      ['excalibur', 1, 7.5, 7.5],
+      ['hombre', 10, 6.0, 7.0],
+      ['mujer', 10, 5.5, 6.5],
+      ['perro', 10, 3.2, 4.5],
+      ['arbusto', 30, 3.5, 8.0],
+      ['casa_calamardo', 1, 3.5, 3.5],
+      ['casa_esponja', 1, 3.5, 3.5],
+      ['casa_patricio', 1, 3.5, 3.5],
+      ['maceta', 18, 2.5, 4.0],
+      ['calamardo', 1, 2.0, 2.0],
+      ['patricio', 1, 2.0, 2.0],
+      ['esponja', 1, 2.0, 2.0],
+      ['botella', 25, 1.7, 2.2],
+      ['lata', 25, 1.0, 1.5]
     ]
   },
   {
-    // TRANSICION- tercer nivel: rodea al parque, que queda como una pequeña parte de el.
-    // De momento sin objetos.
     nombre: 'La ciudad',
-    radioSuelo: 1200,          // unas 8 veces el del nivel 2 (120), como del 1 al 2
+    radioSuelo: 1200,
     altoBorde: 50,
     colorSuelo: 0x9a9a95,
     colorBorde: 0x5c5850,
-    // TEXTURA- en vez de "cuantas veces se repite", indicamos cuanto mide cada
-    // baldosa de la textura (en tamaños de slime). Asi el dibujo tiene un tamaño
-    // proporcional al slime de este nivel, y no se ve diminuto ni repetitivo.
-    tamanoBaldosa: 120,        // 2 x 1000 / 120 = unas 17 repeticiones sobre todo el disco
+    tamanoBaldosa: 120,
     texturaSuelo: 'images/tasty_damacy/nivel3.jpg',
     umbral: 300,
     fondo: 'images/tasty_damacy/fondo_nivel3.jpg',
     altoFondo: 0.8,
     colorCielo: 0xcfe8ff,
-    // Tamaño necesario para comer cada objeto = su tamaño / 0,425 (el nivel va de 20 a 150).
-    // Al llegar quedan los objetos grandes del parque (bancos, personas, la farola...).
     catalogo: [
-      ['torre3', 2, 120, 120],           // necesita 146 - 165: el reto final (algunas no caben en el nivel)
-      ['torre2', 3, 110, 110],           // necesita 132 - 146
-      ['torre1', 4, 100, 100],           // necesita 118 - 132
-      ['fuente', 4, 46, 50],           // necesita 108 - 118: como las mansiones
-      ['casa4', 4, 44, 50],            // necesita 104 - 118
-      ['casa3', 6, 40, 45],            // necesita 94 - 106
-      ['casa2', 8, 36, 40],           // necesita 85 - 94
-      ['casa1', 8, 33, 37],           // necesita 78 - 87
-      ['tienda', 10, 30, 34],           // necesita 71 - 80
-      ['arbol3', 15, 27, 32],          // necesita 64 - 75
-      ['arbol2', 18, 22, 27],          // necesita 52 - 64
-      ['arbol1', 20, 18, 22],          // necesita 42 - 52
-      ['farola2', 25, 19, 22],         // necesita 30,6 - 37,6 (algo mas grande que la farola)
-      ['farola', 30, 17.5, 20],          // necesita 25,9 - 32,9
-      ['coche2', 30, 9, 11],           // necesita 18,8 - 25,9 (igual que el coche)
-      ['coche', 30, 8, 11],            // necesita 18,8 - 25,9
-      ['hombre', 30, 8.0, 9.0],        // necesita 14,1 - 16,5: la gente de la ciudad, comida desde el principio
-      ['mujer', 30, 7.5, 8.5],         // necesita 12,9 - 15,3
-      ['perro', 20, 4.2, 6.5]          // necesita 7,5 - 10,6
+      ['torre3', 2, 120, 120],
+      ['torre2', 3, 110, 110],
+      ['torre1', 4, 100, 100],
+      ['fuente', 4, 46, 50],
+      ['casa4', 4, 44, 50],
+      ['casa3', 6, 40, 45],
+      ['casa2', 8, 36, 40],
+      ['casa1', 8, 33, 37],
+      ['tienda', 10, 30, 34],
+      ['arbol3', 15, 27, 32],
+      ['arbol2', 18, 22, 27],
+      ['arbol1', 20, 18, 22],
+      ['farola2', 25, 19, 22],
+      ['farola', 30, 17.5, 20],
+      ['coche2', 30, 9, 11],
+      ['coche', 30, 8, 11],
+      ['hombre', 30, 8.0, 9.0],
+      ['mujer', 30, 7.5, 8.5],
+      ['perro', 20, 4.2, 6.5]
     ]
   },
     {
-    // TRANSICION- cuarto nivel: rodea a la ciudad, que queda como una pequeña parte de el.
-    // De momento sin objetos.
     nombre: 'La naturaleza',
-    radioSuelo: 8000,          // unas 8 veces el del nivel 3 (1000), como entre los anteriores
+    radioSuelo: 8000,
     altoBorde: 400,
     colorSuelo: 0x5e8f3a,
     colorBorde: 0x4a3220,
-    // Baldosas proporcionales al slime de este nivel (el nivel 3 usa 120 con un slime 8 veces menor)
-    tamanoBaldosa: 960,        // 2 x 8000 / 960 = unas 17 repeticiones, como en el nivel 3
-    texturaSuelo: 'images/tasty_damacy/nivel4.jpg',   // cambiala por la del nivel 4
+    tamanoBaldosa: 960,
+    texturaSuelo: 'images/tasty_damacy/nivel4.jpg',
     umbral: 4800,
-    fondo: 'images/tasty_damacy/fondo_nivel4.jpg',  // descomentar cuando tengas su panoramica
+    fondo: 'images/tasty_damacy/fondo_nivel4.jpg',
     altoFondo: 1,
     colorCielo: 0xcfe8ff,
-    // Tamaño necesario para comer cada objeto = su tamaño / 0,425 (el nivel va de 300 a 2400).
-    // Los grandes van primero para que encuentren hueco al colocarse.
     catalogo: [
-      ['godzilla', 1, 1400, 1400],       // necesita 2235 (criaturas: una de cada, iguales: el gran final)
+      ['godzilla', 1, 1400, 1400],
       ['serafin', 1, 950, 950],
       ['hallucigenia', 1, 1200, 1200],
       ['golem', 1, 950, 950],
-      ['monte3', 10, 650, 800],        // necesita 1529 - 1882 (montes: muchos y de tamaños muy variados)
-      ['monte2', 14, 450, 650],        // necesita 1059 - 1529
-      ['monte1', 18, 300, 500],        // necesita 706 - 1176
-      ['ciudad', 4, 260, 320],         // necesita 612 - 753 (pocas)
-      ['castillo', 15, 160, 210],      // necesita 376 - 494
-      ['bosque', 40, 160, 210],        // necesita 376 - 494
-      ['mamut', 8, 160, 210],          // necesita 376 - 494
-      ['molino2', 30, 100, 130],       // necesita 235 - 306: lo primero que se come al llegar
-      ['molino', 30, 100, 130]         // necesita 235 - 306
+      ['monte3', 10, 650, 800],
+      ['monte2', 14, 450, 650],
+      ['monte1', 18, 300, 500],
+      ['ciudad', 4, 260, 320],
+      ['castillo', 15, 160, 210],
+      ['bosque', 40, 160, 210],
+      ['mamut', 8, 160, 210],
+      ['molino2', 30, 100, 130],
+      ['molino', 30, 100, 130]
     ]
   },
   {
-    // TRANSICION- quinto nivel: el espacio (sin suelo).
     nombre: 'El espacio',
-    // ESPACIO- sin suelo: el slime flota en el plano y = 0. Al llegar desaparecen
+    // No tiene suelo, el slime flota en y = 0. Al llegar desaparecen
     // los suelos de todos los niveles anteriores. radioSuelo sigue marcando hasta
     // donde puede moverse el slime y donde se colocan los objetos.
     espacio: true,
-    // Los objetos que queden de niveles anteriores (montes, castillos...) tambien
-    // desaparecen: si no, flotarian en el espacio. Pon false para conservarlos.
+    // Los objetos que queden de niveles anteriores también desaparecen
     borrarObjetosAnteriores: true,
-    radioSuelo: 128000,        // 16 veces el del nivel 4 (8000): el espacio es inmenso
+    radioSuelo: 128000,
     altoBorde: 0,
-    umbral: 55000,             // el slime llega con 4800 y debe crecer unas 12 veces
-    // Tamaño necesario para comer cada objeto = su tamaño / 0,425 (el nivel va de 4800 a 58800).
-    // Los grandes van primero para que encuentren hueco al colocarse.
+    umbral: 55000,
     catalogo: [
-      ['tierra', 1, 28000, 28000],         // necesita 35294: el gran final del nivel
-      ['luna', 1, 14000, 14000],             // necesita 21176
-      // asteroides: rango muy amplio, desde algo menos que un astronauta hasta casi un tercio de la luna
-      ['asteroide1', 30, 1000, 5000],      // necesita 2353 - 11765
+      ['tierra', 1, 28000, 28000],
+      ['luna', 1, 14000, 14000],
+      ['asteroide1', 30, 1000, 5000],
       ['asteroide2', 30, 1000, 5000],
       ['asteroide3', 30, 1000, 5000],
       ['asteroide4', 30, 1000, 5000],
-      ['ovni', 20, 2800, 3600],            // necesita 6588 - 8470
+      ['ovni', 20, 2800, 3600],
       ['cohete', 20, 2800, 3600],
       ['robot', 20, 2800, 3600],
-      ['satelite', 25, 1900, 2500],        // necesita 4470 - 5882
+      ['satelite', 25, 1900, 2500],
       ['satelite2', 25, 1900, 2500],
-      ['astronauta', 30, 1300, 1700]       // necesita 3059 - 4000: lo primero que se come al llegar
+      ['astronauta', 30, 1300, 1700]
     ]
   },
   {
-    // TRANSICION- sexto nivel: el sistema solar. Tambien es espacial (sin suelo).
     nombre: 'El sistema solar',
     espacio: true,
-    sistemaSolar: true,        // la luz viene del Sol (el objeto con { centro: true })
+    sistemaSolar: true,
     borrarObjetosAnteriores: true,
-    // SISTEMA SOLAR- el radio sube de 480000 a 1000000: las orbitas de los 8 planetas
-    // necesitan sitio para no cruzarse entre si (Saturno con su anillo ocupa mucho)
     radioSuelo: 1000000,
     altoBorde: 0,
-    umbral: 235200,            // el slime llega con 58800 y debe crecer 4 veces
-    // Tamaño necesario para comer cada objeto = su tamaño / 0,425 (el nivel va de 58800 a 235200).
-    // Los grandes van primero para que encuentren hueco al colocarse.
-    // Quinto valor (opcional) de cada entrada:
-    //   { centro: true }  -> se coloca en el centro del nivel (el Sol)
-    //   { orbita: 0.27 }  -> gira alrededor del centro; radio de la orbita como
-    //                        fraccion de radioSuelo (asi se adapta si cambias el radio)
+    umbral: 235200,
+    //{ centro: true } = se coloca en el centro del nivel (el Sol)
+    //{ orbita: x } = gira alrededor del centro
     catalogo: [
-      ['sol',      1, 50000, 50000, { centro: true }],    // necesita 211765: el gran final
-      ['jupiter',  1, 30000, 30000, { orbita: 0.45 }],    // necesita 94118
-      ['saturno',  1, 26000, 26000, { orbita: 0.60 }],    // necesita 80000
-      ['urano',    1, 22000, 22000, { orbita: 0.74 }],    // necesita 61176
-      ['neptuno',  1, 20000, 20000, { orbita: 0.87 }],    // necesita 58824
-      ['tierra',   1, 16000, 16000, { orbita: 0.27 }],    // necesita 44706
-      ['venus',    1, 14000, 14000, { orbita: 0.20 }],    // necesita 42353
-      ['marte',    1, 12000, 12000, { orbita: 0.33 }],    // necesita 30588
-      ['mercurio', 1, 10000, 10000, { orbita: 0.14 }],    // necesita 23529: el primer planeta que se come                  // necesita 58824 - 105882 (grupos de asteroides)
+      ['sol',      1, 50000, 50000, { centro: true }],
+      ['jupiter',  1, 30000, 30000, { orbita: 0.45 }],
+      ['saturno',  1, 26000, 26000, { orbita: 0.60 }],
+      ['urano',    1, 22000, 22000, { orbita: 0.74 }],
+      ['neptuno',  1, 20000, 20000, { orbita: 0.87 }],
+      ['tierra',   1, 16000, 16000, { orbita: 0.27 }],
+      ['venus',    1, 14000, 14000, { orbita: 0.20 }],
+      ['marte',    1, 12000, 12000, { orbita: 0.33 }],
+      ['mercurio', 1, 10000, 10000, { orbita: 0.14 }],
       ['cometa', 80, 8000, 10000],
-      ['asteroide1', 200, 2000, 6000],                     // necesita 18824 - 70588
+      ['asteroide1', 200, 2000, 6000],
       ['asteroide2', 200, 2000, 6000],
       ['asteroide3', 200, 2000, 6000],
       ['asteroide4', 200, 2000, 6000]
@@ -375,48 +344,41 @@ const ESCALAS = [
 ];
 var escala_actual = 0;
 
-// CIELO- imagen de fondo de la escena (detras de todo, a distancia infinita).
-// Cada entrada se usa desde su nivel hasta que otra la sustituye: la primera
-// sirve para los niveles 1 a 4, la segunda para el 5 y la tercera para el 6.
-// equirectangular: true  -> panoramica 360º (proporcion 2:1): rodea la escena
-// equirectangular: false -> imagen normal: se queda fija detras, como un decorado
+// Imagen de fondo de la escena.
+// equirectangular: true = panoramica 360, rodea la escena
+// equirectangular: false = imagen normal, se queda fija detras
 const CIELOS = [
   { desdeNivel: 1, imagen: 'images/tasty_damacy/arcoiris_fondo.jpg', equirectangular: true },
   { desdeNivel: 5, imagen: 'images/tasty_damacy/fondo_nivel5.jpg', equirectangular: true },
   { desdeNivel: 6, imagen: 'images/tasty_damacy/fondo_nivel6.jpg', equirectangular: true }
 ];
-var cieloActual = null;        // entrada de CIELOS que se esta mostrando
+var cieloActual = null;
 
-// ILUMINACION- como en el proyecto Tron: una luz ambiental y una direccional (el sol).
-// Aqui ademas el sol proyecta sombras y sigue al slime.
+//Luces
 var luzSol, luzAmbiente;
-const direccion_sol = new THREE.Vector3(30, 50, 20).normalize();  // misma direccion que en Tron
-var suelos = [];               // un registro por escala: { grupo, radio, ... }
+const direccion_sol = new THREE.Vector3(30, 50, 20).normalize();
+var suelos = [];
 
-// TRANSICION- estado del cambio de nivel
+// Cambio de nmivel
 const transicion = { activa: false, t: 0, duracion: 3.5 };
-const DURACION_CRECER_SUELO = 1.7;   // segundos que tarda el suelo nuevo en extenderse
+const DURACION_CRECER_SUELO = 1.7; // segundos que tarda el suelo nuevo en extenderse
 
-// Minimapa: camara cenital ortografica en la esquina superior izquierda
+// Minimapa, camara cenital ortografica en la esquina superior izquierda
 var cameraTop, cameraStencil;
 var stencilScene, hudBorderScene;
-var alcance_hud = 20;                          // lado (en unidades del mundo) que abarca el minimapa
-const centro_hud = new THREE.Vector3(0, 10, 0); // punto sobre el que se coloca la camara cenital
+var alcance_hud = 20;
+const centro_hud = new THREE.Vector3(0, 10, 0);
 
-// SONIDO- configuracion y estado del audio. Va antes de init() porque crearAudio()
-// se ejecuta dentro de init() y necesita que estas variables ya existan.
-// MUSICA- lista de canciones con su peso: cuanto mayor el peso, mas probable.
-// Al empezar se elige una al azar y se repite en bucle durante toda la partida.
-// Añade aqui tus canciones.
+// Música, cuanto mayor el peso, mas probable
 const CANCIONES = [
   { ruta: 'sounds/lonely_rolling_star.mp3', peso: 1 },
   { ruta: 'sounds/lets_fly_to_rio.mp3', peso: 1 },
 ];
 const VOLUMEN_MUSICA = 0.2;
-var cancionActual = null;      // entrada de CANCIONES que esta sonando
+var cancionActual = null;
 const VOLUMEN_EFECTOS = 0.5;
 
-// Sonidos de comer con su peso: cuanto mayor el peso, mas probable.
+// Sonidos de comer, cuanto mayor el peso, mas probable
 const SONIDOS_COMER = [
   { ruta: 'sounds/katamari_comer2.wav', peso: 100 },
   { ruta: 'sounds/mordisco.wav', peso: 50 },
@@ -424,13 +386,10 @@ const SONIDOS_COMER = [
   { ruta: 'sounds/nom.wav', peso: 5 },
 ];
 
-// CHOQUE- sonido y sacudida de pantalla al chocar con algo que no se puede comer
-// Sonidos de choque con su peso: cuanto mayor el peso, mas probable.
-// Añade aqui tus otros sonidos de choque con el peso que quieras.
-// FINAL- sonido de victoria al comerse el Sol (cambia la ruta por la de tu archivo)
+// Sonidos de choque y victoria
 const RUTA_SONIDO_VICTORIA = 'sounds/katamari_victoria.wav';
 const VOLUMEN_VICTORIA = 0.6;
-var canalVictoria;             // THREE.Audio del sonido de victoria
+var canalVictoria;
 
 const SONIDOS_CHOQUE = [
   { ruta: 'sounds/katamari_no.wav', peso: 10 },
@@ -439,40 +398,36 @@ const SONIDOS_CHOQUE = [
   { ruta: 'sounds/ouch.wav', peso: 1 },
 ];
 const VOLUMEN_CHOQUE = 0.3;
-const INTERVALO_CHOQUE = 0.6;  // segundos minimos entre dos efectos de choque
-const FUERZA_TEMBLOR = 0.02;   // amplitud de la sacudida, en tamaños de slime
-var canalChoque;               // THREE.Audio del sonido de choque
-var ultimoChoque = -10;        // instante (s) del ultimo efecto de choque
-var temblor = 0;               // intensidad actual de la sacudida (1 al chocar, baja a 0)
+const INTERVALO_CHOQUE = 0.6; // segundos minimos entre dos sonidos de choque
+const FUERZA_TEMBLOR = 0.02; // nivel de movimiento de pantalla
+var canalChoque;
+var ultimoChoque = -10;
+var temblor = 0;
 
-// RESALTE- anillo bajo el objeto comestible mas grande que haya cerca
-const DISTANCIA_RESALTE = 3;   // en tamaños de slime: hasta donde se buscan objetos
+// Marcador anillo bajo la cosa comestible mas grande que haya cerca
+const DISTANCIA_RESALTE = 3; // hasta donde se buscan objetos en tamaños de slime
 var anilloResalte;
 var objetoResaltado = null;
 
-// FLECHA- flecha sobre el slime que apunta al mejor objeto comestible de la zona
-const DISTANCIA_FLECHA = 6;    // en tamaños de slime: hasta donde busca
-var flechaActiva = true;       // la tecla N la activa o la desactiva
+// Flecha sobre el slime que apunta al mejor comida del radio
+const DISTANCIA_FLECHA = 6; // en tamaños de slime: hasta donde busca
+var flechaActiva = true;
 var flecha;
 var objetivoFlecha = null;
-var chocandoAntes = false;     // si en el fotograma anterior el slime ya estaba chocando
-var chocandoAhora = false;     // si en este fotograma esta chocando
+var chocandoAntes = false;
+var chocandoAhora = false;
 
-var oyente;                    // AudioListener
-var musica;                    // THREE.Audio de la musica de fondo
-var canalesComer = [];         // reserva de Audio para que varios bocados puedan sonar a la vez
-const MAX_CANALES_COMER = 6;  // como mucho, 6 bocados sonando simultaneamente
+var oyente;
+var musica;
+var canalesComer = [];
+const MAX_CANALES_COMER = 6; // como mucho, 6 sonidos de comida sonando simultáneamente
 var silenciado = false;
 
-// MODELOS- modelos glTF de los objetos comestibles. Van antes de init() porque
+// Modelos glTF de los objetos comestibles. Van antes de init() porque
 // init() empieza a cargarlos y necesita que estas variables ya existan.
 const MODELOS_OBJETOS = {
-  // animQuieto / animAndar: nombre (o parte del nombre) de cada animacion del modelo.
-  // Mira en la consola la lista "animaciones" al cargar y ajustalos si no coinciden.
-  hormiga: { ruta: 'models/hormiga/scene.gltf', plantilla: null, animaciones: [],
-             animQuieto: 'Armature|Idle', animAndar: 'Armature|Walk' },
-
-  // Objetos del jardin (un archivo por modelo)
+  // La hierba
+  hormiga: { ruta: 'models/hormiga/scene.gltf', plantilla: null, animaciones: [], animQuieto: 'Armature|Idle', animAndar: 'Armature|Walk' },
   piedra:   { ruta: 'models/piedra/scene.gltf', plantilla: null, animaciones: [] },
   setaRoja: { ruta: 'models/seta_roja/scene.gltf', plantilla: null, animaciones: []},
   setaAzul: { ruta: 'models/seta_azul/scene.gltf', plantilla: null, animaciones: []},
