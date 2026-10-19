@@ -435,6 +435,8 @@ const MODELOS_OBJETOS = {
   flor: { ruta: 'models/flor/scene.gltf', plantilla: null, animaciones: []},
   lata: { ruta: 'models/lata/scene.gltf', plantilla: null, animaciones: []},
   botella: { ruta: 'models/botella/scene.gltf', plantilla: null, animaciones: []},
+
+  // El parque
   esponja: { ruta: 'models/esponja/scene.gltf', plantilla: null, animaciones: [], animQuieto: 'IDLE01', animAndar: 'RUN01'},
   patricio: { ruta: 'models/patricio/scene.gltf', plantilla: null, animaciones: [], animQuieto: 'patrick_bind.dff|patrick_idlenorm_new.anm', animAndar: 'patrick_bind.dff|patrick_runnorm.anm'},
   calamardo: { ruta: 'models/calamardo/scene.gltf', plantilla: null, animaciones: [], animQuieto: 'Take 001', animAndar: 'Take 001'},
@@ -450,8 +452,8 @@ const MODELOS_OBJETOS = {
   excalibur: { ruta: 'models/excalibur/scene.gltf', plantilla: null, animaciones: []},
   farola: { ruta: 'models/farola/scene.gltf', plantilla: null, animaciones: []},
   farola2: { ruta: 'models/farola2/scene.gltf', plantilla: null, animaciones: []},
-  // La unica animacion del coche (Plane|PlaneAction) es un giro de exhibicion
-  // (como en un escaparate): no la usamos, el movimiento ya lo hace moverSerVivo()
+
+  // La ciudad
   coche: { ruta: 'models/coche/scene.gltf', plantilla: null, animaciones: [], sinAnimaciones: true },
   coche2: { ruta: 'models/coche2/scene.gltf', plantilla: null, animaciones: [], sinAnimaciones: true },
   arbol1: { ruta: 'models/arbol1/scene.gltf', plantilla: null, animaciones: []},
@@ -467,6 +469,7 @@ const MODELOS_OBJETOS = {
   torre2: { ruta: 'models/torre2/scene.gltf', plantilla: null, animaciones: []},
   torre3: { ruta: 'models/torre3/scene.gltf', plantilla: null, animaciones: []},
 
+  // La naturaleza
   molino: { ruta: 'models/molino/scene.gltf', plantilla: null, animaciones: []},
   molino2: { ruta: 'models/molino2/scene.gltf', plantilla: null, animaciones: []},
   mamut: { ruta: 'models/mamut/scene.gltf', plantilla: null, animaciones: [], animQuieto: 'ColumbianMammoth_Idle', animAndar: 'CoumbianMammoth_WalkCycle'},
@@ -481,6 +484,7 @@ const MODELOS_OBJETOS = {
   hallucigenia: { ruta: 'models/hallucigenia/scene.gltf', plantilla: null, animaciones: [], animQuieto: 'animation.hallucigenia.move', animAndar: 'animation.hallucigenia.move'},
   golem: { ruta: 'models/golem/scene.gltf', plantilla: null, animaciones: [], animQuieto: 'ArmatureAction', animAndar: 'ArmatureAction'},
 
+  // El espacio
   astronauta: { ruta: 'models/astronauta/scene.gltf', plantilla: null, animaciones: []},
   satelite: { ruta: 'models/satelite/scene.gltf', plantilla: null, animaciones: []},
   satelite2: { ruta: 'models/satelite2/scene.gltf', plantilla: null, animaciones: []},
@@ -491,42 +495,44 @@ const MODELOS_OBJETOS = {
   asteroide2: { ruta: 'models/asteroide2/scene.gltf', plantilla: null, animaciones: []},
   asteroide3: { ruta: 'models/asteroide3/scene.gltf', plantilla: null, animaciones: []},
   asteroide4: { ruta: 'models/asteroide4/scene.gltf', plantilla: null, animaciones: []},
+
+  // El sistema solar
   cometa: { ruta: 'models/cometa/scene.gltf', plantilla: null, animaciones: []},
 };
 var promesaModelos = null;     // se cumple cuando todos los modelos estan cargados
-var mixersObjetos = [];        // AnimationMixer de cada copia animada
+var mixersObjetos = [];
 
 const clock = new THREE.Clock();
 
-// HUD- estado que muestra la interfaz
 var puntos = 0;
 
-// FINAL- el juego termina al comerse el Sol
+// El juego termina al comerse el Sol
 var juegoTerminado = false;
 
-// MENU- la partida empieza al pulsar "Jugar" en el menu de inicio
+// La partida empieza al pulsar "Jugar" en el menu de inicio
 var juegoIniciado = false;
 
-// PAUSA- con la P se detiene todo: movimiento, objetos, animaciones y cronometro
+// Con la P se detiene todo: movimiento, objetos, animaciones y cronometro
 var juegoPausado = false;
 var pantallaPausa;
-var apagon = 0;                // de 0 a 1: al comerse el Sol, las luces se apagan poco a poco
-const ESPERA_PANTALLA_FINAL = 2.5;   // segundos entre el bocado final y la pantalla de victoria
-var tiempoJugado = 0;          // segundos jugando de verdad (no cuenta la carga ni la pestaña oculta)
-var hud = {};                  // referencias a los elementos HTML del HUD
-var cacheHUD = {};             // ultimo valor escrito en cada elemento (para no reescribir si no cambia)
-var temporizadorAviso = null;  // para ocultar el aviso central pasado un tiempo
-var ultimoAvisoChoque = -10;   // evita repetir "demasiado grande" en cada fotograma del choque
-// VISOR- circulo en la esquina inferior derecha con el ultimo objeto comido girando.
+var apagon = 0; // Al comerse el Sol, las luces se apagan poco a poco
+const ESPERA_PANTALLA_FINAL = 2.5; // segundos entre el bocado final y la pantalla de victoria
+var tiempoJugado = 0; // segundos jugando de verdad
+var hud = {};
+var cacheHUD = {};
+var temporizadorAviso = null;
+var ultimoAvisoChoque = -10; // evita repetir "demasiado grande" en cada frame del choque
+
+// Visualizador de cosas comidas en la esquina inferior derecha con el ultimo objeto comido girando.
 // Es una escena aparte, con su propia camara y luces, que se dibuja encima de
 // la principal con la misma tecnica (viewport + stencil) que el minimapa.
 var escenaVisor, camaraVisor;
-var pivoteVisor = null;        // grupo que gira; dentro va el modelo del ultimo objeto comido
-var etiquetaVisor;             // nombre del objeto, en HTML, sobre el circulo
-var visorPendiente = null;     // tipo del ultimo objeto comido que aun no se ha mostrado
-var ultimoCambioVisor = -10;   // instante (s) en que cambio por ultima vez el modelo
-const INTERVALO_VISOR = 0.6;   // tiempo minimo que se muestra cada modelo
-const RADIO_VISOR = 0.75;      // radio de la esfera en la que se encaja cada modelo (mas alto = mas grande)
+var pivoteVisor = null;
+var etiquetaVisor;
+var visorPendiente = null;
+var ultimoCambioVisor = -10;
+const INTERVALO_VISOR = 0.6; // tiempo minimo que se muestra cada modelo
+const RADIO_VISOR = 0.75;
 
 const NOMBRES_CAMARA = {
   tercera: 'Tercera persona',
@@ -534,10 +540,8 @@ const NOMBRES_CAMARA = {
   seguimiento: 'Seguimiento'
 };
 
-// BLOOM- brillo de cada nivel (si el nivel no tiene "bloom" en ESCALAS, se usa
-// BLOOM_DIA). De dia, un brillo sutil: umbral alto para que solo destaquen los
-// reflejos; en el espacio, con fondo oscuro, mucho mas fuerte: el Sol resplandece.
-// Van antes de init() porque crearBloom() se ejecuta dentro de init().
+// Bloom, brillo de cada nivel. De dia, un brilla menos, umbral alto para que solo destaquen los
+// reflejos. En el espacio, mucho mas fuerte.
 const BLOOM_DIA = { fuerza: 0.35, radio: 0.4, umbral: 0.9 };
 const BLOOM_ESPACIO = { fuerza: 0.35, radio: 0.6, umbral: 0.8 };
 var composer = null;
@@ -554,28 +558,27 @@ function init()
   renderer = new THREE.WebGLRenderer();
   renderer.setSize( window.innerWidth, window.innerHeight );
   renderer.setClearColor( new THREE.Color(0xFFFFFF) );
-  renderer.outputEncoding = THREE.sRGBEncoding;          // salida en sRGB: colores correctos
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;     // brillos más suaves
-  renderer.shadowMap.enabled = true;                      // SOMBRAS- activar el mapa de sombras
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;       // bordes de sombra suavizados
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap; // bordes de sombra suavizados
   document.getElementById('container').appendChild( renderer.domElement );
 
   stats = new Stats();
   stats.showPanel(0); // FPS inicialmente. Picar para cambiar panel.
-  // Stats se coloca por defecto arriba a la izquierda (position fixed, top 0, left 0)
   document.getElementById('container').appendChild( stats.domElement );
 
   scene = new THREE.Scene();
-  crearEntorno();                                         // reflejos para los materiales PBR
-  actualizarCielo(0);                                     // CIELO- el del primer nivel
+  crearEntorno();
+  actualizarCielo(0);
 
   // cargo el objeto
   loadObjGLTF();
-  promesaModelos = cargarModelosObjetos();   // MODELOS- se cargan a la vez que el slime
+  promesaModelos = cargarModelosObjetos(); // Modelos que se cargan a la vez que el slime
 
   var aspectRatio = window.innerWidth / window.innerHeight;
   camera = new THREE.PerspectiveCamera( 50, aspectRatio , 1, 1000 );
-  camera.layers.enable(1);   // FONDO- la camara principal ve tambien la capa 1 (el cilindro)
+  camera.layers.enable(1);
   camera.position.set( 10, 15, 20 );
 
   cameraControls = new THREE.OrbitControls( camera, renderer.domElement );
@@ -589,7 +592,7 @@ function init()
   crearPantallaPausa();
   crearBloom();
 
-  // PAUSA- si se cambia de pestaña o de ventana en mitad de la partida, se pausa sola
+  // Si se cambia de pestaña o de ventana en mitad de la partida, se pausa sola
   document.addEventListener('visibilitychange', function () {
     if (document.hidden && !juegoPausado) alternarPausa();
   });
@@ -629,7 +632,7 @@ function loadObjGLTF()
     //let model = 'models/gar/scene.gltf';
     //let model = 'models/sombrero/fishermans_hat_4k.gltf';
     //let model = 'models/rata/street_rat_4k.gltf';
-    let model = 'models/slime_gltf/scene.gltf';   // slime de Sketchfab (scene.bin y textures/ en la misma carpeta)
+    let model = 'models/slime_gltf/scene.gltf';
 
     // Para cambiar tamaño del modelo. Conseguir su dimensión más grande y dividirla por ello, eso hace que quede entre 0-1 y tras ello, multiplicarlo por lo deseado. por ejemplo, 0.15 es un 15% del tamaño original.
     loader.load(model,
@@ -638,25 +641,16 @@ function loadObjGLTF()
 
             var object = gltf.scene;
 
-            // El modelo va dentro de un grupo: movemos y giramos el grupo, y el
-            // modelo queda centrado dentro de él (más abajo)
-            // Jerarquia:  slime (se mueve y gira)
-            //               └─ cuerpo_slime (se escala al crecer)
-            //                    └─ modelo glTF (centrado y apoyado en y = 0)
-            // Escalamos el grupo intermedio y no el modelo porque el modelo esta
-            // desplazado para centrarlo: al escalarlo se moveria de su sitio.
             slime = new THREE.Group();
             cuerpo_slime = new THREE.Group();
             slime.add(cuerpo_slime);
             cuerpo_slime.add(object);
             scene.add(slime);
 
-            // AURA- la luz va en el grupo "slime" (no en cuerpo_slime): asi se
-            // mueve con el pero no se deforma con la animacion de comer
             luzAura = new THREE.PointLight(AURA_COLOR, AURA_INTENSIDAD, 1, 1);
             slime.add(luzAura);
 
-            // SOMBRAS- el slime proyecta sombra sobre el suelo
+            // El slime proyecta sombra sobre el suelo
             object.traverse(function (hijo) {
                 if (hijo.isMesh) hijo.castShadow = true;
             });
@@ -706,7 +700,7 @@ function loadObjGLTF()
             cameraControls.update();            
 
             // Ajustar la camara cenital al tamaño del modelo
-            alcance_hud = maxDim * 6;      // abarca los alrededores del slime
+            alcance_hud = maxDim * 6;
             cameraTop.left = -alcance_hud / 2;
             cameraTop.right = alcance_hud / 2;
             cameraTop.top = alcance_hud / 2;
@@ -714,9 +708,8 @@ function loadObjGLTF()
             cameraTop.near = maxDim * 0.1;
             cameraTop.far = maxDim * 10;
             cameraTop.updateProjectionMatrix();
-            centro_hud.set(0, size.y + maxDim, 0); // por encima del modelo (ya apoyado en y = 0)
+            centro_hud.set(0, size.y + maxDim, 0);
 
-            // Centramos el modelo dentro de su grupo y lo apoyamos en y = 0
             object.position.x -= center.x;
             object.position.z -= center.z;
             object.position.y -= box.min.y;
@@ -724,20 +717,15 @@ function loadObjGLTF()
             tamano_base = maxDim;
             tamano_objetivo = maxDim;
 
-            // Escenario: suelo del primer nivel (su tamaño depende del slime)
             crearSuelo(0);
             configurarSombras();
-            // OBJETOS- los comestibles del primer nivel. Esperamos a que esten
-            // cargados los modelos de los objetos (por ejemplo, la hormiga)
+            // Espera a que esten cargados los modelos de los objetos
             promesaModelos.then(function () {
                 generarObjetos(0);
             });
 
-            // HUD- presentamos el nivel con un aviso central
-            // (si el jugador sigue en el menu, el aviso se mostrara al pulsar "Jugar")
             if (juegoIniciado) mostrarAviso('Nivel 1: ' + ESCALAS[0].nombre, '', 2500);
 
-            // A partir de ahora manda la camara en tercera persona
             cameraControls.enabled = false;
 
 
@@ -758,10 +746,8 @@ function loadObjGLTF()
 
 }
 
-// ---------------------------------------------------------------------------
-// OBJETOS- definicion de los tipos de objetos comestibles y su colocacion
-// ---------------------------------------------------------------------------
-var objetos = [];   // registro de todos los objetos del mundo (para colisiones, comer...)
+// Objetos comestibles y su colocacion
+var objetos = [];
 
 // Numero aleatorio entre a y b
 function rand(a, b)
@@ -780,60 +766,40 @@ function elegir(lista)
 const GEOMETRIAS = {
   esfera: new THREE.SphereGeometry(1, 24, 16)
 };
-// Los colores en hexadecimal estan en sRGB; los pasamos a lineal porque el
-// renderizador trabaja en lineal y codifica la salida en sRGB
+
 const MATERIALES = {
   semillas: ['#8a5a2b', '#c9a46a', '#4a3524'].map(function (c) {
     return new THREE.MeshStandardMaterial({ color: new THREE.Color(c).convertSRGBToLinear(), roughness: 0.6 });
   })
 };
 
-// Tabla de tipos: nombre visible, huella (radio de colision relativo a su tamaño)
-// y funcion que construye su modelo
-// ---------------------------------------------------------------------------
-// MODELOS- objetos que usan un modelo glTF en vez de primitivas.
-// Cada modelo se carga UNA vez (la "plantilla") y cada objeto del mundo es una
-// copia. Al cargarlo se normaliza: centrado, apoyado en y = 0 y con su
-// dimension mayor de tamaño 2, igual que los objetos hechos con primitivas,
-// para que el sistema de tamaños del catalogo funcione igual con todos.
-// ---------------------------------------------------------------------------
-// (MODELOS_OBJETOS, promesaModelos y mixersObjetos estan declarados antes de init())
-
 function cargarModelosObjetos()
 {
   const cargador = new THREE.GLTFLoader();
   const nombres = Object.keys(MODELOS_OBJETOS);
 
-  // Una promesa por modelo; Promise.all espera a que terminen todas
+  // Una promesa por modelo, Promise.all espera a que terminen todas
   return Promise.all(nombres.map(function (nombre) {
     const modelo = MODELOS_OBJETOS[nombre];
     return new Promise(function (resolver) {
       cargador.load(modelo.ruta, function (gltf) {
         modelo.plantilla = normalizarModelo(gltf.scene);
-        // Algunos modelos traen animaciones que no queremos (por ejemplo, un giro
-        // de exhibicion): con sinAnimaciones: true se ignoran
+        // Algunos modelos traen animaciones que no se necesita, con sinAnimaciones: true se ignoran
         modelo.animaciones = modelo.sinAnimaciones ? [] : gltf.animations;
         console.log('Modelo cargado:', nombre, '- animaciones:',
                     gltf.animations.map(function (clip) { return clip.name; }));
         resolver();
       }, undefined, function () {
         console.error('No se pudo cargar el modelo:', modelo.ruta);
-        resolver();   // seguimos igualmente: ese tipo de objeto no aparecera
+        resolver(); // seguir igualmente, ese tipo de objeto no aparecerá
       });
     });
   }));
 }
 
-
-// MODELOS- caja envolvente REAL de un objeto.
-// Box3.setFromObject() mide las mallas animadas (SkinnedMesh) en su pose
-// original, sin aplicar los huesos. En muchos modelos el esqueleto lleva una
-// escala propia (malla en centimetros, huesos que la reducen...), asi que esa
-// medida no se parece al tamaño que se ve. Aqui calculamos donde queda de
-// verdad cada vertice despues de aplicarle sus huesos.
 function calcularCajaReal(objeto)
 {
-  objeto.updateMatrixWorld(true);              // posiciones de todos los nodos y huesos al dia
+  objeto.updateMatrixWorld(true);
   const caja = new THREE.Box3();
   const v = new THREE.Vector3();
 
@@ -845,12 +811,11 @@ function calcularCajaReal(objeto)
       n.skeleton.update();
       for (let i = 0; i < posiciones.count; i++) {
         v.fromBufferAttribute(posiciones, i);
-        n.boneTransform(i, v);                 // aplica los huesos al vertice (espacio local de la malla)
-        v.applyMatrix4(n.matrixWorld);         // y lo pasa a coordenadas del mundo
+        n.boneTransform(i, v);
+        v.applyMatrix4(n.matrixWorld);
         caja.expandByPoint(v);
       }
     } else {
-      // Malla normal: basta con su caja de geometria transformada
       if (n.geometry.boundingBox === null) n.geometry.computeBoundingBox();
       caja.union(n.geometry.boundingBox.clone().applyMatrix4(n.matrixWorld));
     }
@@ -861,7 +826,7 @@ function calcularCajaReal(objeto)
 // Centra el modelo, lo apoya en y = 0 y lo escala a "unidades de objeto"
 function normalizarModelo(escenaModelo)
 {
-  const caja = calcularCajaReal(escenaModelo);   // con los huesos aplicados (ver la funcion)
+  const caja = calcularCajaReal(escenaModelo);
   const tam = caja.getSize(new THREE.Vector3());
   const centro = caja.getCenter(new THREE.Vector3());
   const escala = 2 / Math.max(tam.x, tam.y, tam.z);
@@ -872,7 +837,7 @@ function normalizarModelo(escenaModelo)
     if (n.isMesh) { n.castShadow = true; n.receiveShadow = true; }
   });
 
-  // Lo metemos en un grupo para que la normalizacion no se pierda al escalar la copia
+  // Lo mete en un grupo para que la normalizacion no se pierda al escalar la copia
   const plantilla = new THREE.Group();
   plantilla.add(escenaModelo);
   return plantilla;
@@ -884,25 +849,25 @@ function anadirCopiaModelo(grupo, nombre)
   const modelo = MODELOS_OBJETOS[nombre];
   if (!modelo.plantilla) return;
 
-  // Los modelos con esqueleto (animados) necesitan SkeletonUtils.clone para que
-  // cada copia tenga sus propios huesos; con clone() normal compartirian esqueleto
+  // Los modelos animados necesitan SkeletonUtils.clone para que
+  // cada copia tenga sus propias animaciones, con clone() normal compartirian animación
   const copia = THREE.SkeletonUtils ? THREE.SkeletonUtils.clone(modelo.plantilla) : modelo.plantilla.clone();
   grupo.add(copia);
 
   if (modelo.animaciones.length > 0) {
     const mixerCopia = new THREE.AnimationMixer(copia);
 
-    // ANIMACIONES- buscamos la de estar quieto y la de andar por su nombre.
-    // Si no se encuentran, usamos la primera y la segunda de la lista.
+    // Busca la animación de estar quieto y la de andar por su nombre.
+    // Si no se encuentran, usa la primera y la segunda de la lista.
     const clipQuieto = buscarClip(modelo.animaciones, modelo.animQuieto) || modelo.animaciones[0];
     const clipAndar = buscarClip(modelo.animaciones, modelo.animAndar) || modelo.animaciones[1] || clipQuieto;
 
     const quieto = mixerCopia.clipAction(clipQuieto);
-    quieto.time = Math.random() * clipQuieto.duration;   // desfasadas: no se mueven todas a la vez
+    quieto.time = Math.random() * clipQuieto.duration; // No se mueven todas a la vez
     grupo.userData.mixer = mixerCopia;
     mixersObjetos.push(mixerCopia);
 
-    // Si el modelo solo tiene una animacion, la reproducimos y ya esta
+    // Si el modelo solo tiene una animacion, la reproduce
     if (clipAndar === clipQuieto) {
       quieto.play();
       return;
@@ -910,9 +875,6 @@ function anadirCopiaModelo(grupo, nombre)
 
     const andar = mixerCopia.clipAction(clipAndar);
 
-    // Las dos suenan a la vez y se mezclan por PESOS: al empezar, solo se ve la
-    // de quieto (peso 1) y la de andar no se nota (peso 0). moverSerVivo()
-    // reparte los pesos segun la velocidad.
     quieto.play();
     andar.play();
     quieto.setEffectiveWeight(1);
@@ -923,7 +885,7 @@ function anadirCopiaModelo(grupo, nombre)
   }
 }
 
-// Busca una animacion cuyo nombre contenga el texto indicado (sin distinguir mayusculas)
+// Busca una animacion cuyo nombre tenga el texto indicado
 function buscarClip(clips, texto)
 {
   if (!texto) return null;
@@ -950,8 +912,7 @@ function crearHormiga(grupo)
   anadirCopiaModelo(grupo, 'hormiga');
 }
 
-// MODELOS- constructor generico para cualquier modelo de MODELOS_OBJETOS:
-// devuelve una funcion que añade una copia del modelo indicado al grupo
+// Constructor generico para cualquier modelo de MODELOS_OBJETOS:
 function crearDesdeModelo(nombre)
 {
   return function (grupo) {
@@ -959,19 +920,18 @@ function crearDesdeModelo(nombre)
   };
 }
 
-// huella: radio que ocupa el objeto en el suelo, como fraccion de su tamaño (la
-// mitad de su dimension MAYOR). Objetos altos y finos -> huella pequeña; bajos y
-// anchos -> cercana a 1; alargados (animales, bancos) -> intermedia.
+// huella: radio que ocupa el objeto en el suelo. 
+// Objetos altos y finos = huella pequeña
+// bajos y anchos = cercana a 1
+// alargados = intermedia.
+// comerDesde: tamaño minimo del slime para comerla, aunque sea pequeña
+// rotacionFrente: si camina de lado o hacia atras, prueba Math.PI / 2, -Math.PI / 2 o Math.PI
 const TIPOS = {
-  semilla: { nombre: 'Semilla', huella: 0.6, crear: crearSemilla },          // alargada y tumbada
-  // comerDesde: tamaño minimo del slime para comerla, aunque sea pequeña
+  semilla: { nombre: 'Semilla', huella: 0.6, crear: crearSemilla },
   hormiga: { nombre: 'Hormiga', huella: 0.5, crear: crearHormiga, modelo: 'hormiga', comerDesde: 1.2, escalaVisor: 1,
-             // VIDA- se mueve por el nivel y huye del slime cuando este puede comersela
-             //   velocidad: medios cuerpos por segundo al pasear (al huir va mas rapido)
-             //   rotacionFrente: si camina de lado o hacia atras, prueba Math.PI / 2, -Math.PI / 2 o Math.PI
              movil: { velocidad: 1.5, huye: true, rotacionFrente: Math.PI } },
 
-  // MODELOS- objetos del jardin
+  // objetos de la hierba
   piedra:    { nombre: 'Piedrecita', huella: 0.85, crear: crearDesdeModelo('piedra'),    modelo: 'piedra' },     // baja y redondeada
   hierba:    { nombre: 'Hierba',     huella: 0.6,  crear: crearDesdeModelo('hierba'),    modelo: 'hierba' },     // mata algo mas alta que ancha
   flor:      { nombre: 'Flor',       huella: 0.3,  crear: crearDesdeModelo('flor'),      modelo: 'flor' },       // alta, con tallo fino
@@ -981,7 +941,7 @@ const TIPOS = {
   botella:   { nombre: 'Botella',    huella: 0.35, crear: crearDesdeModelo('botella'),   modelo: 'botella' },    // alta y estrecha
   maceta:    { nombre: 'Maceta',     huella: 0.7,  crear: crearDesdeModelo('maceta'),    modelo: 'maceta' },     // casi tan ancha como alta
 
-  // MODELOS- objetos del parque (nivel 2)
+  // objetos del parque (nivel 2)
   arbusto:   { nombre: 'Arbusto',    huella: 0.85, crear: crearDesdeModelo('arbusto'),   modelo: 'arbusto' },    // mas ancho que alto
   perro:  { nombre: 'Perro',  huella: 0.5,  crear: crearDesdeModelo('perro'),  modelo: 'perro', movil: { velocidad: 2, huye: true, rotacionFrente: -Math.PI / 2 } },
   mujer:  { nombre: 'Mujer',  huella: 0.25, crear: crearDesdeModelo('mujer'),  modelo: 'mujer', movil: { velocidad: 1.2, huye: true, rotacionFrente: 0 } },
@@ -991,7 +951,7 @@ const TIPOS = {
   farola:    { nombre: 'Farola',     huella: 0.15, crear: crearDesdeModelo('farola'),    modelo: 'farola' },     // poste muy alto y fino
   farola2:   { nombre: 'Farola Moderna', huella: 0.15, crear: crearDesdeModelo('farola2'), modelo: 'farola2' },  // como la farola, algo mayor
 
-  // MODELOS- objetos de la ciudad (nivel 3)
+  // objetos de la ciudad (nivel 3)
   coche:     { nombre: 'Coche',          huella: 0.5,  crear: crearDesdeModelo('coche'),  modelo: 'coche', movil: { velocidad: 1.2, huye: true, rotacionFrente: 0 } },    // largo, la mitad de ancho
   coche2:    { nombre: 'Coche',          huella: 0.5,  crear: crearDesdeModelo('coche2'), modelo: 'coche2', movil: { velocidad: 1.2, huye: true, rotacionFrente: 0 } },
   arbol1:    { nombre: 'Árbol',       huella: 0.4,  crear: crearDesdeModelo('arbol1'), modelo: 'arbol1' },   // alto: la huella es la copa
@@ -1007,7 +967,7 @@ const TIPOS = {
   torre3:    { nombre: 'Rascacielos',    huella: 0.3,  crear: crearDesdeModelo('torre3'), modelo: 'torre3' },
   fuente:    { nombre: 'Fuente',         huella: 0.9,  crear: crearDesdeModelo('fuente'), modelo: 'fuente' },   // pilon ancho y bajo
 
-  // MODELOS- Fondo de Bikini (nivel 2): un personaje y una casa de cada
+  // Bob esponja
   esponja:        { nombre: 'Bob Esponja',          huella: 0.6,  crear: crearDesdeModelo('esponja'),        modelo: 'esponja', movil: { velocidad: 1.2, huye: true, rotacionFrente: 0 } },        // cuadrado: casi tan ancho como alto
   patricio:       { nombre: 'Patricio',             huella: 0.55, crear: crearDesdeModelo('patricio'),       modelo: 'patricio', movil: { velocidad: 1.2, huye: true, rotacionFrente: 0 } },       // estrella: brazos abiertos
   calamardo:      { nombre: 'Calamardo',            huella: 0.35, crear: crearDesdeModelo('calamardo'),      modelo: 'calamardo', movil: { velocidad: 1.2, huye: true, rotacionFrente: 0, seDetiene: false } },      // alto y estrecho. Solo tiene animacion de andar: no se para
@@ -1015,25 +975,24 @@ const TIPOS = {
   casa_patricio:  { nombre: 'Casa de Patricio',     huella: 0.85, crear: crearDesdeModelo('casa_patricio'),  modelo: 'casa_patricio' },  // la roca: baja y ancha
   casa_calamardo: { nombre: 'Casa de Calamardo',    huella: 0.45, crear: crearDesdeModelo('casa_calamardo'), modelo: 'casa_calamardo' },  // la cabeza moai: alta
 
-  // MODELOS- objetos del campo (nivel 4)
+  // objetos de la naturaleza (nivel 4)
   molino:       { nombre: 'Molino',       huella: 0.4,  crear: crearDesdeModelo('molino'),       modelo: 'molino' },       // alto, con aspas
   molino2:      { nombre: 'Molino',       huella: 0.4,  crear: crearDesdeModelo('molino2'),      modelo: 'molino2' },
   mamut:        { nombre: 'Mamut',        huella: 0.5,  crear: crearDesdeModelo('mamut'),        modelo: 'mamut', movil: { velocidad: 1.2, huye: true, rotacionFrente: 0, seDetiene: false } },        // animal alargado
   bosque:       { nombre: 'Bosque',       huella: 0.85, crear: crearDesdeModelo('bosque'),       modelo: 'bosque' },       // grupo de arboles: ancho
   castillo:     { nombre: 'Castillo',     huella: 0.8,  crear: crearDesdeModelo('castillo'),     modelo: 'castillo' },     // ancho, con torres
   ciudad:       { nombre: 'Ciudad',       huella: 0.9,  crear: crearDesdeModelo('ciudad'),       modelo: 'ciudad' },       // muy ancha y baja
-  monte1:       { nombre: 'Montaña',        huella: 0.9,  crear: crearDesdeModelo('monte1'),       modelo: 'monte1' },       // base muy ancha
+  monte1:       { nombre: 'Montaña',      huella: 0.9,  crear: crearDesdeModelo('monte1'),       modelo: 'monte1' },       // base muy ancha
   monte2:       { nombre: 'Montaña',      huella: 0.9,  crear: crearDesdeModelo('monte2'),       modelo: 'monte2' },
-  monte3:       { nombre: 'Montaña', huella: 0.9,  crear: crearDesdeModelo('monte3'),       modelo: 'monte3' },
+  monte3:       { nombre: 'Montaña',      huella: 0.9,  crear: crearDesdeModelo('monte3'),       modelo: 'monte3' },
   godzilla:     { nombre: 'Godzilla',     huella: 0.35, crear: crearDesdeModelo('godzilla'),     modelo: 'godzilla', movil: { velocidad: 0.8, huye: true, rotacionFrente: Math.PI } },     // alto, de pie
   serafin:      { nombre: 'Serafín',      huella: 0.5,  crear: crearDesdeModelo('serafin'),      modelo: 'serafin', movil: { velocidad: 1.2, huye: true, rotacionFrente: Math.PI } },      // con alas
-  hallucigenia: { nombre: 'Hallucigenia',  huella: 0.6,  crear: crearDesdeModelo('hallucigenia'), modelo: 'hallucigenia', movil: { velocidad: '0.2', huye: true, rotacionFrente: Math.PI, seDetiene: false } },
+  hallucigenia: { nombre: 'Hallucigenia', huella: 0.6,  crear: crearDesdeModelo('hallucigenia'), modelo: 'hallucigenia', movil: { velocidad: '0.2', huye: true, rotacionFrente: Math.PI, seDetiene: false } },
   golem: { nombre: 'Golem',  huella: 0.6,  crear: crearDesdeModelo('golem'), modelo: 'golem', movil: { velocidad: 0.6, huye: true, rotacionFrente: 0, seDetiene: false } },
   
-  // MODELOS- objetos del espacio (nivel 5)
-  //   rotacionAleatoria: true -> cada copia aparece girada al azar en los tres ejes,
-  //   como si flotara sin gravedad
-  //   tumbo: radianes por segundo -> ademas gira sin parar sobre un eje al azar
+  // objetos del espacio (nivel 5)
+  // rotacionAleatoria: true = cada copia aparece girada al azar en los tres ejes, como si flotara sin gravedad
+  // tumbo: radianes por segundo = ademas gira sin parar sobre un eje al azar
   astronauta: { nombre: 'Astronauta',  huella: 0.3,  crear: crearDesdeModelo('astronauta'), modelo: 'astronauta', rotacionAleatoria: true, movil: { velocidad: 0.6, huye: false, rotacionFrente: 0, seDetiene: false } },  // figura humana
   satelite:   { nombre: 'Satélite',    huella: 0.7,  crear: crearDesdeModelo('satelite'),   modelo: 'satelite',   rotacionAleatoria: true, movil: { velocidad: 0.6, huye: false, rotacionFrente: 0, seDetiene: false } },  // paneles extendidos
   satelite2:  { nombre: 'Satélite',    huella: 0.7,  crear: crearDesdeModelo('satelite2'),  modelo: 'satelite2',  rotacionAleatoria: true, movil: { velocidad: 0.6, huye: false, rotacionFrente: 0, seDetiene: false } },
@@ -1045,38 +1004,28 @@ const TIPOS = {
   asteroide3: { nombre: 'Asteroide',   huella: 0.85, crear: crearDesdeModelo('asteroide3'), modelo: 'asteroide3', rotacionAleatoria: true, tumbo: 0.3, movil: { velocidad: 0.6, huye: false, rotacionFrente: 0, seDetiene: false } },
   asteroide4: { nombre: 'Asteroide',   huella: 0.85, crear: crearDesdeModelo('asteroide4'), modelo: 'asteroide4', rotacionAleatoria: true, tumbo: 0.3, movil: { velocidad: 0.6, huye: false, rotacionFrente: 0, seDetiene: false } },
 
-  // ESFERAS- la Tierra y la Luna: esferas con textura que giran despacio sobre si mismas
-  //   gira: radianes por segundo
+  // La Tierra y la Luna: esferas con textura que giran despacio sobre si mismas gira a radianes por segundo
   tierra: { nombre: 'Tierra', huella: 1, crear: crearEsferaTexturizada('tierra'), gira: 0.1 },
   luna:   { nombre: 'Luna',   huella: 1, crear: crearEsferaTexturizada('luna'),   gira: 0.05 },
 
-  // SISTEMA SOLAR- (nivel 6) esferas con textura; la Tierra es la de arriba
-  // LUZ SOL- "luz": el objeto lleva una luz puntual en su centro (ver generarObjetos)
-  sol:      { nombre: 'Sol',   huella: 1, crear: crearEsferaTexturizada('sol'),      gira: 0.02, final: true,  // FINAL- comerselo termina el juego
-              luz: { color: 0xfff2d0, intensidad: 1.8 } },
+  // Objetos del sistema solar (nivel 6), esferas con textura.
+  sol:      { nombre: 'Sol',   huella: 1, crear: crearEsferaTexturizada('sol'),         gira: 0.02, final: true, luz: { color: 0xfff2d0, intensidad: 1.8 } },  // Final = comerlo termina el juego
   mercurio: { nombre: 'Mercurio', huella: 1, crear: crearEsferaTexturizada('mercurio'), gira: 0.05 },
   venus:    { nombre: 'Venus',    huella: 1, crear: crearEsferaTexturizada('venus'),    gira: 0.03 },
   marte:    { nombre: 'Marte',    huella: 1, crear: crearEsferaTexturizada('marte'),    gira: 0.1 },
   jupiter:  { nombre: 'Júpiter',  huella: 1, crear: crearEsferaTexturizada('jupiter'),  gira: 0.2 },
-  saturno:  { nombre: 'Saturno',  huella: 1, crear: crearSaturno,                       gira: 0.18 },  // la huella es la del planeta, sin el anillo
+  saturno:  { nombre: 'Saturno',  huella: 1, crear: crearSaturno,                       gira: 0.18 },
   urano:    { nombre: 'Urano',    huella: 1, crear: crearEsferaTexturizada('urano'),    gira: 0.12 },
   neptuno:  { nombre: 'Neptuno',  huella: 1, crear: crearEsferaTexturizada('neptuno'),  gira: 0.12 },
 
-  // Grupo de asteroides (un modelo con varias rocas)
   cometa: { nombre: 'Cometa', huella: 0.8, crear: crearDesdeModelo('cometa'), modelo: 'cometa', rotacionAleatoria: true, movil: { velocidad: 1, huye: false, rotacionFrente: Math.PI, seDetiene: false } }
 };
 
-// Cada constructor monta el objeto en "unidades de objeto": apoyado en y = 0 y con
-// su dimension mayor de tamaño 2 (de -1 a 1). Despues el grupo se escala a su tamaño real.
-// ---------------------------------------------------------------------------
-// ESFERAS- planetas y lunas: una esfera con una imagen como textura.
+// Los planetas y lunas = una esfera con una imagen como textura.
 // La imagen debe ser un mapa del planeta en proyeccion equirectangular
-// (proporcion 2:1), que es como se distribuyen las coordenadas UV de una esfera.
-// ---------------------------------------------------------------------------
 const TEXTURAS_ESFERAS = {
-  tierra: 'images/tasty_damacy/tierra.jpg',   // cambia las rutas por las de tus imagenes
+  tierra: 'images/tasty_damacy/tierra.jpg',
   luna:   'images/tasty_damacy/luna.jpg',
-  // SISTEMA SOLAR- mapas equirectangulares (2:1) de cada astro
   sol:      'images/tasty_damacy/sol.jpg',
   mercurio: 'images/tasty_damacy/mercurio.jpg',
   venus:    'images/tasty_damacy/venus.jpg',
@@ -1085,30 +1034,25 @@ const TEXTURAS_ESFERAS = {
   saturno:  'images/tasty_damacy/saturno.jpg',
   urano:    'images/tasty_damacy/urano.jpg',
   neptuno:  'images/tasty_damacy/neptuno.jpg',
-  // Anillo: una tira horizontal (de dentro a fuera del anillo), en PNG con transparencia
   anilloSaturno: 'images/tasty_damacy/anillo_saturno.png'
 };
-var materialesEsferas = {};    // un material por esfera, creado la primera vez que se usa
+var materialesEsferas = {};
 
-// Devuelve el constructor de la esfera indicada (como crearDesdeModelo)
 function crearEsferaTexturizada(nombre)
 {
   return function (grupo) {
-    // El material (con su textura) se crea una sola vez y se comparte entre copias
-    // (por ejemplo, la del mundo y la del visor del ultimo bocado)
     if (!materialesEsferas[nombre]) {
       const textura = new THREE.TextureLoader().load(TEXTURAS_ESFERAS[nombre], undefined, undefined, function () {
         console.error('No se pudo cargar la textura de', nombre + ':', TEXTURAS_ESFERAS[nombre]);
       });
       textura.encoding = THREE.sRGBEncoding;
-      // SISTEMA SOLAR- el Sol emite luz: MeshBasicMaterial no se ve afectado por las
+      // El Sol emite luz: MeshBasicMaterial no se ve afectado por las
       // luces ni las sombras, asi que se ve siempre brillante
       materialesEsferas[nombre] = (nombre === 'sol')
         ? new THREE.MeshBasicMaterial({ map: textura, toneMapped: false })
         : new THREE.MeshStandardMaterial({ map: textura, roughness: 0.8, metalness: 0 });
     }
 
-    // En "unidades de objeto": radio 1 y apoyada en y = 0 (centro en y = 1)
     const esfera = new THREE.Mesh(new THREE.SphereGeometry(1, 64, 32), materialesEsferas[nombre]);
     esfera.position.y = 1;
     esfera.name = 'esfera';
@@ -1118,26 +1062,22 @@ function crearEsferaTexturizada(nombre)
   };
 }
 
-// ESPACIO- gira el contenido del grupo al azar en los tres ejes, alrededor de su
-// CENTRO. Los modelos se construyen apoyados en y = 0 con el centro en y = 1;
-// si giraramos el grupo entero, rotaria alrededor de su base y se desplazaria.
-// Por eso metemos el modelo en un pivote situado en su centro y giramos el pivote.
-// (El grupo en si no se toca: su giro en Y lo sigue usando el resto del juego.)
+// Gira el contenido del grupo al azar en los tres ejes, alrededor de su centro.
 function rotarAleatoriamente(grupo)
 {
   const pivote = new THREE.Group();
   pivote.position.y = 1;
   while (grupo.children.length > 0) {
     const hijo = grupo.children[0];
-    hijo.position.y -= 1;          // compensamos para que no cambie de sitio
-    pivote.add(hijo);              // add() lo saca del grupo y lo mete en el pivote
+    hijo.position.y -= 1;
+    pivote.add(hijo);
   }
   pivote.rotation.set(rand(0, Math.PI * 2), rand(0, Math.PI * 2), rand(0, Math.PI * 2));
-  pivote.name = 'pivoteGiro';      // para encontrarlo despues (lo usa el giro continuo)
+  pivote.name = 'pivoteGiro';
   grupo.add(pivote);
 }
 
-// SISTEMA SOLAR- Saturno: la esfera mas su anillo
+// Saturno, la esfera mas su anillo
 function crearSaturno(grupo)
 {
   crearEsferaTexturizada('saturno')(grupo);
@@ -1152,9 +1092,6 @@ function crearSaturno(grupo)
     });
   }
 
-  // Anillo de radio 1,25 a 2,2 (el planeta mide 1). RingGeometry reparte sus UV
-  // como si fuera un plano; las texturas de anillos son una tira que va de dentro
-  // a fuera, asi que recalculamos las UV: u = distancia al centro (0 dentro, 1 fuera)
   const interior = 1.25, exterior = 2.2;
   const geometria = new THREE.RingGeometry(interior, exterior, 128, 1);
   const pos = geometria.attributes.position, uv = geometria.attributes.uv;
@@ -1164,18 +1101,16 @@ function crearSaturno(grupo)
   }
 
   const anillo = new THREE.Mesh(geometria, materialesEsferas.anilloSaturno);
-  anillo.rotation.x = -Math.PI / 2;          // RingGeometry se crea en vertical: lo tumbamos
+  anillo.rotation.x = -Math.PI / 2; // RingGeometry se crea en vertical, se gira
 
-  const inclinacion = new THREE.Group();     // el anillo de Saturno esta inclinado
-  inclinacion.position.y = 1;                // a la altura del centro del planeta
+  const inclinacion = new THREE.Group(); // el anillo de Saturno esta inclinado
+  inclinacion.position.y = 1; // a la altura del centro del planeta
   inclinacion.rotation.z = 0.45;
   inclinacion.add(anillo);
   grupo.add(inclinacion);
 }
 
 // SISTEMA SOLAR- los objetos con orbita giran alrededor del centro del nivel (el Sol).
-// Periodo segun la 3a ley de Kepler simplificada: cuanto mas lejos, mucho mas lento
-// (periodo proporcional a radio^1,5). Mercurio da una vuelta en PERIODO_MERCURIO s.
 const PERIODO_MERCURIO = 60;
 function iniciarOrbita(objeto, fraccion, radioSuelo)
 {
@@ -1183,8 +1118,8 @@ function iniciarOrbita(objeto, fraccion, radioSuelo)
   const periodo = PERIODO_MERCURIO * Math.pow(fraccion / 0.14, 1.5);
   objeto.orbita = {
     radio: radio,
-    angulo: rand(0, Math.PI * 2),            // cada planeta empieza en un punto distinto
-    velocidad: (Math.PI * 2) / periodo       // radianes por segundo
+    angulo: rand(0, Math.PI * 2), // cada planeta empieza en un punto distinto
+    velocidad: (Math.PI * 2) / periodo 
   };
   colocarEnOrbita(objeto);
 }
@@ -1196,7 +1131,7 @@ function colocarEnOrbita(objeto)
   objeto.grupo.position.z = Math.cos(o.angulo) * o.radio;
 }
 
-// SISTEMA SOLAR- si el slime llega dentro del Sol, lo sacamos fuera de el
+// Si el slime llega dentro del Sol, lo saca fuera de el
 function apartarSlimeDe(x, z, radio)
 {
   const dx = pos_slime.x - x, dz = pos_slime.z - z;
@@ -1208,8 +1143,8 @@ function apartarSlimeDe(x, z, radio)
   pos_slime.z = z + (dz / d) * minimo;
 }
 
-// SISTEMA SOLAR- en el sistema solar la luz del sol viene del Sol: la direccion
-// de la luz direccional apunta desde el slime hacia el (con algo de altura)
+// En el sistema solar la luz del sol viene del Sol: la direccion
+// de la luz direccional apunta desde el slime hacia él
 function actualizarDireccionSol()
 {
   const sol = objetos.find(function (o) { return o.tipo === 'sol' && o.estado === 'activo'; });
@@ -1222,17 +1157,17 @@ function actualizarDireccionSol()
   direccion_sol.normalize();
 }
 
-// ESFERAS- los objetos con "gira" rotan despacio sobre su eje
+// Los objetos con "gira" rotan despacio sobre su eje
 function actualizarGiros(delta)
 {
   for (let i = 0; i < objetos.length; i++) {
     const objeto = objetos[i];
     if (objeto.estado !== 'activo') continue;
 
-    // ESPACIO- giro continuo alrededor de un eje cualquiera
+    // Giro continuo alrededor de un eje cualquiera
     if (objeto.tumbo) objeto.tumbo.pivote.rotateOnAxis(objeto.tumbo.eje, objeto.tumbo.velocidad * delta);
 
-    // SISTEMA SOLAR- los planetas avanzan por su orbita
+    // Los planetas avanzan por su orbita
     if (objeto.orbita) {
       objeto.orbita.angulo += objeto.orbita.velocidad * delta;
       colocarEnOrbita(objeto);
@@ -1248,7 +1183,7 @@ function crearSemilla(grupo)
 {
   const semilla = new THREE.Mesh(GEOMETRIAS.esfera, elegir(MATERIALES.semillas));
   semilla.position.y = 0.38;
-  semilla.scale.set(0.55, 0.4, 1);     // esfera achatada y alargada: forma de pipa
+  semilla.scale.set(0.55, 0.4, 1); // esfera plana y alargada
   semilla.castShadow = true;
   semilla.receiveShadow = true;
   grupo.add(semilla);
@@ -1263,42 +1198,40 @@ function generarObjetos(indice)
 
   (E.catalogo || []).forEach(function (entrada) {
     const tipo = entrada[0], cantidad = entrada[1], min = entrada[2], max = entrada[3];
-    const opciones = entrada[4] || {};     // SISTEMA SOLAR- colocacion especial (centro, orbita)
+    const opciones = entrada[4] || {};// colocacion especial para el nivel 6 (centro, orbita)
     const def = TIPOS[tipo];
 
-    // MODELOS- si el tipo usa un modelo que no se pudo cargar, lo saltamos
+    // Si el tipo usa un modelo que no se pudo cargar, lo salta
     if (def.modelo && !MODELOS_OBJETOS[def.modelo].plantilla) return;
 
     for (let k = 0; k < cantidad; k++) {
       const tam = rand(min, max) * tamano_base;
       const radio = tam * def.huella;
 
-      // SISTEMA SOLAR- el centro y las orbitas no buscan hueco al azar
       let pos;
       if (opciones.centro) {
         pos = { x: 0, z: 0 };
         apartarSlimeDe(0, 0, radio);
       } else if (opciones.orbita) {
-        pos = { x: 0, z: 0 };            // iniciarOrbita() lo coloca despues
+        pos = { x: 0, z: 0 };
       } else {
         pos = buscarPosicion(radioSuelo, radio);
       }
-      if (!pos) continue;   // no hay hueco libre: lo saltamos
+      if (!pos) continue; // no hay hueco libre lo salta
 
       const grupo = new THREE.Group();
       grupo.name = tipo;
       def.crear(grupo);
 
-      // LUZ SOL- los tipos con "luz" emiten luz de verdad desde su centro: ilumina
-      // a cada planeta por la cara que mira hacia el, este donde este.
+      // Los tipos con "luz" emiten luz desde su centro, ilumina
+      // a cada planeta por la cara que mira hacia él.
       // distance 0 = alcance infinito, sin perder fuerza con la distancia.
-      // (Solo aqui, no en el constructor: asi la copia del visor no lleva luz.)
       if (def.luz) {
         const luzObjeto = new THREE.PointLight(def.luz.color, def.luz.intensidad, 0, 1);
-        luzObjeto.position.y = 1;        // centro de la esfera (en unidades de objeto)
+        luzObjeto.position.y = 1;
         grupo.add(luzObjeto);
       }
-      if (def.rotacionAleatoria) rotarAleatoriamente(grupo);   // ESPACIO- giro en los 3 ejes
+      if (def.rotacionAleatoria) rotarAleatoriamente(grupo);
       grupo.position.set(pos.x, 0, pos.z);
       grupo.rotation.y = rand(0, Math.PI * 2);
       grupo.scale.setScalar(tam);
@@ -1307,18 +1240,18 @@ function generarObjetos(indice)
       // estado: 'activo' (en el suelo) o 'comiendo' (siendo absorbido por el slime)
       const nuevo = { tipo: tipo, def: def, tam: tam, radio: radio, escala: indice, grupo: grupo, estado: 'activo' };
 
-      // VIDA- los tipos con "movil" llevan su propio estado de movimiento
+      // Los tipos con "movil" llevan su propio estado de movimiento
       if (def.movil) {
         nuevo.movil = {
-          dir: grupo.rotation.y,          // direccion en la que camina (radianes)
-          dirObjetivo: grupo.rotation.y,  // direccion hacia la que quiere girar
-          temporizador: rand(0, 3),       // segundos hasta su proxima decision
-          parada: false,                  // a veces se detiene un rato
-          velActual: 0                    // velocidad actual (se suaviza)
+          dir: grupo.rotation.y, // direccion en la que camina (radianes)
+          dirObjetivo: grupo.rotation.y, // direccion hacia la que quiere girar
+          temporizador: rand(0, 3), // segundos hasta su proxima decision
+          parada: false, // a veces se detiene
+          velActual: 0 // velocidad actual
         };
       }
-      // ESPACIO- los tipos con "tumbo" giran lentamente sin parar, cada uno sobre
-      // un eje al azar y a su propia velocidad (como los asteroides de ¡GLUP!)
+      // Los tipos con "tumbo" giran lentamente sin parar, cada uno sobre
+      // un eje al azar y a su propia velocidad
       if (def.tumbo) {
         if (!grupo.getObjectByName('pivoteGiro')) rotarAleatoriamente(grupo);
         nuevo.tumbo = {
@@ -1335,7 +1268,7 @@ function generarObjetos(indice)
   console.log('Objetos creados en', E.nombre + ':', creados);
 }
 
-// Busca una posicion aleatoria dentro del disco que no este encima del slime
+// Busca una posicion aleatoria del suelo que no este encima del slime
 // ni se solape con otro objeto. Si tras varios intentos no la encuentra, devuelve null.
 function buscarPosicion(radioSuelo, radio)
 {
@@ -1357,14 +1290,7 @@ function buscarPosicion(radioSuelo, radio)
   return null;
 }
 
-// ---------------------------------------------------------------------------
-// SONIDO Y MUSICA (sistema de audio de Three.js, basado en Web Audio)
-//   AudioListener: los "oidos" de la escena; va pegado a la camara
-//   Audio: un sonido no posicional (se oye igual este donde este)
-//   AudioLoader: carga el archivo y lo decodifica en un buffer
-// ---------------------------------------------------------------------------
-// (las variables de audio estan declaradas al principio del archivo, antes de init())
-
+// Sonido y música
 function crearAudio()
 {
   oyente = new THREE.AudioListener();
@@ -1372,12 +1298,12 @@ function crearAudio()
 
   const cargador = new THREE.AudioLoader();
 
-  // MUSICA- se elige una cancion al empezar y suena en bucle toda la partida
+  // Se elige una cancion al empezar y suena en bucle toda la partida
   musica = new THREE.Audio(oyente);
   musica.setVolume(VOLUMEN_MUSICA);
   elegirCancion();
 
-  // Sonidos de comer: cargamos cada buffer una vez y lo reutilizamos
+  // Sonidos de comer con un buffer para tener varios sonidos
   SONIDOS_COMER.forEach(function (sonido) {
     cargador.load(sonido.ruta, function (buffer) {
       sonido.buffer = buffer;
@@ -1386,11 +1312,11 @@ function crearAudio()
     });
   });
 
-  // Empezamos con unos pocos canales; si hacen falta mas, se crean al vuelo
+  // Empieza con unos pocos canales, si hacen falta mas, se crean
   for (let i = 0; i < 4; i++) crearCanalComer();
 
-  // CHOQUE- sonido de choque: un solo canal basta (nunca suenan dos a la vez)
-  // FINAL- sonido de victoria
+  // Sonido de choque, un solo canal (nunca suenan dos a la vez)
+  // Sonido de victoria
   canalVictoria = new THREE.Audio(oyente);
   canalVictoria.setVolume(VOLUMEN_VICTORIA);
   cargador.load(RUTA_SONIDO_VICTORIA, function (buffer) {
@@ -1401,7 +1327,7 @@ function crearAudio()
 
   canalChoque = new THREE.Audio(oyente);
   canalChoque.setVolume(VOLUMEN_CHOQUE);
-  // Cargamos cada sonido una vez y guardamos su buffer en su entrada de la lista
+
   SONIDOS_CHOQUE.forEach(function (sonido) {
     cargador.load(sonido.ruta, function (buffer) {
       sonido.buffer = buffer;
@@ -1410,8 +1336,8 @@ function crearAudio()
     });
   });
 
-  // Los navegadores no dejan reproducir sonido hasta que el usuario interactua
-  // con la pagina: con la primera tecla o clic activamos el audio y la musica
+  // Los navegadores no dejan reproducir sonido hasta que el usuario interactúa
+  // con la página, con la primera tecla o click activa el audio y la música
   const activarAudio = function () {
     oyente.context.resume();
     if (musica.buffer && !musica.isPlaying) musica.play();
@@ -1422,16 +1348,14 @@ function crearAudio()
   document.addEventListener('pointerdown', activarAudio);
 }
 
-// MUSICA- elige una cancion al azar segun su peso y la reproduce en bucle.
-// Solo se descarga la cancion elegida: las demas no hacen falta en esta partida.
+// Elige una canción al azar segun su peso y la reproduce en bucle.
 function elegirCancion()
 {
   cancionActual = elegirConPeso(CANCIONES);
 
   new THREE.AudioLoader().load(cancionActual.ruta, function (buffer) {
     musica.setBuffer(buffer);
-    musica.setLoop(true);            // se repite durante toda la partida
-    // Si el usuario ya ha interactuado, empieza ya; si no, empezara al pulsar algo
+    musica.setLoop(true); // se repite durante toda la partida
     if (oyente.context.state === 'running') musica.play();
     console.log('Música:', cancionActual.ruta);
   }, undefined, function () {
@@ -1440,7 +1364,7 @@ function elegirCancion()
 }
 
 // Eleccion aleatoria con pesos: se tira un numero entre 0 y la suma de los pesos
-// y se ve en el "tramo" de que elemento cae. Un elemento con peso 5 ocupa un tramo
+// y se ve en que elemento cae. Un elemento con peso 5 ocupa un tramo
 // cinco veces mas largo que uno con peso 1, asi que sale cinco veces mas.
 function elegirConPeso(lista)
 {
@@ -1459,30 +1383,29 @@ function reproducirSonidoComer()
 {
   if (!oyente) return;
 
-  // Solo elegimos entre los sonidos que ya se han cargado
+  // Solo elege entre los sonidos que ya se han cargado
   const cargados = SONIDOS_COMER.filter(function (s) { return s.buffer; });
   if (cargados.length === 0) return;
 
-  // Buscamos un canal que NO este sonando, en vez de coger el siguiente por turno:
-  // asi nunca se corta un sonido que todavia no ha terminado
+  // Busca un canal que NO este sonando, en vez de coger el siguiente por turno,
+  // así nunca se corta un sonido que todavia no ha terminado
   let canal = canalesComer.find(function (c) { return !c.isPlaying; });
 
-  // Si todos estan ocupados, creamos uno nuevo (hasta el maximo)
+  // Si todos están ocupados, crea uno nuevo (hasta el maximo)
   if (!canal && canalesComer.length < MAX_CANALES_COMER) canal = crearCanalComer();
 
-  // Si se ha llegado al maximo, este bocado no suena: es preferible a cortar otro
-  // (con tantos sonidos a la vez, uno mas no se notaria)
+  // Si se ha llegado al máximo,  no suena
   if (!canal) return;
 
   const sonido = elegirConPeso(cargados);
   canal.setBuffer(sonido.buffer);
-  canal.setPlaybackRate(rand(0.92, 1.08));   // ligera variacion de tono: no suena repetitivo
+  canal.setPlaybackRate(rand(0.92, 1.08));// variación de tono
   canal.play();
 }
 
 // Crea un canal (THREE.Audio) para los sonidos de comer y lo añade a la reserva.
 // Cuando el sonido termina, Three.js pone isPlaying a false y el canal queda libre.
-// CHOQUE- reproduce un sonido de choque elegido al azar segun su peso
+// Reproduce un sonido de choque elegido al azar según su peso
 function reproducirSonidoChoque()
 {
   if (!canalChoque) return;
@@ -1493,15 +1416,13 @@ function reproducirSonidoChoque()
 
   const sonido = elegirConPeso(cargados);
   if (canalChoque.isPlaying) canalChoque.stop();
-  canalChoque.setBuffer(sonido.buffer);          // el sonido elegido se asigna al reproducir
-  canalChoque.setPlaybackRate(rand(0.9, 1.1));   // ligera variacion de tono
+  canalChoque.setBuffer(sonido.buffer);
+  canalChoque.setPlaybackRate(rand(0.9, 1.1));
   canalChoque.play();
 }
 
-// CHOQUE- desplazamiento aleatorio de la camara mientras dura el temblor.
-// Se aplica solo al dibujar y se deshace justo despues: asi no altera la
-// posicion real de la camara (la camara con resorte la usa para calcular la
-// siguiente) ni se acumula fotograma a fotograma.
+// Movimiento aleatorio de la camara mientras dura el temblor del choque.
+// Se aplica solo al dibujar y se deshace justo después.
 function aplicarTemblor(camara, activo)
 {
   if (activo) {
@@ -1530,11 +1451,7 @@ function alternarSilencio()
   mostrarAviso(silenciado ? 'Sonido desactivado' : 'Sonido activado', 'info', 1000);
 }
 
-// ---------------------------------------------------------------------------
-// HUD- interfaz en HTML y CSS superpuesta al canvas. Es mas facil de maquetar
-// que texto en 3D, se ve nitido y no gasta GPU. Se crea desde aqui para no
-// tener que tocar el HTML.
-// ---------------------------------------------------------------------------
+// HUD
 function crearHUD()
 {
   const estilo = document.createElement('style');
@@ -1641,21 +1558,19 @@ function crearHUD()
   hud.aviso.className = 'hud-aviso';
   document.body.appendChild(hud.aviso);
 
-  // Modo de camara activo
+  // Modo de cámara activo
   hud.camara = document.createElement('div');
   hud.camara.className = 'hud-panel hud-camara';
   document.body.appendChild(hud.camara);
   mostrarModoCamara(false);
 
-  // Firma del autor, visible durante toda la partida (tambien en el menu y al final)
+  // Firma
   const autor = document.createElement('div');
   autor.className = 'hud-autor';
-  autor.textContent = 'Hecho por Francisco He Chi (kililoti)';     // pon aqui tu nombre
+  autor.textContent = 'Hecho por Francisco He Chi (kililoti)';
   document.body.appendChild(autor);
 }
 
-// Escribe un valor en el HUD solo si ha cambiado: tocar el DOM en cada
-// fotograma sin necesidad es lento
 function fijarHUD(clave, valor, aplicar)
 {
   if (cacheHUD[clave] === valor) return;
@@ -1671,7 +1586,7 @@ function formatoTiempo(segundos)
   return minutos + ':' + (resto < 10 ? '0' : '') + resto;
 }
 
-// FINAL- objeto final del nivel actual que aun no se ha comido (el Sol), o null
+// Objeto final del nivel actual que aun no se ha comido
 var objetivoNombreFinal = 'el Sol';
 function buscarObjetoFinal()
 {
@@ -1700,14 +1615,11 @@ function formatoNumero(n)
 function actualizarHUD()
 {
   const E = ESCALAS[escala_actual];
-  const tamanoRelativo = tamano_slime / tamano_base;   // 1 = tamaño inicial
+  const tamanoRelativo = tamano_slime / tamano_base; // 1 = tamaño inicial
 
-  // Progreso en escala logaritmica: crecer de 1 a 1,5 cuesta lo mismo en la
-  // barra que de 2 a 3, que es como se siente al jugar (crecimiento "por area")
-  // Cada nivel empieza donde termino el anterior (en el nivel 1, en tamaño 1)
   const inicioNivel = escala_actual > 0 ? ESCALAS[escala_actual - 1].umbral : 1;
 
-  // FINAL- si en el nivel hay un objeto final (el Sol), el objetivo no es el
+  // Si en el nivel hay un objeto final (el Sol), el objetivo no es el
   // umbral sino comerselo: la barra llega al 100 % cuando ya puedes comertelo
   const objetivoFinal = buscarObjetoFinal();
   let meta = E.umbral;
@@ -1732,7 +1644,7 @@ function actualizarHUD()
   fijarHUD('tiempo', formatoTiempo(tiempoJugado), function (v) { hud.tiempo.textContent = v; });
 }
 
-// HUD- añade una linea a la lista de bocados ("Semilla +15") que desaparece sola
+// Lista de bocados recientes
 function anunciarBocado(nombre, puntosBocado)
 {
   const fila = document.createElement('div');
@@ -1742,15 +1654,15 @@ function anunciarBocado(nombre, puntosBocado)
   valor.textContent = '+' + puntosBocado;
   fila.appendChild(valor);
 
-  hud.bocados.prepend(fila);                       // el mas reciente, arriba
-  while (hud.bocados.children.length > 5) {        // como mucho 5 a la vez
+  hud.bocados.prepend(fila); // el mas reciente, arriba
+  while (hud.bocados.children.length > 5) { // como mucho 5 a la vez
     hud.bocados.lastChild.remove();
   }
-  setTimeout(function () { fila.classList.add('saliendo'); }, 1500);   // se desvanece...
-  setTimeout(function () { fila.remove(); }, 1900);                    // ...y se elimina
+  setTimeout(function () { fila.classList.add('saliendo'); }, 1500);
+  setTimeout(function () { fila.remove(); }, 1900);
 }
 
-// HUD- mensaje breve en el centro. tipo: '' (normal), 'peligro' (rojo) o 'info' (mas pequeño)
+// Mensaje breve en el centro. tipo: '' (normal), 'peligro' (rojo) o 'info' (mas pequeño)
 function mostrarAviso(texto, tipo, duracion)
 {
   hud.aviso.textContent = texto;
@@ -1761,7 +1673,7 @@ function mostrarAviso(texto, tipo, duracion)
   }, duracion || 1500);
 }
 
-// HUD- muestra la camara activa; si destacar es true, la etiqueta destella un momento
+// Mostrar la camara activa, si destacar es true, la etiqueta destella un momento
 function mostrarModoCamara(destacar)
 {
   hud.camara.textContent = 'Cámara: ' + NOMBRES_CAMARA[modo_camara] + ' · C para cambiar';
@@ -1771,13 +1683,13 @@ function mostrarModoCamara(destacar)
   }
 }
 
-// VISOR- escena, camara, luces y etiqueta del visor del ultimo bocado
+// Escena, camara, luces y etiqueta del visualizador de comidas
 function crearVisor()
 {
   escenaVisor = new THREE.Scene();
-  escenaVisor.environment = scene.environment;    // mismos reflejos que la escena principal
+  escenaVisor.environment = scene.environment; // mismos reflejos que la escena principal
 
-  camaraVisor = new THREE.PerspectiveCamera(35, 1, 0.1, 100);   // aspecto 1: el visor es cuadrado
+  camaraVisor = new THREE.PerspectiveCamera(35, 1, 0.1, 100);
   camaraVisor.position.set(0, 0.9, 3.2);
   camaraVisor.lookAt(0, 0, 0);
 
@@ -1797,20 +1709,20 @@ function crearVisor()
   document.head.appendChild(estilo);
   etiquetaVisor = document.createElement('div');
   etiquetaVisor.className = 'hud-panel hud-visor-nombre';
-  etiquetaVisor.textContent = 'Nada';      // hasta el primer bocado el circulo esta vacio
+  etiquetaVisor.textContent = 'Nada'; // hasta el primer bocado el circulo esta vacio
   document.body.appendChild(etiquetaVisor);
 }
 
-// VISOR- se llama al comer. No cambia el modelo directamente: solo apunta cual
+// Se llama al comer. No cambia el modelo directamente, solo apunta cual
 // es el ultimo objeto comido. actualizarVisor() lo mostrara cuando haya pasado
-// el intervalo minimo, asi al comer muchas cosas seguidas el visor no parpadea
-// y, aun asi, acaba mostrando siempre el ultimo de verdad.
+// el intervalo mínimo, así al comer muchas cosas seguidas el visor no parpadea
+// y, aun asi, acaba mostrando siempre el último de verdad.
 function mostrarEnVisor(objeto)
 {
   visorPendiente = objeto.def;
 }
 
-// VISOR- en cada fotograma: gira el modelo y, si hay uno pendiente y ya ha
+// En cada fotograma gira el modelo y, si hay uno pendiente y ya ha
 // pasado el intervalo minimo, lo muestra
 function actualizarVisor(delta)
 {
@@ -1823,22 +1735,21 @@ function actualizarVisor(delta)
   }
 }
 
-// VISOR- sustituye el modelo del visor por uno del tipo indicado.
-// No reutilizamos el objeto comido (esta encogiendo dentro del slime): construimos
+// Sustituye el modelo del visor por uno del tipo indicado.
+// No reutilizamos el objeto comido, construye
 // uno nuevo con el mismo constructor, que comparte geometrias y materiales.
 function cambiarModeloVisor(def)
 {
   if (pivoteVisor !== null) {
-    quitarMixers(pivoteVisor);    // MODELOS- la animacion del modelo anterior del visor
+    quitarMixers(pivoteVisor);
     escenaVisor.remove(pivoteVisor);
   }
 
   const modelo = new THREE.Group();
   def.crear(modelo);
 
-  // Lo centramos y escalamos para que ocupe siempre lo mismo en el visor,
-  // sea una semilla o una montaña. Usamos la ESFERA que envuelve al modelo y
-  // no su caja: como el modelo gira, un objeto alargado (la hormiga) ocupa
+  // Lo centra y escala para que ocupe siempre lo mismo en el visor
+  // Usa la ESFERA que envuelve al modelo, como el modelo gira, un objeto alargado ocupa
   // mas espacio al ponerse de frente o en diagonal que lo que dice su caja.
   // La esfera lo envuelve en cualquier orientacion, asi nunca se sale del circulo.
   const caja = calcularCajaReal(modelo);
@@ -1849,26 +1760,24 @@ function cambiarModeloVisor(def)
   modelo.position.copy(centro).multiplyScalar(-escala);
 
   pivoteVisor = new THREE.Group();
-  pivoteVisor.rotation.x = 0.25;            // un poco inclinado para verlo mejor
+  pivoteVisor.rotation.x = 0.25; //un poco inclinado para verlo mejor
   pivoteVisor.add(modelo);
   escenaVisor.add(pivoteVisor);
 
   etiquetaVisor.textContent = def.nombre;
 }
 
-// ---------------------------------------------------------------------------
-// COLISIONES Y COMER
-// Las colisiones se calculan con circulos en el plano XZ (el suelo): cada objeto
-// tiene un radio (su "huella") y el slime otro. Es barato y suficiente para este
-// juego, porque todo se mueve sobre el suelo.
-// ---------------------------------------------------------------------------
-const FACTOR_COMESTIBLE = 0.85;   // se puede comer lo que mida menos del 85 % del slime
-const FACTOR_CRECIMIENTO = 0.4;   // parte del "area" del objeto que se convierte en crecimiento
-const DURACION_BOCADO = 0.35;     // segundos que tarda un objeto en ser absorbido
+
+// Colisiones y comer cosas:
+// Las colisiones se calculan con circulos en el plano XZ. Cada objeto
+// tiene un radio (su "huella") y el slime otro.
+const FACTOR_COMESTIBLE = 0.85; // se puede comer lo que mida menos del 85 % del slime
+const FACTOR_CRECIMIENTO = 0.4; // parte del "área" del objeto que se convierte en crecimiento
+const DURACION_BOCADO = 0.35; // segundos que tarda un objeto en ser absorbido
 var comidos = 0;
 const _destinoBocado = new THREE.Vector3();
 
-// Radio del slime: la mitad de su tamaño (tamano_slime es su dimension mayor)
+// Radio del slime = la mitad de su tamaño
 function radioSlime()
 {
   return tamano_slime * 0.5;
@@ -1879,13 +1788,12 @@ function esComestible(objeto)
   return (tamano_slime / tamano_base) >= tamanoParaComer(objeto);
 }
 
-// Tamaño del slime (el mismo que muestra el HUD: 1 = tamaño inicial) a partir
-// del cual se puede comer un objeto. Se combinan dos reglas y se aplica la mas
+// Tamaño del slime a partir del cual se puede comer un objeto. Se combinan dos reglas y se aplica la mas
 // exigente:
 //  - por su tamaño: el objeto debe medir menos del 85 % del radio del slime
 //  - por su tipo: si tiene "comerDesde", el slime debe medir al menos eso
-// Asi "comerDesde" funciona como un minimo, pero un objeto muy grande sigue
-// necesitando que el slime sea lo bastante grande para el.
+// "comerDesde" funciona como un mínimo, un objeto muy grande sigue
+// necesitando que el slime sea lo bastante grande para el
 function tamanoParaComer(objeto)
 {
   const porTamano = objeto.tam / (0.5 * FACTOR_COMESTIBLE * tamano_base);
@@ -1894,10 +1802,9 @@ function tamanoParaComer(objeto)
   return porTamano;
 }
 
-// ---------------------------------------------------------------------------
-// RESALTE- un anillo en el suelo que marca el objeto mas grande que el slime
-// puede comerse entre los que tiene cerca: la mejor presa del momento.
-// ---------------------------------------------------------------------------
+// Resaltado:
+// un anillo en el suelo que marca el objeto mas grande que el slime
+// puede comerse entre los que tiene cerca.
 function crearResalte()
 {
   anilloResalte = new THREE.Mesh(
@@ -1906,22 +1813,21 @@ function crearResalte()
       color: 0x8dffb5,
       transparent: true,
       opacity: 0.85,
-      depthWrite: false,          // no tapa nada de lo que se dibuje despues
-      toneMapped: false,          // color vivo, sin el tone mapping de la escena
-      // Esta en el mismo plano que el suelo: polygonOffset lo dibuja siempre por
+      depthWrite: false, // no tapa nada de lo que se dibuje despues
+      toneMapped: false,
+      // Está en el mismo plano que el suelo, polygonOffset lo dibuja siempre por
       // encima (con mas prioridad que cualquiera de los suelos superpuestos)
       polygonOffset: true, polygonOffsetFactor: -10, polygonOffsetUnits: -20
     })
   );
-  anilloResalte.rotation.x = -Math.PI / 2;   // RingGeometry se crea en vertical: lo tumbamos
-  anilloResalte.renderOrder = 1;             // despues de los objetos opacos
+  anilloResalte.rotation.x = -Math.PI / 2; // Se gira el RingGeometry que se crea en vertical
+  anilloResalte.renderOrder = 1; // despues de los objetos opacos
   anilloResalte.visible = false;
   scene.add(anilloResalte);
 }
 
-// Busca, entre los objetos que se pueden comer a menos de "alcance" (distancia
-// hasta su borde), el de mayor tamaño; si dos miden lo mismo, el mas cercano.
-// La usan el anillo (alcance corto) y la flecha (alcance largo).
+// Busca el objeto de mayor tamaño en un alcance, si dos miden lo mismo, el mas cercano.
+// La usan el resaltado (alcance corto) y la flecha (alcance largo).
 function buscarMejorPresa(alcance)
 {
   let mejor = null, mejorDistancia = Infinity;
@@ -1955,42 +1861,35 @@ function actualizarResalte()
     return;
   }
 
-  // El anillo sigue al objeto (algunos se mueven) y "late" suavemente para llamar la atencion
+  // El anillo sigue al objeto y se mueve suavemente para llamar la atención
   anilloResalte.visible = true;
   anilloResalte.position.set(mejor.grupo.position.x, 0, mejor.grupo.position.z);
   const latido = 1 + 0.08 * Math.sin(clock.elapsedTime * 6);
   anilloResalte.scale.setScalar((mejor.radio * 1.3 + tamano_slime * 0.05) * latido);
 }
 
-// ---------------------------------------------------------------------------
-// FLECHA- flecha flotante sobre el slime que señala la mejor presa de la zona.
-// Complementa al anillo: el anillo marca lo que tienes al lado; la flecha te
-// guia hacia lo que merece la pena aunque todavia no lo veas.
-// ---------------------------------------------------------------------------
+// Flecha flotante sobre el slime que apunta al objeto más grande de la zona.
 function crearFlecha()
 {
   const material = new THREE.MeshBasicMaterial({ color: 0xffd23f, toneMapped: false });
 
-  // Se construye apuntando hacia +z (hacia delante) en "unidades de flecha"
-  // y despues se escala segun el tamaño del slime
   flecha = new THREE.Group();
 
   const cuerpo = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.6, 12), material);
-  cuerpo.rotation.x = Math.PI / 2;      // el cilindro se crea en vertical: lo tumbamos
+  cuerpo.rotation.x = Math.PI / 2; // Rotar el cilindro que se crea en vertical
   cuerpo.position.z = -0.1;
   flecha.add(cuerpo);
 
   const punta = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.4, 16), material);
-  punta.rotation.x = Math.PI / 2;       // la punta del cono pasa de +y a +z
+  punta.rotation.x = Math.PI / 2; // la punta del cono pasa de +y a +z
   punta.position.z = 0.4;
   flecha.add(punta);
 
   flecha.visible = false;
-  scene.add(flecha);                    // en la escena, no dentro del slime: asi no
-                                        // hereda su giro ni su aplastamiento al comer
+  scene.add(flecha); // en la escena, no dentro del slime: asi no hereda su giro ni su animación al comer
 }
 
-// FLECHA- activa o desactiva la flecha guia (tecla N)
+// Activa o desactiva la flecha guía
 function alternarFlecha()
 {
   flechaActiva = !flechaActiva;
@@ -2000,7 +1899,7 @@ function alternarFlecha()
 
 function actualizarFlecha(delta)
 {
-  // Desactivada: ni se busca objetivo ni se muestra
+  // Desactivada = no se busca objetivo ni se muestra
   if (!flechaActiva) return;
 
   objetivoFlecha = buscarMejorPresa(DISTANCIA_FLECHA * tamano_slime);
@@ -2012,7 +1911,7 @@ function actualizarFlecha(delta)
   const dx = objetivoFlecha.grupo.position.x - pos_slime.x;
   const dz = objetivoFlecha.grupo.position.z - pos_slime.z;
 
-  // Si ya esta practicamente encima, la flecha sobra (y giraria sin control)
+  // Si ya esta prácticamente encima, la flecha se oculta
   if (Math.hypot(dx, dz) - objetivoFlecha.radio < tamano_slime * 0.5) {
     flecha.visible = false;
     return;
@@ -2025,16 +1924,16 @@ function actualizarFlecha(delta)
   flecha.position.set(pos_slime.x, tamano_slime * (1.1 + flotar), pos_slime.z);
   flecha.scale.setScalar(tamano_slime * 0.35);
 
-  // Gira suavemente hacia el objetivo (por el camino mas corto)
+  // Gira hacia el objetivo
   const angulo = Math.atan2(dx, dz);
   flecha.rotation.y = amortiguarAngulo(flecha.rotation.y, angulo, 10, delta);
 }
 
 function comprobarColisiones()
 {
-  const r = radioSlime() * 0.9;   // un poco menos que el radio visual: se ve mas natural
+  const r = radioSlime() * 0.9; // un poco menos que el radio visual
 
-  // CHOQUE- recordamos si en el fotograma anterior ya estaba chocando
+  // Recordar si en el fotograma anterior ya estaba chocando
   chocandoAntes = chocandoAhora;
   chocandoAhora = false;
 
@@ -2046,7 +1945,7 @@ function comprobarColisiones()
     const dz = pos_slime.z - objeto.grupo.position.z;
     const distancia = Math.hypot(dx, dz);
 
-    // Hay colision si la distancia entre centros es menor que la suma de radios
+    // Hay colisión si la distancia entre centros es menor que la suma de radios
     if (distancia >= r + objeto.radio) continue;
 
     if (esComestible(objeto)) {
@@ -2057,7 +1956,7 @@ function comprobarColisiones()
   }
 }
 
-// Objeto demasiado grande: colocamos el slime justo en el borde del objeto,
+// Si el objeto demasiado grande, coloca el slime justo en el borde del objeto,
 // en la direccion por la que llegaba, para que no pueda atravesarlo
 function empujarFuera(objeto, dx, dz, distancia, r)
 {
@@ -2066,8 +1965,8 @@ function empujarFuera(objeto, dx, dz, distancia, r)
   pos_slime.x = objeto.grupo.position.x + (dx / distancia) * minimo;
   pos_slime.z = objeto.grupo.position.z + (dz / distancia) * minimo;
 
-  // CHOQUE- efecto solo al EMPEZAR a chocar (no mientras sigue empujando contra
-  // el objeto) y, ademas, como mucho una vez cada INTERVALO_CHOQUE segundos
+  // efecto solo al EMPEZAR a chocar (no mientras sigue empujando contra
+  // el objeto), como mucho una vez cada INTERVALO_CHOQUE segundos
   chocandoAhora = true;
   if (!chocandoAntes && clock.elapsedTime - ultimoChoque > INTERVALO_CHOQUE) {
     ultimoChoque = clock.elapsedTime;
@@ -2075,7 +1974,7 @@ function empujarFuera(objeto, dx, dz, distancia, r)
     reproducirSonidoChoque();
   }
 
-  // HUD- aviso, como mucho uno cada 1,5 s (el choque dura varios fotogramas)
+  // aviso en el HUD, uno cada 1,5s max
   if (clock.elapsedTime - ultimoAvisoChoque > 1.5) {
     mostrarAviso(objeto.def.nombre + ': necesitas tamaño ' +
                  tamanoParaComer(objeto).toFixed(2).replace('.', ','), 'peligro');
@@ -2088,33 +1987,29 @@ function comer(objeto)
   objeto.estado = 'comiendo';
   objeto.t = 0;
 
-  // Cambio en el grafo de escena: el objeto pasa de ser hijo de la escena a ser
-  // hijo del slime. attach() conserva su posicion en el mundo al cambiar de padre,
+  // El objeto pasa de ser hijo de la escena a ser hijo del slime. 
+  // attach() conserva su posición en el mundo al cambiar de padre,
   // asi que a partir de ahora se mueve con el slime.
   slime.attach(objeto.grupo);
   objeto.posicionInicial = objeto.grupo.position.clone();
   objeto.escalaInicial = objeto.grupo.scale.x;
 
-  // CRECIMIENTO- el slime crece "por area": su radio al cuadrado aumenta en
-  // proporcion al tamaño al cuadrado de lo que come. Comer algo grande se nota
-  // mucho; comer migajas cuando ya eres enorme, apenas.
+  // Crecicimiento, comer algo grande hace crecer más
   const radioActual = tamano_objetivo / 2;
   const radioNuevo = Math.sqrt(radioActual * radioActual + FACTOR_CRECIMIENTO * objeto.tam * objeto.tam);
   tamano_objetivo = radioNuevo * 2;
 
-  // SONIDO- un sonido de comer elegido al azar segun su peso
+  // un sonido de comer elegido al azar segun su peso
   reproducirSonidoComer();
 
-  // ANIMACION COMER- un "empujon" al muelle: el slime se aplasta y rebota.
-  // Si acaba de recibir otro, este bocado no empuja: asi el muelle tiene tiempo
-  // de rebotar y, comiendo sin parar, el slime "mastica" con un ritmo regular
-  // en lugar de quedarse aplastado.
+  // Animación de comer, el slime se aplasta y rebota.
+  // Si vuelve a comer, la animación no se produce de vuelve hasta el intervalo
   if (clock.elapsedTime - ultimoEmpujon > INTERVALO_EMPUJON) {
     velocidadEstiramiento += 5.5;
     ultimoEmpujon = clock.elapsedTime;
   }
 
-  // HUD- puntos proporcionales al tamaño del objeto (una semilla da 12-18)
+  // Puntos en el HUD proporcionales al tamaño del objeto
   var puntosBocado = Math.max(1, Math.round(100 * objeto.tam / tamano_base));
   puntos += puntosBocado;
   anunciarBocado(objeto.def.nombre, puntosBocado);
@@ -2124,15 +2019,11 @@ function comer(objeto)
   console.log('Comido:', objeto.def.nombre, '- total:', comidos,
               '- tamaño:', (tamano_objetivo / tamano_base).toFixed(2) + 'x');
 
-  // FINAL- los tipos con "final: true" (el Sol) terminan la partida
+  // Los objetos con "final: true" (el Sol) terminan la partida
   if (objeto.def.final) terminarJuego();
 }
 
-// ---------------------------------------------------------------------------
-// ---------------------------------------------------------------------------
-// MENU- pantalla de inicio (nombre, explicacion, controles y botones) y creditos.
-// Se crea desde el codigo, como el HUD, asi que no hay que tocar el HTML.
-// ---------------------------------------------------------------------------
+// MENU: pantalla de inicio (nombre, explicacion, controles y botones) y creditos.
 function crearMenuInicio()
 {
   const estilo = document.createElement('style');
@@ -2190,7 +2081,7 @@ function crearMenuInicio()
   const fondo = document.createElement('div');
   fondo.className = 'menu-fondo';
   fondo.innerHTML =
-    // --- Pantalla principal ---
+    // Pantalla principal
     '<div class="menu-tarjeta menu-principal">' +
       '<div class="menu-titulo">Tasty Katamari</div>' +
       '<p class="menu-texto">Eres un slime con mucha hambre. Cómete todo lo que sea más pequeño que tú para crecer. ' +
@@ -2211,7 +2102,7 @@ function crearMenuInicio()
         '<button class="menu-boton secundario boton-creditos">Créditos</button>' +
       '</div>' +
     '</div>' +
-    // --- Creditos (ocultos hasta pulsar el boton) ---
+    // Créditos
     '<div class="menu-tarjeta menu-creditos" style="display: none">' +
       '<h2>Créditos</h2>' +
       '<h3>Desarrollo</h3><ul><li>Francisco He Chi</li></ul>' +
@@ -2327,9 +2218,7 @@ function crearMenuInicio()
   });
 }
 
-// ---------------------------------------------------------------------------
-// PAUSA- pantalla de pausa y cambio entre pausa y juego
-// ---------------------------------------------------------------------------
+// Pantalla de pausa y cambio entre pausa y juego
 function crearPantallaPausa()
 {
   const estilo = document.createElement('style');
@@ -2380,15 +2269,14 @@ function alternarPausa()
   pantallaPausa.classList.toggle('visible', juegoPausado);
 
   if (juegoPausado) {
-    // Soltamos todas las teclas: si no, al volver el slime seguiria moviendose
+    // Soltar todas las teclas
     controls.moveForward = controls.moveBackward = false;
     controls.moveLeft = controls.moveRight = false;
     controls.rotateCameraLeft = controls.rotateCameraRight = false;
-    if (musica && musica.isPlaying) musica.pause();      // la musica se para donde iba...
+    if (musica && musica.isPlaying) musica.pause();// parar música
   } else {
-    clock.getDelta();     // descartamos el tiempo que ha pasado en pausa
-    if (musica && musica.buffer && !musica.isPlaying) musica.play();   // ...y sigue desde ahi
-    // (si el sonido estaba silenciado con M, sigue silenciado: M baja el volumen, no para la musica)
+    clock.getDelta(); // descartar el tiempo que ha pasado en pausa
+    if (musica && musica.buffer && !musica.isPlaying) musica.play();
   }
 }
 
@@ -2396,14 +2284,13 @@ function empezarPartida(fondo)
 {
   juegoIniciado = true;
   document.body.classList.remove('en-menu');
-  fondo.classList.add('oculto');                       // se desvanece...
-  setTimeout(function () { fondo.remove(); }, 600);    // ...y se elimina
+  fondo.classList.add('oculto');
+  setTimeout(function () { fondo.remove(); }, 600);
   mostrarAviso('Nivel 1: ' + ESCALAS[0].nombre, '', 2500);
 }
 
-// FINAL- fin de la partida: el slime se detiene, el tiempo se para, las luces
-// se apagan (te has comido el Sol) y aparece la pantalla de victoria
-// ---------------------------------------------------------------------------
+// Fin de la partida: el slime se para, el tiempo se para, las luces
+// se apagan y aparece la pantalla de victoria
 function terminarJuego()
 {
   if (juegoTerminado) return;
@@ -2416,17 +2303,17 @@ function terminarJuego()
   mostrarAviso('¡Te has comido el Sol!', '', 2500);
   setTimeout(mostrarPantallaFinal, ESPERA_PANTALLA_FINAL * 1000);
 
-  // Sonido de victoria (la musica de fondo sigue sonando igual)
+  // Sonido de victoria
   if (canalVictoria && canalVictoria.buffer) canalVictoria.play();
 }
 
-// Apaga las luces poco a poco (en unos 2,5 s): sin Sol, el sistema solar se queda a oscuras
+// Apaga las luces en unos 2,5s
 function actualizarApagon(delta)
 {
   if (!juegoTerminado || apagon >= 1) return;
   apagon = Math.min(1, apagon + delta * 0.4);
   luzSol.intensity = 0.8 * (1 - apagon);
-  luzAmbiente.intensity = 0.4 * (1 - 0.7 * apagon);   // algo de luz ambiental para seguir viendo al slime
+  luzAmbiente.intensity = 0.4 * (1 - 0.7 * apagon); // luz ambiental para seguir viendo al slime
 }
 
 function mostrarPantallaFinal()
@@ -2480,46 +2367,36 @@ function mostrarPantallaFinal()
   pantalla.querySelector('.dato-bocados').textContent = comidos.toLocaleString('es-ES');
   pantalla.querySelector('.dato-tamano').textContent = Math.round(tamano_slime / tamano_base).toLocaleString('es-ES');
 
-  // Volver a jugar: recargar la pagina es la forma mas sencilla y segura de
-  // empezar de cero (se vuelven a crear la escena, los objetos y el estado)
+  // Volver a jugar = recargar la pagina
   pantalla.querySelector('.final-boton').addEventListener('click', function () {
     window.location.reload();
   });
 }
 
-// CRECIMIENTO- el tamaño actual se acerca suavemente al objetivo y todo lo que
-// depende de el (modelo, camaras, sombras, minimapa) se recalcula
+// El tamaño actual se acerca lentamente al objetivo y todo lo que
+// depende (modelo, camaras, sombras, minimapa) se recalcula
 function actualizarCrecimiento(delta)
 {
   tamano_slime = amortiguar(tamano_slime, tamano_objetivo, 5, delta);
 
-  // ANIMACION COMER- muelle amortiguado (igual que la camara con resorte):
-  // la rigidez (120) lo devuelve a su forma y la amortiguacion (9) frena el rebote
   velocidadEstiramiento += (-120 * estiramiento - 9 * velocidadEstiramiento) * delta;
   estiramiento += velocidadEstiramiento * delta;
   var e = THREE.MathUtils.clamp(estiramiento, -0.3, 0.3);
 
-  // Escala por el crecimiento y deformacion por la animacion. Al aplastarse
-  // (y menor) se ensancha (x, z mayores), como si conservara su volumen.
   var escala = tamano_slime / tamano_base;
   cuerpo_slime.scale.set(escala * (1 + e * 0.6), escala * (1 - e), escala * (1 + e * 0.6));
 
-  // AURA- su alcance y su altura crecen con el slime (distance esta en unidades
-  // del mundo y no se escala sola: el grupo "slime" no tiene escala)
   if (luzAura) {
     luzAura.distance = tamano_slime * AURA_ALCANCE;
-    luzAura.position.set(0, tamano_slime * 0.8, 0);   // algo por encima del centro del slime
+    luzAura.position.set(0, tamano_slime * 0.8, 0);
   }
 
-  // Planos de recorte de la camara principal proporcionales al tamaño
   camera.near = tamano_slime * 0.05;
   camera.far = tamano_slime * 100;
   camera.updateProjectionMatrix();
 
-  // Zona de sombras alrededor del slime
   configurarSombras();
 
-  // El minimapa abarca siempre 6 tamaños de slime alrededor de el
   alcance_hud = tamano_slime * 6;
   cameraTop.left = -alcance_hud / 2;
   cameraTop.right = alcance_hud / 2;
@@ -2531,15 +2408,11 @@ function actualizarCrecimiento(delta)
   centro_hud.y = tamano_slime * 2;
 }
 
-// ---------------------------------------------------------------------------
-// VIDA- comportamiento de los objetos que se mueven solos (hormigas...).
-// Cada uno tiene dos modos:
-//   - pasear: cada pocos segundos elige una direccion al azar y a veces se para
-//   - huir: si el slime esta cerca Y puede comerselo, corre en direccion contraria
-// Es una "maquina de estados" muy sencilla, la base de la IA de muchos juegos.
-// ---------------------------------------------------------------------------
-const DISTANCIA_HUIDA = 3;        // en tamaños del slime: a esta distancia empiezan a huir
-const MULTIPLICADOR_HUIDA = 2.5;  // al huir van 2,5 veces mas rapido que paseando
+// Comportamiento de los objetos que se mueven
+//   - pasear: cada pocos segundos elige una dirección al azar y a veces se para
+//   - huir: si el slime esta cerca y puede comerlo, corre en dirección contraria
+const DISTANCIA_HUIDA = 3; // en tamaños del slime, a esta distancia empiezan a huir
+const MULTIPLICADOR_HUIDA = 2.3; // al huir van 2,3 veces mas rapido que paseando
 
 function actualizarSeresVivos(delta)
 {
@@ -2555,11 +2428,11 @@ function moverSerVivo(objeto, delta)
   const config = objeto.def.movil;
   const p = objeto.grupo.position;
 
-  // Velocidad proporcional a su tamaño: una hormiga grande da pasos mas largos
+  // Velocidad proporcional a su tamaño
   const velocidadPaseo = config.velocidad * objeto.tam;
   let velocidad = velocidadPaseo;
 
-  // ¿Esta en peligro? Solo huye si el slime puede comerselo: si no, lo ignora
+  // Solo huye si el slime puede comerlo, si no, lo ignora
   const dx = p.x - pos_slime.x;
   const dz = p.z - pos_slime.z;
   const distanciaSlime = Math.hypot(dx, dz);
@@ -2567,32 +2440,30 @@ function moverSerVivo(objeto, delta)
 
   m.temporizador -= delta;
   if (huyendo) {
-    m.dirObjetivo = Math.atan2(dx, dz);      // direccion contraria al slime
+    m.dirObjetivo = Math.atan2(dx, dz); // dirección contraria al slime
     velocidad *= MULTIPLICADOR_HUIDA;
     m.parada = false;
   } else if (m.temporizador <= 0) {
-    // Nueva decision al pasear: girar un poco al azar y, a veces, pararse
+    // Nueva decisión al pasear: girar un poco al azar y, a veces, pararse
     m.dirObjetivo = m.dir + rand(-1.5, 1.5);
     m.temporizador = rand(1.5, 4);
-    // Con "seDetiene: false" en su movil, nunca se para (util si su modelo solo
-    // tiene animacion de andar: parado, caminaria en el sitio)
+    // Con "seDetiene: false", nunca se para (útil si su modelo solo tiene animación de andar)
     m.parada = config.seDetiene !== false && Math.random() < 0.25;
   }
   if (m.parada && !huyendo) velocidad = 0;
 
-  // No salir del suelo: cerca del borde, da la vuelta hacia el centro
+  // Cerca del borde, dar la vuelta hacia el centro
   const limite = suelos[objeto.escala].radio * 0.92 - objeto.radio;
   const distanciaCentro = Math.hypot(p.x, p.z);
   if (distanciaCentro > limite) m.dirObjetivo = Math.atan2(-p.x, -p.z);
 
-  // Giro y velocidad suavizados: no cambian de golpe
+  // Giro y velocidad suavizados
   m.dir = amortiguarAngulo(m.dir, m.dirObjetivo, huyendo ? 8 : 3, delta);
   m.velActual = amortiguar(m.velActual, velocidad, 6, delta);
 
   p.x += Math.sin(m.dir) * m.velActual * delta;
   p.z += Math.cos(m.dir) * m.velActual * delta;
 
-  // Por si acaso (por ejemplo, al huir pegada al borde): nunca fuera del suelo
   const nuevaDistancia = Math.hypot(p.x, p.z);
   if (nuevaDistancia > limite) {
     p.x *= limite / nuevaDistancia;
@@ -2601,40 +2472,34 @@ function moverSerVivo(objeto, delta)
 
   objeto.grupo.rotation.y = m.dir + (config.rotacionFrente || 0);
 
-  // ANIMACIONES- mezcla entre "quieto" y "andar" segun su velocidad.
-  // ritmo = 0 parada, 1 paseando, hasta 2,5 huyendo
   const acciones = objeto.grupo.userData.acciones;
   if (acciones) {
     const ritmo = THREE.MathUtils.clamp(m.velActual / velocidadPaseo, 0, MULTIPLICADOR_HUIDA);
-    const pesoAndar = Math.min(ritmo, 1);          // de parada a paseando pasa de quieto a andar
+    const pesoAndar = Math.min(ritmo, 1); 
 
     acciones.andar.setEffectiveWeight(pesoAndar);
     acciones.quieto.setEffectiveWeight(1 - pesoAndar);
 
-    // Al huir, la animacion de andar va mas deprisa (patas a toda prisa),
-    // pero nunca baja de la velocidad normal: asi no "patina" al arrancar
     acciones.andar.setEffectiveTimeScale(Math.max(ritmo, 1));
   }
 }
 
-// El objeto viaja hacia el interior del slime y encoge hasta desaparecer.
-// Como el slime es translucido, se ve como se hunde dentro de el.
+// El objeto comido va hacia el interior del slime y se hace pequeño hasta desaparecer
 function actualizarObjetos(delta)
 {
-  // Recorremos al reves porque eliminamos elementos del array mientras lo recorremos
   for (let i = objetos.length - 1; i >= 0; i--) {
     const objeto = objetos[i];
 
-    // TRANSICION- objetos insignificantes que desaparecen al cambiar de nivel
+    // Desaparecer objetos al hacer transición
     if (objeto.estado === 'desvaneciendo') {
       objeto.t += delta;
       const d = Math.min(objeto.t / 1.2, 1);
       objeto.materiales.forEach(function (m) { m.opacity = 1 - d; });
-      objeto.grupo.position.y = -d * objeto.tam * 0.5;       // se hunden un poco en el suelo
+      objeto.grupo.position.y = -d * objeto.tam * 0.5; // se hunden un poco en el suelo
       if (d >= 1) {
         quitarMixers(objeto.grupo);
         scene.remove(objeto.grupo);
-        objeto.materiales.forEach(function (m) { m.dispose(); });   // son copias: si se liberan
+        objeto.materiales.forEach(function (m) { m.dispose(); }); 
         objetos.splice(i, 1);
       }
       continue;
@@ -2644,38 +2509,29 @@ function actualizarObjetos(delta)
 
     objeto.t += delta;
     const k = Math.min(objeto.t / DURACION_BOCADO, 1);
-    const suave = k * k;   // empieza despacio y acelera: parece que lo "succiona"
+    const suave = k * k; // empieza despacio y acelera
 
-    // Destino en coordenadas locales del slime: su centro, algo por encima del suelo
+    // Termina en el centro del slime
     _destinoBocado.set(0, tamano_slime * 0.35, 0);
     objeto.grupo.position.lerpVectors(objeto.posicionInicial, _destinoBocado, suave);
     objeto.grupo.scale.setScalar(Math.max(0.0001, objeto.escalaInicial * (1 - suave)));
 
     if (k >= 1) {
-      // No hacemos dispose() de la geometria ni del material porque son compartidos
-      // con los demas objetos del mismo tipo
-      quitarMixers(objeto.grupo);   // MODELOS- su animacion deja de actualizarse
+      quitarMixers(objeto.grupo); // su animación deja de actualizarse
       slime.remove(objeto.grupo);
       objetos.splice(i, 1);
     }
   }
 }
 
-// ESCENARIOS- crea el suelo de una escala: un disco plano con un borde de tierra,
-// para que el nivel se vea como una "isla" (asi luego la siguiente escala podra
-// aparecer alrededor y la anterior quedara como una pequeña parte de ella).
-//
-//   grupo (se añade a la escena)
-//    ├─ superficie: disco plano (CircleGeometry) en y = 0
-//    └─ borde: cilindro abierto bajo el disco
+// Crea el suelo de un nivel, un disco plano con un borde de tierra.
 function crearSuelo(indice)
 {
   const E = ESCALAS[indice];
   const radio = E.radioSuelo * tamano_base;
   const alto = E.altoBorde * tamano_base;
 
-  // ESPACIO- un nivel espacial no tiene suelo ni fondo: solo guardamos su
-  // registro (el radio limita el movimiento y la colocacion de objetos)
+  // El espacio no tiene suelo ni fondo
   if (E.espacio) {
     const vacio = new THREE.Group();
     vacio.name = 'suelo_' + indice;
@@ -2684,56 +2540,52 @@ function crearSuelo(indice)
     return;
   }
 
-  // TRANSICION- los suelos de varios niveles estan en el mismo plano (y = 0):
-  // el del nivel 1 queda dentro del del nivel 2. Para que no parpadeen al
-  // superponerse, polygonOffset "adelanta" un poco los niveles mas pequeños.
+  // Los suelos del nivel anterior aparecen dentro del nuevo nivel. Para que no parpadeen al
+  // superponerse, polygonOffset mueve un poco.
   const prioridad = ESCALAS.length - 1 - indice;
   const materialSuelo = new THREE.MeshStandardMaterial({
     color: E.colorSuelo, roughness: 1,
     polygonOffset: true, polygonOffsetFactor: -2 * prioridad, polygonOffsetUnits: -4 * prioridad
   });
 
-  // CircleGeometry reparte las UV de 0 a 1 sobre todo el disco, por eso hay que
-  // repetir la textura para que no quede estirada.
+  // Textura del suelo
   if (E.texturaSuelo) {
     const textura = new THREE.TextureLoader().load(E.texturaSuelo);
     textura.encoding = THREE.sRGBEncoding;
     textura.wrapS = textura.wrapT = THREE.MirroredRepeatWrapping;
-    // CircleGeometry reparte las UV de 0 a 1 en todo el diametro: con tamanoBaldosa
-    // calculamos las repeticiones para que cada baldosa mida eso en el mundo
     const repeticiones = E.tamanoBaldosa ? (2 * E.radioSuelo) / E.tamanoBaldosa : E.repetirTextura;
     textura.repeat.set(repeticiones, repeticiones);
-    textura.magFilter = THREE.LinearMipMapLinearFilter;  // Filtrado  para la magnificación
+    textura.magFilter = THREE.LinearMipMapLinearFilter;
     textura.minFilter = THREE.LinearMipMapLinearFilter; 
     materialSuelo.map = textura;
-    materialSuelo.color.set(0xffffff);   // blanco = la textura con sus colores originales
+    materialSuelo.color.set(0xffffff);
   }
 
   const superficie = new THREE.Mesh(new THREE.CircleGeometry(radio, 96), materialSuelo);
-  superficie.rotation.x = -Math.PI / 2;    // el disco se crea en vertical: lo tumbamos
+  superficie.rotation.x = -Math.PI / 2; // Girar el suelo vertical
   superficie.name = 'superficie';
-  superficie.receiveShadow = true;           // SOMBRAS- el suelo recibe la sombra del slime
+  superficie.receiveShadow = true; // El suelo recibe la sombras
 
-  // Borde: cilindro sin tapas (openEnded), un poco mas estrecho por abajo
+  // Cilindro sin tapas (openEnded), un poco mas estrecho por abajo
   const materialBorde = new THREE.MeshStandardMaterial({ color: E.colorBorde, roughness: 1 });
   const borde = new THREE.Mesh(
     new THREE.CylinderGeometry(radio, radio * 0.92, alto, 96, 1, true),
     materialBorde
   );
-  borde.position.y = -alto / 2;            // su parte de arriba coincide con el disco
+  borde.position.y = -alto / 2;
   borde.name = 'borde';
 
   const grupo = new THREE.Group();
   grupo.name = 'suelo_' + indice;
   grupo.add(superficie, borde);
 
-  // FONDO- el cilindro panoramico forma parte del nivel
+  // Añadir el cilindro al nivel
   const fondo = crearFondoCilindro(indice);
   if (fondo) grupo.add(fondo);
   scene.add(grupo);
 
-  // TRANSICION- el suelo de un nivel nuevo empieza del tamaño del anterior y
-  // crece hasta el suyo (actualizarSuelos): parece que el mundo se expande
+  // Al transicionar, el suelo de un nivel nuevo empieza del tamaño del anterior y
+  // crece hasta el suyo (actualizarSuelos)
   const escalaInicial = indice === 0 ? 1 : ESCALAS[indice - 1].radioSuelo / E.radioSuelo;
   grupo.scale.set(escalaInicial, 1, escalaInicial);
 
@@ -2742,27 +2594,22 @@ function crearSuelo(indice)
   console.log('Escenario creado:', E.nombre, '- radio', radio.toFixed(2));
 }
 
-// FONDO- cilindro abierto que rodea el suelo con la imagen por dentro.
-// Forma parte del nivel (va dentro del grupo del suelo), asi que cuando haya
-// varios niveles cada uno tendra el suyo y desaparecera con el.
+// Crear el cilindro del nivel
 function crearFondoCilindro(indice)
 {
   const E = ESCALAS[indice];
   if (!E.fondo) return null;
 
-  const radio = E.radioSuelo * tamano_base * 1.00;     // un pelin fuera del borde del suelo
+  const radio = E.radioSuelo * tamano_base * 1.00;
   const alto = E.radioSuelo * tamano_base * E.altoFondo;
-  const base = -E.altoBorde * tamano_base;              // empieza bajo el borde: sin huecos
+  const base = -E.altoBorde * tamano_base;
   const altoTotal = alto - base;
 
-  // Cilindro sin tapas (openEnded). Lo invertimos en X para que la imagen se vea
-  // por dentro y sin quedar en espejo (el mismo truco que usan las panoramicas de Three.js)
   const geometria = new THREE.CylinderGeometry(radio, radio, altoTotal, 96, 1, true);
   geometria.scale(-1, 1, 1);
 
   const textura = new THREE.TextureLoader().load(E.fondo, function (imagen) {
-    // Repetimos la imagen alrededor del cilindro las veces necesarias para que
-    // conserve su proporcion (si no, quedaria muy estirada en horizontal)
+    // Repetir la imagen alrededor del cilindro
     const proporcion = imagen.image.width / imagen.image.height;
     const perimetro = 2 * Math.PI * radio;
     textura.repeat.x = Math.max(1, Math.round(perimetro / (altoTotal * proporcion)));
@@ -2772,15 +2619,14 @@ function crearFondoCilindro(indice)
   textura.encoding = THREE.sRGBEncoding;
   textura.wrapS = THREE.MirroredRepeatWrapping;
 
-  // MeshBasicMaterial: no le afectan las luces ni las sombras, es un decorado.
-  // toneMapped false para que la imagen se vea con sus colores originales.
+  // MeshBasicMaterial = no le afecta las luces ni las sombras.
   const material = new THREE.MeshBasicMaterial({ map: textura, toneMapped: false });
 
   const cilindro = new THREE.Mesh(geometria, material);
   cilindro.position.y = base + altoTotal / 2;
   cilindro.name = 'fondo';
 
-  // Capa 1: la ve la camara principal pero no la cenital, asi en el minimapa
+  // Capa 1, la ve la camara principal pero no la cenital, asi en el minimapa
   // no aparece como un anillo alrededor del nivel
   cilindro.layers.set(1);
 
@@ -2790,23 +2636,17 @@ function crearFondoCilindro(indice)
   return cilindro;
 }
 
-// ---------------------------------------------------------------------------
-// TRANSICION- cambio de nivel. Los niveles no son mundos separados: el nuevo
-// rodea al anterior, que queda como una pequeña parte de el.
-// ---------------------------------------------------------------------------
+// Cambio de nivel
 function comprobarCambioNivel()
 {
   const E = ESCALAS[escala_actual];
   const esUltimo = escala_actual >= ESCALAS.length - 1;
   if (transicion.activa || esUltimo) return;
 
-  // Usamos el tamaño objetivo (el que ya ha "ganado"), no el que se esta animando
   if (tamano_objetivo / tamano_base >= E.umbral) iniciarTransicion(escala_actual + 1);
 }
 
-// DEBUG- salta al nivel indicado (0 = nivel 1) pasando por todos los intermedios,
-// como si el slime hubiera crecido hasta el umbral de cada uno. Sirve para probar
-// los niveles avanzados sin tener que jugar los anteriores.
+// Saltar niveles con números
 function saltarANivel(destino)
 {
   if (slime === null) return;
@@ -2820,11 +2660,9 @@ function saltarANivel(destino)
   }
 
   while (escala_actual < destino) {
-    // El slime pasa a medir el umbral del nivel actual (justo lo necesario para
-    // el siguiente) y se hace la transicion normal: suelo, objetos, limpieza...
     const tamanoNuevo = ESCALAS[escala_actual].umbral * tamano_base;
     tamano_objetivo = tamanoNuevo;
-    tamano_slime = tamanoNuevo;          // sin animacion de crecimiento: de golpe
+    tamano_slime = tamanoNuevo;
     iniciarTransicion(escala_actual + 1);
   }
 }
@@ -2834,15 +2672,13 @@ function iniciarTransicion(nueva)
   const anterior = escala_actual;
   escala_actual = nueva;
 
-  // 1. Suelo (y fondo) del nivel nuevo, que crece alrededor del actual
+  // Suelo y fondo del nivel nuevo, que crece alrededor del actual
   crearSuelo(nueva);
 
-  // 2. Objetos del nivel nuevo (si su catalogo tiene alguno)
+  // Objetos del nivel nuevo
   generarObjetos(nueva);
 
-  // 3. Lo que ya es insignificante desaparece: todo lo de hace dos niveles y,
-  //    del nivel anterior, lo que mida menos de un cuarto del slime.
-  //    Los objetos grandes se quedan y en el nuevo nivel se podran comer.
+  // Eliminar cosas pequeñas del nivel anterior
   objetos.forEach(function (objeto) {
     if (objeto.estado !== 'activo') return;
     const muyAntiguo = objeto.escala <= nueva - 2;
@@ -2850,14 +2686,14 @@ function iniciarTransicion(nueva)
     if (muyAntiguo || diminuto) desvanecerObjeto(objeto);
   });
 
-  // 4. El fondo del nivel anterior se desvanece: si no, taparia el nivel nuevo
+  // El fondo del nivel anterior desaparece
   const fondoAnterior = suelos[anterior].grupo.getObjectByName('fondo');
   if (fondoAnterior) {
     fondoAnterior.material.transparent = true;
     suelos[anterior].fondoDesvaneciendo = { malla: fondoAnterior, t: 0 };
   }
 
-  // ESPACIO- al entrar en un nivel espacial desaparecen todos los suelos
+  // Al llegar al espacio, desaparecen todos los suelos
   // anteriores (y, si el nivel lo indica, todos los objetos anteriores)
   if (ESCALAS[nueva].espacio) {
     for (let k = 0; k < nueva; k++) desvanecerSuelo(k);
@@ -2868,20 +2704,19 @@ function iniciarTransicion(nueva)
     }
   }
 
-  // 5. Animacion de camara y aviso
+  // Animación de cámara y aviso
   transicion.activa = true;
   transicion.t = 0;
   mostrarAviso('Nivel ' + (nueva + 1) + ': ' + ESCALAS[nueva].nombre, '', 3000);
 
-  // 6. CIELO- si el nivel nuevo usa otra imagen de cielo, se cambia
+  // Si el nivel nuevo usa otra imagen de cielo, se cambia
   actualizarCielo(nueva);
 
-  // 7. BLOOM- cada nivel puede tener su propio brillo (fuerte en el espacio)
+  // Cambiar el nivel de bloom
   aplicarBloomNivel(nueva);
 }
 
-// CIELO- busca que imagen de CIELOS corresponde a un nivel: la ultima entrada
-// cuyo "desdeNivel" sea menor o igual que el (indice 0 = nivel 1)
+// Buscar la imagen de CIELOS que corresponde a un nivel
 function cieloParaNivel(indice)
 {
   let elegido = null;
@@ -2891,21 +2726,10 @@ function cieloParaNivel(indice)
   return elegido;
 }
 
-// CIELO- pone como fondo de la escena la imagen del nivel (si no es la que ya hay)
-// ---------------------------------------------------------------------------
-// BLOOM- efecto de brillo (como en el proyecto Tron) con postprocesado:
-//   1. RenderPass: dibuja la escena en una imagen intermedia
-//   2. UnrealBloomPass: toma lo que supera el umbral de brillo, lo desenfoca
-//      varias veces y lo suma a la imagen: lo brillante "desprende" luz
-//   3. Correccion de color: la imagen intermedia esta en espacio lineal; al
-//      mostrarla hay que pasarla a sRGB (lo que hace outputEncoding cuando se
-//      dibuja directamente en pantalla), si no se veria mas oscura
-// ---------------------------------------------------------------------------
-// (BLOOM_DIA, BLOOM_ESPACIO, composer... estan declarados antes de init())
+// BLOOM con postprocesados:
 
 function crearBloom()
 {
-  // Si falta algun script de efectos en el HTML, el juego sigue sin brillo
   if (!THREE.EffectComposer || !THREE.RenderPass || !THREE.UnrealBloomPass || !THREE.ShaderPass) {
     console.warn('BLOOM: faltan los scripts de efectos en el HTML; el juego sigue sin brillo');
     return;
@@ -2920,8 +2744,6 @@ function crearBloom()
   );
   composer.addPass(bloomPass);
 
-  // Correccion de color lineal -> sRGB. Si tienes GammaCorrectionShader.js en el
-  // HTML se usa ese; si no, este equivalente (LinearTosRGB lo aporta Three.js)
   const correccion = THREE.GammaCorrectionShader || {
     uniforms: { tDiffuse: { value: null } },
     vertexShader:
@@ -2937,8 +2759,7 @@ function crearBloom()
   aplicarBloomNivel(escala_actual);
 }
 
-// Elige el brillo del nivel: el suyo si lo tiene ("bloom" en ESCALAS), el del
-// espacio si es espacial y, si no, el de dia. El cambio es gradual (actualizarBloom).
+// Elegir el brillo del nivel
 function aplicarBloomNivel(indice)
 {
   const E = ESCALAS[indice];
@@ -2966,14 +2787,14 @@ function alternarBloom()
 function actualizarCielo(indice)
 {
   const cielo = cieloParaNivel(indice);
-  if (!cielo || cielo === cieloActual) return;   // la misma imagen: no hay nada que cambiar
+  if (!cielo || cielo === cieloActual) return;
   cieloActual = cielo;
 
   new THREE.TextureLoader().load(cielo.imagen, function (textura) {
     textura.encoding = THREE.sRGBEncoding;
     if (cielo.equirectangular) textura.mapping = THREE.EquirectangularReflectionMapping;
 
-    // Liberamos la imagen del cielo anterior
+    // Liberar la imagen del cielo anterior
     if (scene.background && scene.background.isTexture) scene.background.dispose();
     scene.background = textura;
   }, undefined, function () {
@@ -2981,26 +2802,24 @@ function actualizarCielo(indice)
   });
 }
 
-// ESPACIO- prepara un suelo (disco, borde y fondo) para desaparecer
+// Preparar un suelo (disco, borde y fondo) para desaparecer
 function desvanecerSuelo(indice)
 {
   const suelo = suelos[indice];
   if (!suelo || suelo.desvaneciendo || suelo.eliminado) return;
 
-  suelo.fondoDesvaneciendo = null;      // el fondo desaparece con todo el grupo
+  suelo.fondoDesvaneciendo = null;
   const materiales = [];
   suelo.grupo.traverse(function (n) {
     if (!n.isMesh) return;
-    n.material.transparent = true;      // cada suelo tiene sus propios materiales: no hace falta clonarlos
+    n.material.transparent = true;
     n.material.needsUpdate = true;
     materiales.push(n.material);
   });
   suelo.desvaneciendo = { t: 0, materiales: materiales };
 }
 
-// Prepara un objeto para desaparecer. Sus materiales son compartidos con los demas
-// objetos de su tipo, asi que los clonamos: si no, al hacerlos transparentes
-// desaparecerian tambien los objetos que se quedan.
+// Preparar un objeto para desaparecer.
 function desvanecerObjeto(objeto)
 {
   objeto.estado = 'desvaneciendo';
@@ -3020,18 +2839,18 @@ function desvanecerObjeto(objeto)
 
 function actualizarTransicion(delta)
 {
-  // Duracion de la animacion de camara
+  // Duración de la animacion de camara
   if (transicion.activa) {
     transicion.t += delta;
     if (transicion.t >= transicion.duracion) transicion.activa = false;
   }
 
   suelos.forEach(function (suelo) {
-    // ESPACIO- suelos que estan desapareciendo (con su borde y su fondo)
+    // Suelos que estan desapareciendo (con su borde y su fondo)
     if (suelo.desvaneciendo) {
       const v = suelo.desvaneciendo;
       v.t += delta;
-      const d = Math.min(v.t / 2, 1);                 // 2 segundos
+      const d = Math.min(v.t / 2, 1); // 2 segundos
       v.materiales.forEach(function (m) { m.opacity = 1 - d; });
       if (d >= 1) {
         scene.remove(suelo.grupo);
@@ -3048,13 +2867,13 @@ function actualizarTransicion(delta)
     }
     if (suelo.eliminado) return;
 
-    // Suelos que estan creciendo
+    // Suelos que están creciendo
     if (suelo.t < 1) {
       suelo.t = Math.min(suelo.t + delta / DURACION_CRECER_SUELO, 1);
       const e = suelo.escalaInicial + (1 - suelo.escalaInicial) * suavizar(suelo.t);
       suelo.grupo.scale.set(e, 1, e);
     }
-    // Fondos que se estan desvaneciendo
+    // Fondos que se estan desapareciendo
     const f = suelo.fondoDesvaneciendo;
     if (f) {
       f.t += delta;
@@ -3071,7 +2890,7 @@ function actualizarTransicion(delta)
   });
 }
 
-// Curva de la "revelacion": la distancia de la camara se multiplica por un
+// Curva de la "revelacion", la distancia de la cámara se multiplica por un
 // factor que sube y vuelve a 1 en forma de campana (alejarse, mirar, volver)
 function factorRevelacion()
 {
@@ -3087,13 +2906,13 @@ function suavizar(t)
   return t * t * (3 - 2 * t);
 }
 
-// Impide que el slime salga del suelo de la escala actual
+// Evita que el slime salga del suelo de la escala actual
 function limitarAlSuelo(posicion)
 {
   const suelo = suelos[escala_actual];
   if (!suelo) return;
 
-  const limite = suelo.radio - tamano_slime * 0.5;    // margen: medio slime
+  const limite = suelo.radio - tamano_slime * 0.5;
   const distancia = Math.hypot(posicion.x, posicion.z);
   if (distancia > limite) {
     posicion.x *= limite / distancia;
@@ -3101,30 +2920,26 @@ function limitarAlSuelo(posicion)
   }
 }
 
-// ILUMINACION- basada en el proyecto Tron (AmbientLight + DirectionalLight).
-// La ambiental ilumina todo por igual para que las zonas en sombra no queden negras;
-// la direccional hace de sol: da volumen y es la que proyecta las sombras.
+// Iluminación
 function crearLuces()
 {
-  luzAmbiente = new THREE.AmbientLight(0xffffff, 0.4);   // algo menor que en Tron: el entorno PBR ya aporta luz
+  luzAmbiente = new THREE.AmbientLight(0xffffff, 0.4);
   scene.add(luzAmbiente);
 
-  luzSol = new THREE.DirectionalLight(0xfff4e0, 0.8);    // blanco ligeramente calido
+  luzSol = new THREE.DirectionalLight(0xfff4e0, 0.8); // blanco ligeramente cálido
   luzSol.position.copy(direccion_sol).multiplyScalar(50);
   luzSol.castShadow = true;
-  luzSol.shadow.mapSize.set(2048, 2048);                 // resolucion del mapa de sombras
-  luzSol.shadow.bias = -0.0005;                          // evita el "acne" (rayas) de sombra
+  luzSol.shadow.mapSize.set(2048, 2048); // resolución del mapa de sombras
+  luzSol.shadow.bias = -0.0005; // evita artefactos de sombras
   scene.add(luzSol);
-  scene.add(luzSol.target);                              // el target tambien debe estar en la escena
+  scene.add(luzSol.target); // el target tambien debe estar en la escena
 }
 
-// La sombra de una DirectionalLight se calcula con una camara ortografica.
-// Su tamaño se ajusta al slime: una zona pequeña alrededor de el da sombras
-// mucho mas nitidas que cubrir todo el nivel con la misma resolucion.
+
 function configurarSombras()
 {
   const camaraSombra = luzSol.shadow.camera;
-  const extension = tamano_slime * 12;          // zona con sombra: 8 tamaños de slime de lado
+  const extension = tamano_slime * 12; // zona con sombra
   camaraSombra.left = -extension;
   camaraSombra.right = extension;
   camaraSombra.top = extension;
@@ -3132,23 +2947,19 @@ function configurarSombras()
   camaraSombra.near = tamano_slime * 0.1;
   camaraSombra.far = tamano_slime * 40;
   camaraSombra.updateProjectionMatrix();
-  luzSol.shadow.normalBias = tamano_slime * 0.01;   // evita el acne en superficies curvas
+  luzSol.shadow.normalBias = tamano_slime * 0.01;
 }
 
-// El sol se coloca siempre en la misma direccion respecto al slime (la luz no
-// cambia de angulo), pero desplazado con el para que su sombra no salga del mapa.
+// El sol se coloca siempre en la misma direccion respecto al slime
 function actualizarLuz()
 {
-  // SISTEMA SOLAR- la luz viene del Sol
+  // la luz viene del Sol en el espacio
   if (ESCALAS[escala_actual].sistemaSolar) actualizarDireccionSol();
 
   luzSol.target.position.copy(slime.position);
   luzSol.position.copy(slime.position).addScaledVector(direccion_sol, tamano_slime * 20);
 }
 
-// Mapa de entorno: un pequeño "estudio" (cielo degradado y dos paneles de luz)
-// procesado con PMREMGenerator. Los materiales PBR lo usan para los reflejos,
-// que es lo que da al slime el aspecto brillante y húmedo.
 function crearEntorno()
 {
   const estudio = new THREE.Scene();
@@ -3164,7 +2975,6 @@ function crearEntorno()
   geoCielo.setAttribute( 'color', new THREE.Float32BufferAttribute( colores, 3 ) );
   estudio.add( new THREE.Mesh( geoCielo, new THREE.MeshBasicMaterial({ side: THREE.BackSide, vertexColors: true }) ) );
 
-  // Paneles muy brillantes (valores > 1) que se reflejan como "ventanas" de luz
   const panel = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide });
   panel.color.setScalar( 6 );
   const p1 = new THREE.Mesh( new THREE.PlaneGeometry( 5, 3 ), panel );
@@ -3183,7 +2993,7 @@ function crearEntorno()
   pmrem.dispose();
 }
 
-// FINAL- camara cenital ortografica para el HUD (igual que en el proyecto Tron)
+// Cámara cenital ortografica para el minimapa del HUD
 function crearMinimapa()
 {
   cameraTop = new THREE.OrthographicCamera(
@@ -3194,15 +3004,12 @@ function crearMinimapa()
     0.1,
     200
   );
-  // Con la camara mirando hacia abajo, "arriba" en el minimapa es -z
+  // Cámara mirando hacia abajo
   cameraTop.up.set(0, 0, -1);
 
-  // Escenas auxiliares que escriben la mascara circular y su borde.
   cameraStencil = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
   cameraStencil.position.z = 2;
 
-  // La mascara escribe 1 en el stencil y, a diferencia de Tron, tambien pinta
-  // un fondo oscuro para que el minimapa se distinga del fondo blanco de la escena.
   stencilScene = new THREE.Scene();
   const mascara = new THREE.Mesh(
     new THREE.CircleGeometry(0.94, 64),
@@ -3224,8 +3031,6 @@ function crearMinimapa()
   const borde = new THREE.Mesh(
     new THREE.RingGeometry(0.92, 0.99, 64),
     new THREE.MeshBasicMaterial({
-      // Mismo verde que el HUD. Lo pasamos a lineal (como los colores del CSS, que
-      // estan en sRGB) y sin tone mapping, para que se vea exactamente igual
       color: new THREE.Color(0x8dffb5).convertSRGBToLinear(),
       toneMapped: false,
       depthTest: false,
@@ -3246,12 +3051,8 @@ function updateCameraTop()
   cameraTop.lookAt(centro_hud.x, 0, centro_hud.z);
 }
 
-// Activa temporalmente la comparacion contra el stencil en todos los
-// materiales de la escena. Se desactiva inmediatamente despues del HUD para
-// no afectar la vista principal del siguiente frame.
 function configurarStencilHUD(activo, escenaObjetivo)
 {
-  // Por defecto la escena principal; el visor le pasa su propia escena
   escenaObjetivo = escenaObjetivo || scene;
   escenaObjetivo.traverse(function(objeto) {
     if (!objeto.material)
@@ -3291,29 +3092,25 @@ function update()
 {
     stats.update();
 
-    // Limitamos el delta para evitar saltos bruscos al volver a la pestaña.
     var delta = Math.min(clock.getDelta(), 0.05);
 
-    // Mientras el modelo carga, solo funciona la camara orbital
     if (slime === null) {
         cameraControls.update();
         return;
     }
 
-    // PAUSA- no se actualiza nada: la escena se sigue dibujando, pero congelada
+    // Cuando se pausa, no se actualiza nada, la escena se sigue dibujando, pero congelada
     if (juegoPausado) return;
 
     var mirarAtras = false;
 
     if (modo_camara === 'seguimiento') {
-        // Movimiento relativo a la camara: W se aleja de la
-        // camara, S se acerca y A/D van de lado. El slime gira hacia donde va.
+        // Movimiento relativo a la cámara
         moverRelativoACamara(delta);
     } else {
-        // 3- movimiento: A/D giran, W/S avanzan y retroceden
+        // A/D giran, W/S avanzan y retroceden
         // Al ir hacia atras en la camara en tercera persona el slime mira hacia la
-        // camara, asi que invertimos el giro: D siempre gira hacia la derecha de la
-        // pantalla y A hacia la izquierda, mire hacia donde mire el modelo.
+        // cámara, asi que se invierte el giro.
         var yendoAtras = controls.moveBackward && !controls.moveForward;
         var sentidoGiro = (modo_camara === 'tercera' && yendoAtras) ? -1 : 1;
         if (controls.moveLeft) angulo += controls.turnSpeed * delta * sentidoGiro;
@@ -3325,55 +3122,53 @@ function update()
         if (controls.moveForward) pos_slime.addScaledVector(velocity, avance);
         if (controls.moveBackward) pos_slime.addScaledVector(velocity, -avance * 0.6);
 
-        // Al ir hacia atras (S), el modelo se da la vuelta y camina de frente hacia
-        // la camara. La camara sigue usando "angulo", asi que no da la vuelta con el.
+        // Al ir hacia atras, el modelo se da la vuelta y camina de frente hacia
+        // la camara
         mirarAtras = controls.moveBackward && !controls.moveForward;
     }
 
     limitarAlSuelo(pos_slime);
 
-    // VIDA- los objetos con vida pasean y huyen
+    // Los objetos con vida pasean y huyen
     actualizarSeresVivos(delta);
-    actualizarGiros(delta);          // ESFERAS y SISTEMA SOLAR- giros sobre si mismos y orbitas
+    actualizarGiros(delta); // giros sobre si mismos y órbitas
 
-    // COLISIONES- comer lo que es mas pequeño y chocar con lo que es mas grande
+    // Comer lo que es mas pequeño y chocar con lo que es más grande
     comprobarColisiones();
 
-    // RESALTE- marca el objeto comestible mas grande que hay cerca
+    // Marcar el objeto comestible más grande que hay cerca
     actualizarResalte();
 
-    // FLECHA- apunta al objeto comestible mas grande de la zona
+    // Una flecha que punta al objeto comestible más grande de la zona
     actualizarFlecha(delta);
 
-    // CHOQUE- la sacudida se apaga sola en 0,35 s
+    // Choques
     temblor = Math.max(0, temblor - delta / 0.35);
 
-    // CRECIMIENTO- aplicar el tamaño actual al modelo y a todo lo que depende de el
+    // Crecimiento
     actualizarCrecimiento(delta);
 
-    // TRANSICION- al alcanzar el umbral del nivel, se pasa al siguiente
+    // Transición
     comprobarCambioNivel();
     actualizarTransicion(delta);
 
-    // HUD- contamos el tiempo de juego y actualizamos la interfaz
-    if (juegoIniciado && !juegoTerminado) tiempoJugado += delta;   // MENU / FINAL- solo cuenta jugando
+    // HUD
+    if (juegoIniciado && !juegoTerminado) tiempoJugado += delta;
     actualizarHUD();
-    actualizarApagon(delta);                       // FINAL- sin Sol, las luces se apagan
-    actualizarBloom(delta);                        // BLOOM- cambio suave de intensidad entre niveles
+    actualizarApagon(delta); // Apagar luces al final de la partida
+    actualizarBloom(delta); // Bloom
 
-    // VISOR- gira el modelo y lo cambia (como mucho cada INTERVALO_VISOR segundos)
+    // Visualizador de comida
     actualizarVisor(delta);
 
     slime.position.copy(pos_slime);
 
     var rotacionObjetivo = angulo + (mirarAtras ? Math.PI : 0);
-    // Giro suave por el camino mas corto (atan2 evita dar la vuelta larga)
     var diferencia = Math.atan2(Math.sin(rotacionObjetivo - rotacion_visual),
                                 Math.cos(rotacionObjetivo - rotacion_visual));
     rotacion_visual += diferencia * (1 - Math.exp(-10 * delta));
     slime.rotation.y = rotacion_visual + rotacion_frente;
 
-    // DEBUG- actualizamos solamente la camara que esta activa.
     if (modo_camara === 'orbital') {
         cameraControls.update();
     } else if (modo_camara === 'seguimiento') {
@@ -3382,15 +3177,12 @@ function update()
         updateCamera(delta);
     }
 
-    // Avanzar la animación según el tiempo transcurrido
-    // ILUMINACION- el sol acompaña al slime para que su sombra siempre sea nitida
+    // Luces
     actualizarLuz();
 
-    // COMER- animacion de los objetos que estan siendo absorbidos
+    // Animacion de los objetos comidos
     actualizarObjetos(delta);
 
-    // VELOCIDAD ANIMACION- mas rapida si se esta moviendo. Se suaviza con
-    // amortiguar() para que el cambio de ritmo no sea brusco.
     if (accionSlime != null) {
         var moviendose = controls.moveForward || controls.moveBackward ||
                          controls.moveLeft || controls.moveRight;
@@ -3400,11 +3192,10 @@ function update()
 
     if (mixer != null) mixer.update(delta);
 
-    // MODELOS- animaciones de los objetos con modelo animado (hormigas...)
+    // Animaciones de objetos
     for (let i = 0; i < mixersObjetos.length; i++) mixersObjetos[i].update(delta);
 }
 
-// Muelle amortiguado: el valor actual persigue al objetivo de forma elastica
 function actualizarResorte(actual, velocidadActual, objetivo, delta)
 {
   aceleracion_camara
@@ -3417,7 +3208,7 @@ function actualizarResorte(actual, velocidadActual, objetivo, delta)
   actual.addScaledVector(velocidadActual, delta);
 }
 
-// FINAL- camara en tercera persona con posicion y punto de mirada elasticos.
+// Cámara en tercera persona con posición y punto de mirada elasticos.
 function updateCamera(delta)
 {
   // Detras del slime (en sentido contrario a donde mira) y algo por encima
@@ -3478,18 +3269,16 @@ function cambiarCamara()
 }
 
 
-// ---------------------------------------------------------------------------
-// CAMARA DE SEGUIMIENTO- orbita en tercera persona controlada por el usuario.
-// Su posicion se calcula en coordenadas esfericas alrededor del punto objetivo:
+// Cámara de seguimiento
+// Su posición se calcula en coordenadas esféricas alrededor del punto objetivo:
 //   x = objetivo.x + sin(yaw) * cos(pitch) * dist
 //   y = objetivo.y + sin(pitch) * dist
 //   z = objetivo.z + cos(yaw) * cos(pitch) * dist
-// ---------------------------------------------------------------------------
 function crearControlesCamaraSeguimiento()
 {
   const lienzo = renderer.domElement;
 
-  // Arrastrar con el raton: gira la camara alrededor del slime
+  // Arrastrar con el raton
   lienzo.addEventListener('pointerdown', function (e) {
     if (modo_camara !== 'seguimiento') return;
     cam_seguimiento.arrastre = { x: e.clientX, y: e.clientY };
@@ -3514,7 +3303,7 @@ function crearControlesCamaraSeguimiento()
   }, { passive: false });
 }
 
-// Al entrar en este modo calculamos yaw, pitch y distancia a partir de donde
+// Al entrar en este modo calcular yaw, pitch y distancia a partir de donde
 // esta la camara ahora, para que el cambio no dé un salto
 function iniciarCamaraSeguimiento(miradaAnterior)
 {
@@ -3526,9 +3315,6 @@ function iniciarCamaraSeguimiento(miradaAnterior)
   cam_seguimiento.arrastre = null;
 }
 
-// Interpolacion exponencial: independiente de los FPS
-// Igual que amortiguar() pero para angulos: gira por el camino mas corto
-// (de 170º a -170º gira 20º, no 340º)
 function amortiguarAngulo(actual, objetivo, rapidez, delta)
 {
   const diferencia = Math.atan2(Math.sin(objetivo - actual), Math.cos(objetivo - actual));
@@ -3543,7 +3329,6 @@ function amortiguar(actual, objetivo, rapidez, delta)
 function updateCameraSeguimiento(delta)
 {
 
-  // La distancia y el punto de mira siguen a su valor ideal con suavizado
   var distObjetivo = DISTANCIA_SEGUIMIENTO * tamano_slime * cam_seguimiento.zoom * factorRevelacion();
   cam_seguimiento.dist = amortiguar(cam_seguimiento.dist, distObjetivo, 2.5, delta);
   cam_seguimiento.objetivo.x = amortiguar(cam_seguimiento.objetivo.x, slime.position.x, 10, delta);
@@ -3559,8 +3344,7 @@ function updateCameraSeguimiento(delta)
   camera.lookAt(cam_seguimiento.objetivo);
 }
 
-// Movimiento relativo a la camara: "adelante" es la direccion en la que mira la
-// camara (proyectada en el suelo) y "derecha" su perpendicular
+// Movimiento relativo a la camara
 function moverRelativoACamara(delta)
 {
   var adelante = 0, lado = 0;
@@ -3580,8 +3364,6 @@ function moverRelativoACamara(delta)
   pos_slime.x += dx * controls.speed * tamano_slime * delta;
   pos_slime.z += dz * controls.speed * tamano_slime * delta;
 
-  // El slime se orienta hacia donde se mueve. Actualizamos "angulo" y "velocity"
-  // para que, al volver a la camara en tercera persona, esta se coloque detras.
   var objetivo = Math.atan2(dx, dz);
   angulo += Math.atan2(Math.sin(objetivo - angulo), Math.cos(objetivo - angulo)) * (1 - Math.exp(-10 * delta));
   velocity.set(Math.sin(angulo), 0, Math.cos(angulo));
@@ -3599,55 +3381,45 @@ function render()
   renderer.setViewport(0, 0, window.innerWidth, window.innerHeight);
   renderer.clear(true, true, true);
 
-  // CHOQUE- sacudida de la camara (solo en la vista principal, no en el minimapa)
+  // Temblor al chocar
   aplicarTemblor(camera, temblor > 0);
-  // BLOOM- la vista principal pasa por el composer (escena + brillo + correccion
-  // de color). El minimapa y el visor se siguen dibujando despues, sin brillo.
+  // Bloom
   if (bloomActivo && composer) composer.render();
   else renderer.render( scene, camera );
   aplicarTemblor(camera, false);
 
-  // HUD circular en la esquina superior izquierda.
+  // Minimapa
   const lado = Math.min(window.innerWidth, window.innerHeight) / 3.5;
   const margen = 18;
-  const x = margen;                                   // esquina izquierda
-  const alto_stats = 48;                              // el contador de FPS ocupa la esquina: bajamos el minimapa
+  const x = margen;
+  const alto_stats = 48;
   const y = window.innerHeight - lado - margen - alto_stats;
 
   renderer.setViewport(x, y, lado, lado);
   renderer.setScissor(x, y, lado, lado);
   renderer.setScissorTest(true);
 
-  // Limpiamos profundidad y stencil solo dentro del viewport del HUD.
   const gl = renderer.getContext();
   gl.stencilMask(0xff);
   gl.clearStencil(0);
   renderer.clear(false, true, true);
 
-  // Primero escribimos el circulo en el stencil (y su fondo oscuro).
   renderer.render(stencilScene, cameraStencil);
 
-  // Luego la vista cenital solo pasa donde el stencil vale 1.
   configurarStencilHUD(true);
-  // CIELO- lo quitamos un momento: el minimapa debe ver solo el suelo desde arriba
-  // (el fondo no respeta la mascara circular y taparia todo el cuadrado)
   const cieloGuardado = scene.background;
   scene.background = null;
   renderer.render(scene, cameraTop);
   scene.background = cieloGuardado;
   configurarStencilHUD(false);
 
-  // Un aro verde hace legible el limite del minimapa.
   renderer.clearDepth();
   renderer.render(hudBorderScene, cameraStencil);
 
-  // VISOR- circulo en la esquina inferior derecha, visible desde el inicio
-  // (vacio hasta el primer bocado). Mismos pasos que el minimapa: mascara
-  // circular, escena del visor y aro.
+  // Visualizador de comida
   {
     const xv = window.innerWidth - lado - margen;
-    const yv = margen;                                // en WebGL, y se mide desde abajo
-
+    const yv = margen;
     renderer.setViewport(xv, yv, lado, lado);
     renderer.setScissor(xv, yv, lado, lado);
 
@@ -3662,8 +3434,6 @@ function render()
     renderer.clearDepth();
     renderer.render(hudBorderScene, cameraStencil);
 
-    // La etiqueta HTML se coloca centrada sobre el borde superior del circulo
-    // (en CSS, bottom se mide desde abajo igual que el viewport)
     fijarHUD('visorPos', lado + ',' + margen, function () {
       etiquetaVisor.style.right = (margen + lado / 2) + 'px';
       etiquetaVisor.style.bottom = (margen + lado - 16) + 'px';
