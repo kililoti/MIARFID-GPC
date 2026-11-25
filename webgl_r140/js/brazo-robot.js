@@ -301,6 +301,7 @@ function loadScene()
     );
 
     geometry.computeVertexNormals();
+    geometry.translate(0, -10, 0);
 
     var malla = new THREE.Mesh(
         geometry,
@@ -321,7 +322,7 @@ function loadScene()
     var axesHelper = new THREE.AxesHelper(0.5); // El parámetro es el tamaño de los ejes
     mano.add(axesHelper);
 
-    mano.position.y += 72.5;
+    mano.position.y += 80;
 
     scene.add(robot);
 
@@ -508,7 +509,7 @@ function update()
         interfaz.giro_brazo = -45 + t * 90;
         interfaz.giro_antebrazo_y = -180 + t * 360;
         interfaz.giro_antebrazo_z = -90 + t * 180;
-        interfaz.giro_pinza = -40 + t * 100;
+        interfaz.giro_pinza = -40 + t * 260;
         interfaz.separacion_pinza = t * 15;
 
         sliderGiroBase.updateDisplay();
